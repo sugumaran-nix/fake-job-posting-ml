@@ -1,0 +1,6 @@
+{
+  "Logistic Regression": "C:\\Users\\anon\\Desktop\\today docs\\Project\\FJPML_LightTheme_v4\\project_enhanced\\models\\logistic_regression.pkl",
+  "Random Forest": "C:\\Users\\anon\\Desktop\\today docs\\Project\\FJPML_LightTheme_v4\\project_enhanced\\models\\random_forest.pkl",
+  "Linear SVM": "C:\\Users\\anon\\Desktop\\today docs\\Project\\FJPML_LightTheme_v4\\project_enhanced\\models\\linear_svm.pkl",
+  "Naive Bayes": "C:\\Users\\anon\\Desktop\\today docs\\Project\\FJPML_LightTheme_v4\\project_enhanced\\models\\naive_bayes.pkl"
+}

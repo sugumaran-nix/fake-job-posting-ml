@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Classify Job — Fake Job Posting Prediction{% endblock %}
+{% block content %}
+
+<section class="page-hdr">
+  <div class="wrap">
+    <h1>Analyse a Job Posting</h1>
+    <p>Provide the job details below. The system runs NLP classification and automated URL fraud detection simultaneously.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap narrow">
+
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+      <div class="alert alert-{{ cat }}"><i class="fi fi-rr-warning"></i> {{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform">
+
+      <!-- ── Card 1: Basic Info ──────────────────────────── -->
+      <div class="fcard">
+        <div class="fcard-hdr"><span><i class="fi fi-rr-document"></i></span><h3>Basic Information</h3></div>
+        <div class="fgrid2">
+          <div class="fg">
+            <label>Job Title</label>
+            <input type="text" name="job_title"
+                   placeholder="e.g. Software Developer, Data Analyst"
+                   value="{{ (form or {}).get('job_title','') }}">
+          </div>
+          <div class="fg">
+            <label>Location</label>
+            <input type="text" name="location"
+                   placeholder="e.g. Chennai, Remote, Pan India"
+                   value="{{ (form or {}).get('location','') }}">
+          </div>
+        </div>
+        <div class="fgrid2">
+          <div class="fg">
+            <label>Company Name</label>
+            <input type="text" name="company"
+                   placeholder="Hiring company name"
+                   value="{{ (form or {}).get('company','') }}">
+          </div>
+          <div class="fg">
+            <label>Salary Range <small>(optional)</small></label>
+            <input type="text" name="salary"
+                   placeholder="e.g. ₹30,000–₹60,000/month"
+                   value="{{ (form or {}).get('salary','') }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Card 2: Company Website URL ────────────────── -->
+      <div class="fcard">
+        <div class="fcard-hdr"><span><i class="fi fi-rr-globe"></i></span>
+          <h3>Company Website URL
+            <span class="fcard-badge">Automated Fraud Detection</span>
+          </h3>
+        </div>
+        <div class="fg" style="padding:16px 24px 20px">
+          <label>Company Website <small>(optional but strongly recommended)</small></label>
+          <input type="url" name="website"
+                 placeholder="e.g. https://www.company.com/careers"
+                 value="{{ (form or {}).get('website','') }}">
+          <div class="url-checks">
+            <span><i class="fi fi-rr-lock"></i> HTTPS / SSL</span>
+            <span><i class="fi fi-rr-chart-histogram"></i> URL Entropy</span>
+            <span><i class="fi fi-rr-tag"></i> TLD Risk</span>
+            <span><i class="fi fi-rr-link"></i> Typosquatting</span>
+            <span><i class="fi fi-rr-home"></i> Free Hosting</span>
+            <span><i class="fi fi-rr-calculator"></i> Digit Density</span>
+            <span><i class="fi fi-rr-list"></i> Subdomain Depth</span>
+            <span><i class="fi fi-rr-key"></i> Keyword Score</span>
+          </div>
+          <div class="field-hint"><i class="fi fi-rr-map-marker"></i> The URL is analysed automatically — no manual checks needed</div>
+        </div>
+      </div>
+
+      <!-- ── Card 3: Job Content ─────────────────────────── -->
+      <div class="fcard">
+        <div class="fcard-hdr"><span><i class="fi fi-rr-document-signed"></i></span><h3>Job Content <span class="req-tag">Required</span></h3></div>
+        <div class="fg" style="padding:16px 24px 0">
+          <label>Job Description <span class="req">*</span></label>
+          <textarea id="desc" name="description" rows="7" required
+            placeholder="Paste the full job description here — the more detail, the more accurate the result…">{{ (form or {}).get('description','') }}</textarea>
+          <div class="char-row"><span id="cc">0</span> characters</div>
+        </div>
+        <div class="fg" style="padding:12px 24px 20px">
+          <label>Requirements / Skills <small>(optional)</small></label>
+          <textarea name="requirements" rows="4"
+            placeholder="Required qualifications, experience, skills…">{{ (form or {}).get('requirements','') }}</textarea>
+        </div>
+      </div>
+
+      <!-- Samples -->
+      <div class="sample-bar">
+        <span><i class="fi fi-rr-flask"></i> Try a sample:</span>
+        <button type="button" class="btn btn-sample" onclick="loadSample('fraud')"><i class="fi fi-rr-warning"></i> Fraudulent Sample</button>
+        <button type="button" class="btn btn-sample" onclick="loadSample('legit')"><i class="fi fi-rr-check"></i> Legitimate Sample</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="sbtn">
+          <i class="fi fi-rr-search"></i> Analyse This Job Posting
+        </button>
+        <button type="reset" class="btn btn-outline btn-lg"
+                onclick="document.getElementById('cc').textContent='0'">
+          <i class="fi fi-rr-refresh"></i> Clear
+        </button>
+      </div>
+
+    </form>
+  </div>
+</section>
+
+<script>
+const SAMPLES = {
+  fraud: {
+    job_title:    "Work From Home – Easy Data Entry Job",
+    company:      "Global Earn Solutions Pvt Ltd",
+    location:     "Remote – Anywhere in India",
+    salary:       "₹50,000 – ₹1,20,000 / month guaranteed",
+    website:      "http://globalearnnow.in.free.hosting.com",
+    description:  "Exciting opportunity! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed. No qualifications required. Just a smartphone and internet connection. Send us your Aadhaar card, PAN card and bank account details to register immediately. Pay a one-time registration fee of ₹799 to get your starter kit. Guaranteed income every month. Join 1,00,000 happy members today! 100% legitimate opportunity!",
+    requirements: "No degree needed. Must have bank account. Registration fee of ₹799 compulsory to start."
+  },
+  legit: {
+    job_title:    "Junior Python Developer",
+    company:      "Infosys Technologies Limited",
+    location:     "Chennai, Tamil Nadu",
+    salary:       "₹4,00,000 – ₹6,00,000 per annum",
+    website:      "https://www.infosys.com/careers",
+    description:  "We are looking for a motivated Junior Python Developer to join our engineering team in Chennai. You will work on backend APIs, microservices and data pipelines. Responsibilities include writing clean Python code, participating in code reviews, writing unit tests and contributing to Agile sprints. We offer competitive salary, health insurance, PF and learning & development opportunities. Work from office 5 days a week.",
+    requirements: "B.E. / B.Tech / MCA in Computer Science. Proficiency in Python 3.x, basic Flask or Django knowledge, Git and MySQL. 0–2 years experience. Strong problem solving skills."
+  }
+};
+
+function loadSample(t) {
+  const s = SAMPLES[t];
+  Object.keys(s).forEach(k => {
+    const el = document.querySelector(`[name="${k}"]`);
+    if (el) el.value = s[k] || '';
+  });
+  updateCC();
+  document.getElementById('desc').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function updateCC() {
+  document.getElementById('cc').textContent =
+    (document.getElementById('desc').value || '').length;
+}
+
+document.getElementById('desc').addEventListener('input', updateCC);
+document.getElementById('cform').addEventListener('submit', () => {
+  const b = document.getElementById('sbtn');
+  b.textContent = '⟳ Analysing…';
+  b.disabled = true;
+});
+</script>
+{% endblock %}

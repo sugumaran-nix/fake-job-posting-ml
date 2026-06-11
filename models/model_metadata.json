@@ -1,0 +1,19 @@
+{
+  "best_model": "Linear SVM",
+  "trained_at": "2026-04-17T12:40:24.315409",
+  "dataset_rows": 17880,
+  "dataset_cols": 24,
+  "fraud_count": 866,
+  "legit_count": 17014,
+  "tfidf_features": 10000,
+  "test_size": 0.2,
+  "accuracy": 0.9883,
+  "f1_fraud": 0.8757,
+  "roc_auc": 0.9838,
+  "all_models": [
+    "Logistic Regression",
+    "Random Forest",
+    "Linear SVM",
+    "Naive Bayes"
+  ]
+}

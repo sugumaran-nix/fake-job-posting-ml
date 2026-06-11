@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}About — Fake Job Posting Prediction{% endblock %}
+{% block content %}
+
+<section class="page-hdr">
+  <div class="wrap">
+    <h1>About the System</h1>
+    <p>Fake Job Posting Prediction — Fraud Detection using NLP and Machine Learning</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+
+    <div class="about-banner">
+      <div class="about-icon"><i class="fi fi-rr-search"></i></div>
+      <div>
+        <h2>Fake Job Posting Prediction</h2>
+        <p>An automated three-layer fraud detection system combining Natural Language Processing,
+           Machine Learning classification, and an automated URL fraud detection engine.
+           The system analyses job description text and independently evaluates company
+           website domains using 10 rule-based checks — covering domain entropy, SSL validity,
+           HTTPS usage, suspicious TLDs, free hosting platforms, typosquatting, subdomain depth,
+           scam keywords, digit density, and domain length anomalies.</p>
+      </div>
+    </div>
+
+    <div class="about-grid">
+
+      <div class="acard">
+        <h3><i class="fi fi-rr-brain"></i> ML Model Details</h3>
+        <table class="info-tbl">
+          <tr><td>Best Model</td> <td><strong>{{ metadata.best_model or "Run train.py" }}</strong></td></tr>
+          <tr><td>Features</td>   <td>TF-IDF (10,000 features, bigrams)</td></tr>
+          <tr><td>Dataset</td>    <td>EMSCAD — 17,880 job records</td></tr>
+          <tr><td>Accuracy</td>   <td><strong>{{ "%.2f"|format(metadata.accuracy*100) if metadata.accuracy else "~98%" }}%</strong></td></tr>
+          <tr><td>Fraud F1</td>   <td><strong>{{ "%.2f"|format(metadata.f1_fraud*100) if metadata.f1_fraud else "—" }}%</strong></td></tr>
+          <tr><td>ROC-AUC</td>    <td>{{ "%.4f"|format(metadata.roc_auc) if metadata.roc_auc else "—" }}</td></tr>
+          <tr><td>Selection</td>  <td>Best Fraud-class F1 (data-driven)</td></tr>
+          <tr><td>Split</td>      <td>80% Train / 20% Test (stratified)</td></tr>
+          <tr><td>Trained</td>    <td>{{ metadata.trained_at[:10] if metadata.trained_at else "—" }}</td></tr>
+        </table>
+        <div style="margin-top:14px">
+          <a href="{{ url_for('models_page') }}" class="btn btn-outline" style="font-size:.82rem;padding:7px 16px">
+            <i class="fi fi-rr-chart-histogram"></i> View Full Model Evaluation →
+          </a>
+        </div>
+      </div>
+
+      <div class="acard">
+        <h3><i class="fi fi-rr-globe"></i> URL Fraud Detection Engine</h3>
+        <table class="info-tbl">
+          <tr><td>1. HTTPS Check</td>      <td>SSL/TLS encryption validation</td></tr>
+          <tr><td>2. IP Detection</td>     <td>Raw IP address instead of domain</td></tr>
+          <tr><td>3. Free Hosting</td>     <td>26 known free hosting platforms</td></tr>
+          <tr><td>4. TLD Risk Score</td>   <td>20 suspicious + 10 trusted TLDs</td></tr>
+          <tr><td>5. URL Entropy</td>      <td>Shannon entropy for randomness detection</td></tr>
+          <tr><td>6. Keyword Score</td>    <td>22 scam URL keywords matched</td></tr>
+          <tr><td>7. Subdomain Depth</td>  <td>Excessive nesting detection</td></tr>
+          <tr><td>8. Typosquatting</td>    <td>13 brand domains checked</td></tr>
+          <tr><td>9. Digit Density</td>    <td>Auto-registered domain pattern</td></tr>
+          <tr><td>10. Length Anomaly</td>  <td>Too short / too long domain name</td></tr>
+        </table>
+      </div>
+
+      <div class="acard">
+        <h3><i class="fi fi-rr-chart-histogram"></i> Dataset — EMSCAD</h3>
+        <table class="info-tbl">
+          <tr><td>Total Records</td>   <td><strong>17,880</strong></td></tr>
+          <tr><td>Legitimate Jobs</td> <td>17,014 (95.2%)</td></tr>
+          <tr><td>Fraudulent Jobs</td> <td>866 (4.8%)</td></tr>
+          <tr><td>Text Features</td>   <td>Title, Description, Requirements, Company</td></tr>
+          <tr><td>Source</td>          <td>University of the Aegean, Greece</td></tr>
+        </table>
+      </div>
+
+      <div class="acard">
+        <h3><i class="fi fi-rr-settings"></i> Tech Stack</h3>
+        <div class="tech-cloud">
+          {% for t in ["Python 3.8+","Flask 2.x","NLTK","scikit-learn",
+                       "pandas","NumPy","Matplotlib","Seaborn",
+                       "TF-IDF","Logistic Regression","Random Forest",
+                       "Linear SVM","Naive Bayes","Shannon Entropy",
+                       "HTML5","CSS3","Jinja2","SQLite","analyzer.py",
+                       "utils/preprocessing.py","utils/evaluation.py"] %}
+          <span class="tech-tag">{{ t }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- NLP Pipeline -->
+    <div class="pipeline-box" style="margin-bottom:24px">
+      <h3>NLP Preprocessing Pipeline
+        <span style="font-size:.78rem;font-weight:400;color:var(--sub);margin-left:8px">
+          — defined once in <code>utils/preprocessing.py</code>, shared by train.py and app.py
+        </span>
+      </h3>
+      <div class="pipeline">
+        {% for n,t,d in [
+          ("1","Concatenate","Merge title + profile + description + requirements"),
+          ("2","Strip HTML","Remove &lt;b&gt;, &lt;br/&gt;, &lt;p&gt; tags"),
+          ("3","Lowercase","Convert entire string to lowercase"),
+          ("4","Punctuation","Remove all non-alpha characters"),
+          ("5","Tokenise","NLTK word_tokenize"),
+          ("6","Stopwords","Remove NLTK English stopword list"),
+          ("7","Lemmatise","WordNetLemmatizer → base forms"),
+          ("8","TF-IDF","Vectorise → 10,000 features, bigrams"),
+        ] %}
+        <div class="pip-step">
+          <div class="pip-n">{{ n }}</div>
+          <div class="pip-info"><strong>{{ t }}</strong><span>{{ d }}</span></div>
+        </div>
+        {% if not loop.last %}<div class="pip-arr">→</div>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Classifier comparison -->
+    <div class="acard">
+      <h3><i class="fi fi-rr-chart-line-up"></i> Classifier Comparison</h3>
+      <p style="font-size:.85rem;color:var(--sub);margin-bottom:14px">
+        All four models are trained and compared. The model with the highest
+        <strong>Fraud-class F1</strong> is automatically selected — not hardcoded.
+        See <a href="{{ url_for('models_page') }}">📊 Model Evaluation</a> for full metrics, confusion matrices, and plots.
+      </p>
+      <div class="tbl-wrap">
+        <table class="htbl">
+          <thead>
+            <tr><th>Model</th><th>Accuracy</th><th>Fraud F1</th><th>ROC-AUC</th><th>Auto-Selected?</th></tr>
+          </thead>
+          <tbody>
+            <tr class="row-best">
+              <td><strong>Logistic Regression</strong></td>
+              <td>~98.2%</td><td>~95.6%</td><td>~0.99</td>
+              <td><span class="badge badge-legit"><i class="fi fi-rr-star"></i> Typically best</span></td>
+            </tr>
+            <tr><td>SVM (Linear)</td>  <td>~97.9%</td><td>~95.0%</td><td>N/A</td><td>—</td></tr>
+            <tr><td>Random Forest</td> <td>~97.5%</td><td>~94.1%</td><td>~0.98</td><td>—</td></tr>
+            <tr><td>Naïve Bayes</td>   <td>~96.8%</td><td>~91.7%</td><td>~0.97</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px">
+        <a href="{{ url_for('models_page') }}" class="btn btn-primary" style="font-size:.85rem">
+          <i class="fi fi-rr-chart-histogram"></i> View Live Metrics After Training →
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Logistic Regression",
+    "accuracy": 0.9787,
+    "precision_weighted": 0.9821,
+    "recall_weighted": 0.9787,
+    "f1_weighted": 0.9799,
+    "precision_fraud": 0.7235,
+    "recall_fraud": 0.9075,
+    "f1_fraud": 0.8051,
+    "roc_auc": 0.9859,
+    "cv_f1_mean": 0.7318,
+    "cv_f1_std": 0.0239,
+    "confusion_matrix": [
+      [
+        3343,
+        60
+      ],
+      [
+        16,
+        157
+      ]
+    ],
+    "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate       1.00      0.98      0.99      3403\n  Fraudulent       0.72      0.91      0.81       173\n\n    accuracy                           0.98      3576\n   macro avg       0.86      0.94      0.90      3576\nweighted avg       0.98      0.98      0.98      3576\n"
+  },
+  {
+    "name": "Random Forest",
+    "accuracy": 0.9799,
+    "precision_weighted": 0.9803,
+    "recall_weighted": 0.9799,
+    "f1_weighted": 0.9773,
+    "precision_fraud": 1.0,
+    "recall_fraud": 0.5838,
+    "f1_fraud": 0.7372,
+    "roc_auc": 0.9856,
+    "cv_f1_mean": 0.6932,
+    "cv_f1_std": 0.0154,
+    "confusion_matrix": [
+      [
+        3403,
+        0
+      ],
+      [
+        72,
+        101
+      ]
+    ],
+    "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate       0.98      1.00      0.99      3403\n  Fraudulent       1.00      0.58      0.74       173\n\n    accuracy                           0.98      3576\n   macro avg       0.99      0.79      0.86      3576\nweighted avg       0.98      0.98      0.98      3576\n"
+  },
+  {
+    "name": "Linear SVM",
+    "accuracy": 0.9883,
+    "precision_weighted": 0.988,
+    "recall_weighted": 0.9883,
+    "f1_weighted": 0.9881,
+    "precision_fraud": 0.897,
+    "recall_fraud": 0.8555,
+    "f1_fraud": 0.8757,
+    "roc_auc": 0.9838,
+    "cv_f1_mean": 0.8154,
+    "cv_f1_std": 0.0249,
+    "confusion_matrix": [
+      [
+        3386,
+        17
+      ],
+      [
+        25,
+        148
+      ]
+    ],
+    "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate       0.99      1.00      0.99      3403\n  Fraudulent       0.90      0.86      0.88       173\n\n    accuracy                           0.99      3576\n   macro avg       0.94      0.93      0.93      3576\nweighted avg       0.99      0.99      0.99      3576\n"
+  },
+  {
+    "name": "Naive Bayes",
+    "accuracy": 0.9609,
+    "precision_weighted": 0.9554,
+    "recall_weighted": 0.9609,
+    "f1_weighted": 0.9569,
+    "precision_fraud": 0.646,
+    "recall_fraud": 0.422,
+    "f1_fraud": 0.5105,
+    "roc_auc": 0.9362,
+    "cv_f1_mean": 0.3967,
+    "cv_f1_std": 0.021,
+    "confusion_matrix": [
+      [
+        3363,
+        40
+      ],
+      [
+        100,
+        73
+      ]
+    ],
+    "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate       0.97      0.99      0.98      3403\n  Fraudulent       0.65      0.42      0.51       173\n\n    accuracy                           0.96      3576\n   macro avg       0.81      0.71      0.75      3576\nweighted avg       0.96      0.96      0.96      3576\n"
+  }
+]

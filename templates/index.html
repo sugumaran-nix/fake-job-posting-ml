@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Fake Job Posting Prediction — Detect Fake Job Postings{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-dots"></div>
+  <div class="hero-accent-line"></div>
+  <div class="hero-wrap">
+    <div class="hero-pill"><i class="fi fi-rr-bolt"></i> NLP + Machine Learning + URL Analysis</div>
+    <h1 class="hero-h1">Fake Job <br><span class="blue-txt">Post Prediction</span></h1>
+    <p class="hero-sub">
+      Paste any job description — our AI analyses text content and
+      automatically evaluates the company website URL for domain-level fraud signals.
+    </p>
+    <div class="hero-btns">
+      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">Start Classifying →</a>
+      <a href="{{ url_for('about') }}"    class="btn btn-ghost   btn-lg">Learn More</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="section bg-lav">
+  <div class="wrap">
+    <div class="stat-row">
+      <div class="stat-box">
+        <span class="stat-n" data-target="98">0</span><span class="stat-unit">%</span>
+        <span class="stat-l">Model Accuracy</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n" data-target="17880">0</span>
+        <span class="stat-l">Training Records</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n" data-target="{{ stats.total }}">0</span>
+        <span class="stat-l">Jobs Analysed</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n" data-target="{{ stats.fraud }}">0</span>
+        <span class="stat-l">Frauds Caught</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="wrap">
+    <div class="sh"><h2>How It Works</h2><p>Three-layer analysis in under a second</p></div>
+    <div class="steps-row">
+      {% for num,icon,title,desc in [
+        ("01",'<i class="fi fi-rr-document"></i>',"Enter Job Details",    "Provide job title, company name, website URL, description and requirements."),
+        ("02",'<i class="fi fi-rr-magic-wand"></i>',"NLP Preprocessing",   "Text is cleaned, tokenised, stopwords removed and lemmatised automatically."),
+        ("03",'<i class="fi fi-rr-brain"></i>',"ML Classification",   "Four classifiers compared (LR, RF, SVM, NB). Best Fraud-class F1 model auto-selected."),
+        ("04",'<i class="fi fi-rr-globe"></i>',"URL Fraud Engine",     "Company URL is independently scored using 10 automated domain-level checks."),
+      ] %}
+      <div class="step-card">
+        <div class="step-num">{{ num }}</div>
+        <div class="step-icon">{{ icon | safe }}</div>
+        <h3>{{ title }}</h3>
+        <p>{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- RED FLAGS -->
+<section class="section bg-dark">
+  <div class="wrap">
+    <div class="sh light"><h2>What the System Detects</h2><p>Automated signals across text and domain analysis</p></div>
+    <div class="flags-row">
+      {% for icon,title,desc in [
+        ('<i class="fi fi-rr-hand-holding-usd"></i>',"Unrealistic Salary",     "Promises of very high guaranteed pay for no experience."),
+        ('<i class="fi fi-rr-globe"></i>',"Suspicious Domain",      "Free TLDs, free hosting, HTTP-only, high entropy domains."),
+        ('<i class="fi fi-rr-link"></i>',"Typosquatting",          "Domains that mimic real brands like infosys-jobs.tk."),
+        ('<i class="fi fi-rr-document"></i>',"Vague Requirements",     "No skills or qualifications listed for high salary."),
+        ('<i class="fi fi-rr-building"></i>',"Fake Company Names",     "Generic or scam-keyword names like 'Global Earn Solutions'."),
+        ('<i class="fi fi-rr-lock"></i>',"No SSL Certificate",     "Company website without HTTPS is a critical trust failure."),
+      ] %}
+      <div class="flag-card">
+        <span class="flag-icon">{{ icon | safe }}</span>
+        <h4>{{ title }}</h4>
+        <p>{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta-sec">
+  <div class="wrap tc">
+    <h2>Ready to Verify a Job Posting?</h2>
+    <p>It takes less than 30 seconds. Protect yourself before you apply.</p>
+    <a href="{{ url_for('classify') }}" class="btn btn-primary btn-xl">Analyse a Job Now →</a>
+  </div>
+</section>
+
+{% endblock %}

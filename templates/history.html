@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}History — Fake Job Posting Prediction{% endblock %}
+{% block content %}
+
+<section class="page-hdr">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>Classification History</h1>
+      <p>All job postings analysed by the system</p>
+    </div>
+    {% if records %}
+    <form method="POST" action="{{ url_for('clear_history') }}"
+          onsubmit="return confirm('Clear all history? This cannot be undone.')">
+      <button type="submit" class="btn btn-danger"><i class="fi fi-rr-trash"></i> Clear All</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+
+    <!-- Stats -->
+    <div class="stat-row stat-3">
+      <div class="stat-box sb-neutral">
+        <span class="stat-n">{{ stats.total }}</span>
+        <span class="stat-l">Total Analysed</span>
+      </div>
+      <div class="stat-box sb-fraud">
+        <span class="stat-n">{{ stats.fraud }}</span>
+        <span class="stat-l">Fraudulent</span>
+      </div>
+      <div class="stat-box sb-legit">
+        <span class="stat-n">{{ stats.legit }}</span>
+        <span class="stat-l">Legitimate</span>
+      </div>
+    </div>
+
+    {% if records %}
+    <div class="hist-search">
+      <input id="srch" type="text"
+             placeholder="Search by job title, company, or result…"
+             onkeyup="filterRows()">
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="htbl" id="htbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Job Title</th>
+            <th>Company</th>
+            <th>Website</th>
+            <th>URL Risk</th>
+            <th>Result</th>
+            <th>Confidence</th>
+            <th>Model Used</th>
+            <th>Date &amp; Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr class="{% if r.prediction=='Fraudulent' %}tr-fraud{% else %}tr-legit{% endif %}">
+            <td class="td-num">{{ loop.index }}</td>
+            <td class="td-title">{{ r.job_title or '—' }}</td>
+            <td>{{ r.company or '—' }}</td>
+            <td style="font-size:.8rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {% if r.website %}
+              <a href="{{ r.website }}" target="_blank" rel="noopener" title="{{ r.website }}">
+                {{ r.website[:28] }}{% if r.website|length > 28 %}…{% endif %}
+              </a>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if r.url_risk %}
+              <span class="badge
+                {% if r.url_risk=='high' %}badge-fraud
+                {% elif r.url_risk=='medium' %}badge-warn
+                {% else %}badge-legit{% endif %}">
+                {{ r.url_risk|title }}
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <span class="badge {% if r.prediction=='Fraudulent' %}badge-fraud{% else %}badge-legit{% endif %}">
+                {% if r.prediction=='Fraudulent' %}<i class="fi fi-rr-warning"></i>{% else %}<i class="fi fi-rr-check"></i>{% endif %} {{ r.prediction }}
+              </span>
+            </td>
+            <td>
+              <div class="mini-rail">
+                <div class="mini-fill {% if r.prediction=='Fraudulent' %}mf-fraud{% else %}mf-legit{% endif %}"
+                     style="width:{{ r.confidence }}%"></div>
+              </div>
+              <small>{{ r.confidence }}%</small>
+            </td>
+            <td class="td-model" title="{{ r.model_used or '—' }}">{{ r.model_used or '—' }}</td>
+            <td class="td-time">{{ r.submitted_at[:16] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fi fi-rr-inbox"></i></div>
+      <h3>No history yet</h3>
+      <p>Start by classifying a job posting.</p>
+      <a href="{{ url_for('classify') }}" class="btn btn-primary"><i class="fi fi-rr-search"></i> Classify a Job →</a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<script>
+function filterRows() {
+  const q = document.getElementById('srch').value.toLowerCase();
+  document.querySelectorAll('#htbl tbody tr').forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

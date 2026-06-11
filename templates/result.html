@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block title %}Result — Fake Job Posting Prediction{% endblock %}
+{% block content %}
+
+<!-- ═══ PAGE HEADER ══════════════════════════════════════════════════ -->
+<section class="page-hdr">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>Analysis Complete</h1>
+      {% if job.job_title %}
+      <p>Job: <strong>{{ job.job_title }}</strong>
+        {% if job.company %} at <strong>{{ job.company }}</strong>{% endif %}
+        {% if elapsed_ms %}
+        <span class="perf-badge"><i class="fi fi-rr-bolt"></i> {{ elapsed_ms }}ms</span>
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('classify') }}" class="btn btn-ghost"><i class="fi fi-rr-arrow-left"></i> Classify Another</a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap narrow">
+
+    <!-- ══ VERDICT BANNER ═══════════════════════════════════════════ -->
+    <div class="verdict {% if result.is_fraud %}vfraud{% else %}vlegit{% endif %}">
+      <div class="v-icon">{% if result.is_fraud %}<i class="fi fi-rr-warning"></i>{% else %}<i class="fi fi-rr-check"></i>{% endif %}</div>
+      <div class="v-body">
+        <h2>{% if result.is_fraud %}FRAUDULENT JOB POSTING DETECTED
+             {% else %}LEGITIMATE JOB POSTING{% endif %}</h2>
+        <p>{% if result.is_fraud %}This posting shows strong fraud indicators.
+          <strong>Do not</strong> pay any fees or share personal documents.
+          {% else %}This posting appears genuine. Always verify independently before applying.{% endif %}</p>
+        <!-- Model used tag -->
+        <div class="model-tag">
+          <i class="fi fi-rr-brain"></i> Model: <strong>{{ result.model_name }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CONFIDENCE BAR ═══════════════════════════════════════════ -->
+    <div class="conf-block">
+      <div class="conf-top">
+        <span>Confidence Score — {{ result.model_name }}</span>
+        <strong class="{% if result.is_fraud %}cfraud{% else %}clegit{% endif %}">
+          {{ result.confidence }}%
+        </strong>
+      </div>
+      <div class="conf-rail">
+        <div class="conf-fill {% if result.is_fraud %}fill-fraud{% else %}fill-legit{% endif %}"
+             style="width:{{ result.confidence }}%"></div>
+      </div>
+      <div class="conf-ends">
+        <span>0% — Uncertain</span>
+        <span>50%</span>
+        <span>100% — Certain</span>
+      </div>
+    </div>
+
+    <!-- ══ METRIC TRIO ═══════════════════════════════════════════════ -->
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-v {% if result.is_fraud %}cfraud{% else %}clegit{% endif %}">
+          {{ result.confidence }}%
+        </div>
+        <div class="metric-k">{% if result.is_fraud %}Fraud{% else %}Legit{% endif %} Confidence</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-v" style="color:#6B7280">
+          {{ "%.1f"|format(100 - result.confidence) }}%
+        </div>
+        <div class="metric-k">{% if result.is_fraud %}Legit{% else %}Fraud{% endif %} Probability</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-v" style="color:
+          {% if analysis.url.risk_level == 'high' %}#DC2626
+          {% elif analysis.url.risk_level == 'medium' %}#D97706
+          {% else %}#16A34A{% endif %}">
+          {{ analysis.url.score }}/100
+        </div>
+        <div class="metric-k">URL Fraud Score</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         EXPLAINABILITY SECTION
+    ══════════════════════════════════════════════════════════════════ -->
+
+    {% set exp = result.explanation %}
+
+    <!-- ── FRAUD PATTERN ALERTS ─────────────────────────────────────── -->
+    {% if exp.fraud_patterns %}
+    <div class="expl-section">
+      <div class="expl-section-hdr">
+        <span><i class="fi fi-rr-flag"></i></span>
+        <div>
+          <h3>Fraud Pattern Detection</h3>
+          <p>{{ exp.fraud_patterns|length }} known fraud pattern{{ 's' if exp.fraud_patterns|length != 1 }} matched in the text</p>
+        </div>
+        <div class="pattern-count-badge {% if exp.fraud_patterns|length >= 3 %}pcb-high{% elif exp.fraud_patterns|length == 2 %}pcb-med{% else %}pcb-low{% endif %}">
+          {{ exp.fraud_patterns|length }} pattern{{ 's' if exp.fraud_patterns|length != 1 }}
+        </div>
+      </div>
+      <div class="pattern-grid">
+        {% for pat in exp.fraud_patterns %}
+        <div class="pattern-card sev-{{ pat.severity }}">
+          <div class="pattern-card-top">
+            <span class="pat-icon">{{ pat.icon }}</span>
+            <div class="pat-info">
+              <strong>{{ pat.label }}</strong>
+              <span class="sev-badge sev-badge-{{ pat.severity }}">{{ pat.severity }}</span>
+            </div>
+          </div>
+          {% if pat.matched %}
+          <div class="pat-match">
+            Matched: <code class="pat-match-text">{{ pat.matched }}</code>
+          </div>
+          {% endif %}
+          <p class="pat-reason">{{ pat.reason }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── REASONS / EXPLANATION BULLETS ────────────────────────────── -->
+    {% if exp.reasons %}
+    <div class="expl-section">
+      <div class="expl-section-hdr">
+        <span><i class="fi fi-rr-brain"></i></span>
+        <div>
+          <h3>Why This Prediction?</h3>
+          <p>Key factors that drove the {{ result.model_name }} decision</p>
+        </div>
+      </div>
+      <div class="reasons-list">
+        {% for r in exp.reasons %}
+        <div class="reason-item reason-{{ r.sev }}">
+          <span class="reason-icon">{{ r.icon }}</span>
+          <p>{{ r.text }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── WORD INFLUENCE CHART ──────────────────────────────────────── -->
+    {% if exp.top_fraud_words or exp.top_legit_words %}
+    <div class="expl-section">
+      <div class="expl-section-hdr">
+        <span><i class="fi fi-rr-chart-histogram"></i></span>
+        <div>
+          <h3>Token Influence Analysis</h3>
+          <p>How each word pushed the model toward Fraud or Legitimate (TF-IDF × Coefficient)</p>
+        </div>
+      </div>
+      <div class="influence-grid">
+
+        <!-- Fraud-pushing words -->
+        {% if exp.top_fraud_words %}
+        <div class="influence-col">
+          <div class="inf-col-hdr inf-fraud-hdr">
+            <i class="fi fi-rr-warning"></i> Fraud Signals
+            <span class="inf-sub">words pushing toward Fraudulent</span>
+          </div>
+          {% for item in exp.top_fraud_words %}
+          <div class="inf-row">
+            <span class="inf-word inf-word-fraud">{{ item.word }}</span>
+            <div class="inf-bar-wrap">
+              <div class="inf-bar inf-bar-fraud" style="width:{{ item.pct }}%"></div>
+            </div>
+            <span class="inf-pct">{{ item.pct }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Legit-pushing words -->
+        {% if exp.top_legit_words %}
+        <div class="influence-col">
+          <div class="inf-col-hdr inf-legit-hdr">
+            <i class="fi fi-rr-check"></i> Legitimacy Signals
+            <span class="inf-sub">words pushing toward Legitimate</span>
+          </div>
+          {% for item in exp.top_legit_words %}
+          <div class="inf-row">
+            <span class="inf-word inf-word-legit">{{ item.word }}</span>
+            <div class="inf-bar-wrap">
+              <div class="inf-bar inf-bar-legit" style="width:{{ item.pct }}%"></div>
+            </div>
+            <span class="inf-pct">{{ item.pct }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── HIGHLIGHTED DESCRIPTION ──────────────────────────────────── -->
+    {% if exp.highlighted_html %}
+    <div class="expl-section">
+      <div class="expl-section-hdr">
+        <span><i class="fi fi-rr-search"></i></span>
+        <div>
+          <h3>Highlighted Text Analysis</h3>
+          <p>
+            <span class="hl-legend hl-fraud-legend">■ Fraud signals</span>
+            <span class="hl-legend hl-legit-legend">■ Legitimacy signals</span>
+            — showing first 800 characters of combined text
+          </p>
+        </div>
+      </div>
+      <div class="highlight-box">{{ exp.highlighted_html | safe }}</div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════════════════════════════════════════════════════
+         DOMAIN ANALYSIS  (existing — preserved)
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <div class="adv-header">
+      <h2><i class="fi fi-rr-microscope"></i> Automated Domain Analysis</h2>
+      <div class="adv-overall risk-{{ analysis.overall_risk }}">
+        {% if analysis.overall_risk == 'high' %}<i class="fi fi-rr-warning"></i> HIGH RISK
+        {% elif analysis.overall_risk == 'medium' %}<i class="fi fi-rr-exclamation"></i> MEDIUM RISK
+        {% else %}<i class="fi fi-rr-check"></i> LOW RISK{% endif %}
+        &nbsp;·&nbsp; Combined Score: {{ analysis.combined_score }}/100
+        &nbsp;·&nbsp; {{ analysis.total_red_flags }} red flag{% if analysis.total_red_flags != 1 %}s{% endif %}
+      </div>
+    </div>
+
+    <!-- URL FRAUD DETECTION CARD -->
+    <div class="adv-card adv-{{ analysis.url.risk_level }}">
+      <div class="adv-card-hdr">
+        <span class="adv-icon"><i class="fi fi-rr-globe"></i></span>
+        <div>
+          <h3>Company URL Fraud Detection</h3>
+          <span class="adv-val">{{ job.website or 'No URL provided' }}</span>
+        </div>
+        <div class="adv-score-badge score-{{ analysis.url.risk_level }}">
+          {{ analysis.url.score }}/100
+        </div>
+      </div>
+      <div class="url-verdict-bar verdict-{{ analysis.url.risk_level }}">
+        {% if analysis.url.risk_level == 'high' %}<i class="fi fi-rr-warning"></i> Fraudulent Domain
+        {% elif analysis.url.risk_level == 'medium' %}<i class="fi fi-rr-exclamation"></i> Suspicious Domain
+        {% else %}<i class="fi fi-rr-check"></i> Legitimate Domain{% endif %}
+        &nbsp;—&nbsp; {{ analysis.url.summary }}
+      </div>
+      {% if analysis.url.domain %}
+      <div class="adv-domain-pill">
+        <i class="fi fi-rr-link"></i> Resolved domain: <strong>{{ analysis.url.domain }}</strong>
+      </div>
+      {% endif %}
+      {% if analysis.url.flags %}
+      <div class="adv-flags">
+        {% for icon, title, detail in analysis.url.flags %}
+        <div class="adv-flag">
+          <div class="adv-flag-top"><span>{{ icon }}</span><strong>{{ title }}</strong></div>
+          <p>{{ detail }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="adv-clean"><i class="fi fi-rr-check"></i> No suspicious URL patterns detected.</p>
+      {% endif %}
+      {% if analysis.url.techniques %}
+      <div class="adv-tech">
+        {% for t in analysis.url.techniques %}
+        <span class="tech-badge">{{ t }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- COMPANY NAME ANALYSIS CARD -->
+    <div class="adv-card adv-{{ analysis.company.risk_level }}">
+      <div class="adv-card-hdr">
+        <span class="adv-icon"><i class="fi fi-rr-building"></i></span>
+        <div>
+          <h3>Company Name Analysis</h3>
+          <span class="adv-val">{{ job.company or 'Not provided' }}</span>
+        </div>
+        <div class="adv-score-badge score-{{ analysis.company.risk_level }}">
+          {{ analysis.company.score }}/100
+        </div>
+      </div>
+      <p class="adv-summary">{{ analysis.company.summary }}</p>
+      {% if analysis.company.is_known %}
+      <div class="adv-known-badge"><i class="fi fi-rr-check"></i> Verified known company in the system database</div>
+      {% endif %}
+      {% if analysis.company.flags %}
+      <div class="adv-flags">
+        {% for icon, title, detail in analysis.company.flags %}
+        <div class="adv-flag">
+          <div class="adv-flag-top"><span>{{ icon }}</span><strong>{{ title }}</strong></div>
+          <p>{{ detail }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="adv-clean"><i class="fi fi-rr-check"></i> No suspicious patterns detected in company name.</p>
+      {% endif %}
+      <div class="adv-tech">
+        <span class="tech-badge">Known Company DB</span>
+        <span class="tech-badge">Scam Keyword Scoring</span>
+        <span class="tech-badge">Brand Impersonation</span>
+        <span class="tech-badge">Vague Name Detection</span>
+        <span class="tech-badge">Suffix Analysis</span>
+      </div>
+    </div>
+
+    <!-- ══ ADVICE ═════════════════════════════════════════════════════ -->
+    <div class="advice {% if result.is_fraud %}advice-bad{% else %}advice-good{% endif %}">
+      <h4>{% if result.is_fraud %}<i class="fi fi-rr-shield-check"></i> What You Should Do{% else %}<i class="fi fi-rr-briefcase"></i> Next Steps{% endif %}</h4>
+      {% if result.is_fraud %}
+      <ul>
+        <li>Do <strong>not</strong> pay any registration or training fee.</li>
+        <li>Do <strong>not</strong> share Aadhaar, PAN, or bank account details.</li>
+        <li>Do <strong>not</strong> click any links from this company.</li>
+        <li>Report the posting on the job portal immediately.</li>
+        <li>File a complaint at <strong>cybercrime.gov.in</strong> if money was lost.</li>
+      </ul>
+      {% else %}
+      <ul>
+        <li>Research the company independently before applying.</li>
+        <li>Verify company on LinkedIn or their official website.</li>
+        <li>Never pay fees even for seemingly legitimate jobs.</li>
+        <li>Apply through the official company careers page if possible.</li>
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- ══ SUBMITTED DETAILS (collapsible) ════════════════════════════ -->
+    <details class="dblock">
+      <summary><i class="fi fi-rr-document"></i> View All Submitted Details</summary>
+      <div class="dbody">
+        <div class="job-info-grid">
+          {% if job.job_title %}<div class="job-info-item"><strong>Job Title</strong>{{ job.job_title }}</div>{% endif %}
+          {% if job.company   %}<div class="job-info-item"><strong>Company</strong>{{ job.company }}</div>{% endif %}
+          {% if job.location  %}<div class="job-info-item"><strong>Location</strong>{{ job.location }}</div>{% endif %}
+          {% if job.salary    %}<div class="job-info-item"><strong>Salary</strong>{{ job.salary }}</div>{% endif %}
+          {% if job.website   %}<div class="job-info-item"><strong>Website</strong>
+            <a href="{{ job.website }}" target="_blank" rel="noopener">{{ job.website }}</a></div>{% endif %}
+          <div class="job-info-item"><strong>Model Used</strong>{{ result.model_name }}</div>
+          {% if elapsed_ms %}<div class="job-info-item"><strong>Inference Time</strong>{{ elapsed_ms }}ms</div>{% endif %}
+        </div>
+        {% if job.description %}
+        <p style="margin-top:12px"><strong>Description:</strong><br>
+          {{ job.description[:600] }}{% if job.description|length > 600 %}…{% endif %}</p>
+        {% endif %}
+        {% if job.requirements %}
+        <p style="margin-top:8px"><strong>Requirements:</strong><br>{{ job.requirements[:400] }}</p>
+        {% endif %}
+      </div>
+    </details>
+
+    <div class="result-acts">
+      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg"><i class="fi fi-rr-search"></i> Classify Another</a>
+      <a href="{{ url_for('history') }}"  class="btn btn-outline  btn-lg"><i class="fi fi-rr-time-past"></i> View History</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

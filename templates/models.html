@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Model Evaluation — Fake Job Posting Prediction{% endblock %}
+{% block content %}
+
+<section class="page-hdr">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>📊 Model Evaluation</h1>
+      <p>Comparison of all four classifiers trained on the EMSCAD dataset</p>
+    </div>
+    {% if metadata.trained_at %}
+    <div class="meta-pill">
+      <i class="fi fi-rr-clock"></i> Trained: {{ metadata.trained_at[:10] }} &nbsp;·&nbsp;
+      ★ Best: <strong>{{ metadata.best_model }}</strong>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+
+    {% if not metrics %}
+    <!-- ── NOT TRAINED YET ─────────────────────────────────────────── -->
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fi fi-rr-brain"></i></div>
+      <h3>Models not trained yet</h3>
+      <p>Run <code>python train.py</code> to train all four classifiers and generate evaluation plots.</p>
+    </div>
+
+    {% else %}
+
+    <!-- ══ ACTIVE MODEL SWITCHER  ← NEW ═════════════════════════════ -->
+    {% if registry %}
+    <div class="info-banner" style="margin-bottom:32px;align-items:flex-start;flex-wrap:wrap;gap:16px">
+      <span style="font-size:1.3rem"><i class="fi fi-rr-arrows-repeat"></i></span>
+      <div style="flex:1;min-width:240px">
+        <strong>Active Inference Model</strong>
+        <p style="margin:4px 0 12px;color:#555">
+          Currently using <strong style="color:#1B9FD4">{{ active_model or "default" }}</strong> for predictions.
+          Switch to any trained model — no restart required.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          {% for name, path in registry.items() %}
+          <form action="{{ url_for('select_model') }}" method="POST" style="display:inline">
+            <input type="hidden" name="model_name" value="{{ name }}">
+            <button type="submit"
+                    class="btn {% if name == active_model %}btn-primary{% else %}btn-ghost{% endif %}"
+                    style="font-size:0.85rem;padding:6px 16px">
+              {% if name == active_model %}✅{% endif %} {{ name }}
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ══ METRICS TABLE ════════════════════════════════════════════ -->
+    <div class="sh" style="text-align:left;margin-bottom:24px">
+      <h2>Classifier Performance Summary</h2>
+      <p>Sorted by Fraud-class F1 — the metric that matters most for imbalanced fraud detection</p>
+    </div>
+
+    {% set sorted_metrics = metrics | sort(attribute='f1_fraud', reverse=True) %}
+
+    <div class="tbl-wrap" style="margin-bottom:40px">
+      <table class="htbl">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th title="Overall accuracy">Accuracy</th>
+            <th title="Weighted precision across both classes">Precision (W)</th>
+            <th title="Weighted recall across both classes">Recall (W)</th>
+            <th title="Weighted F1 across both classes">F1 (Weighted)</th>
+            <th title="Precision on fraud class only" style="background:#1a2a3a">Fraud Precision</th>
+            <th title="Recall on fraud class only"    style="background:#1a2a3a">Fraud Recall</th>
+            <th title="F1 on fraud class only"        style="background:#1a2a3a">Fraud F1 ★</th>
+            <th title="Area under ROC curve">ROC-AUC</th>
+            <th title="5-fold CV F1 mean ± std on training set">CV F1 (5-fold)</th>
+            <th>Active?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in sorted_metrics %}
+          {% set is_best   = (metadata.best_model and m.name == metadata.best_model) %}
+          {% set is_active = (active_model and m.name == active_model) %}
+          <tr class="{% if is_active %}row-best{% elif is_best %}row-selected{% endif %}">
+            <td><strong>{{ m.name }}</strong></td>
+            <td>{{ "%.2f"|format(m.accuracy  * 100) }}%</td>
+            <td>{{ "%.2f"|format(m.precision_weighted * 100) }}%</td>
+            <td>{{ "%.2f"|format(m.recall_weighted    * 100) }}%</td>
+            <td>{{ "%.2f"|format(m.f1_weighted        * 100) }}%</td>
+            <td style="font-weight:600">{{ "%.2f"|format(m.precision_fraud * 100) }}%</td>
+            <td style="font-weight:600">{{ "%.2f"|format(m.recall_fraud    * 100) }}%</td>
+            <td style="font-weight:700;color:{% if is_active %}#1B9FD4{% else %}#333{% endif %}">
+              {{ "%.2f"|format(m.f1_fraud * 100) }}%
+            </td>
+            <td>{{ "%.4f"|format(m.roc_auc) if m.roc_auc else "N/A" }}</td>
+            <td style="font-size:0.82rem;color:#555">
+              {% if m.cv_f1_mean %}
+                {{ "%.2f"|format(m.cv_f1_mean * 100) }}% ± {{ "%.2f"|format(m.cv_f1_std * 100) }}%
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if is_active %}
+              <span class="badge badge-legit"><i class="fi fi-rr-arrows-repeat"></i> Active</span>
+              {% elif is_best %}
+              <span class="badge badge-info"><i class="fi fi-rr-star"></i> Best</span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── METRIC EXPLANATION ──────────────────────────────────────── -->
+    <div class="info-banner" style="margin-bottom:40px">
+      <span><i class="fi fi-rr-info"></i></span>
+      <div>
+        <strong>Why Fraud-class F1, not overall Accuracy?</strong>
+        The EMSCAD dataset is heavily imbalanced (~95% legitimate, ~5% fraudulent).
+        A model that classifies everything as "Legitimate" would achieve ~95% accuracy
+        but catch zero fraud. <strong>Fraud Recall</strong> (fraction of actual frauds
+        correctly caught) and <strong>Fraud F1</strong> (harmonic mean of fraud precision
+        and recall) are the metrics that reflect real-world usefulness.
+        <br><br>
+        <strong>CV F1 (5-fold)</strong> is the mean fraud-class F1 across 5 cross-validation
+        folds on the training set — a more robust estimate of generalisation than a single
+        train/test split.
+      </div>
+    </div>
+
+    <!-- ══ MODEL COMPARISON CHART ═══════════════════════════════════ -->
+    <div class="sh" style="text-align:left;margin-bottom:20px">
+      <h2>Model Comparison Chart</h2>
+      <p>Grouped bar chart across five key metrics for all four classifiers</p>
+    </div>
+
+    {% set comp_img = "images/model_comparison.png" %}
+    <div class="plot-card" style="margin-bottom:40px">
+      <img src="{{ url_for('static', filename=comp_img) }}"
+           alt="Model Comparison Chart"
+           class="plot-img"
+           onerror="this.parentElement.innerHTML='<p class=plot-missing>Chart not found. Run python train.py to generate plots.</p>'">
+    </div>
+
+    <!-- ══ ROC CURVES  ← NEW ════════════════════════════════════════ -->
+    <div class="sh" style="text-align:left;margin-bottom:20px">
+      <h2>ROC Curves</h2>
+      <p>Receiver Operating Characteristic curves — higher AUC = better discrimination between legitimate and fraudulent</p>
+    </div>
+
+    <div class="plot-card" style="margin-bottom:40px">
+      <img src="{{ url_for('static', filename='images/roc_curves.png') }}"
+           alt="ROC Curves for all models"
+           class="plot-img"
+           onerror="this.parentElement.innerHTML='<p class=plot-missing>ROC curve not found. Run python train.py to generate plots.</p>'">
+    </div>
+
+    <!-- ══ CONFUSION MATRICES ════════════════════════════════════════ -->
+    <div class="sh" style="text-align:left;margin-bottom:20px">
+      <h2>Confusion Matrices</h2>
+      <p>True Positive / True Negative / False Positive / False Negative for each model</p>
+    </div>
+
+    <!-- All-in-one grid image -->
+    {% set all_cm = "images/all_confusion_matrices.png" %}
+    <div class="plot-card" style="margin-bottom:32px">
+      <img src="{{ url_for('static', filename=all_cm) }}"
+           alt="All Confusion Matrices"
+           class="plot-img"
+           onerror="this.parentElement.innerHTML='<p class=plot-missing>Confusion matrix grid not found. Run python train.py.</p>'">
+    </div>
+
+    <!-- Individual confusion matrices (collapsible) -->
+    <details class="dblock" style="margin-bottom:40px">
+      <summary><i class="fi fi-rr-search"></i> View Individual Confusion Matrices</summary>
+      <div class="dbody">
+        <div class="cm-grid">
+          {% for m in metrics %}
+          {% set slug = m.name | lower | replace(" ","_") | replace("(","") | replace(")","") %}
+          <div class="cm-item">
+            <h4>{{ m.name }}</h4>
+            <img src="{{ url_for('static', filename='images/cm_' + slug + '.png') }}"
+                 alt="Confusion Matrix {{ m.name }}"
+                 class="plot-img-sm"
+                 onerror="this.style.display='none'">
+            {% if m.confusion_matrix %}
+            <div class="cm-numbers">
+              <div class="cm-cell cm-tn">TN: {{ m.confusion_matrix[0][0] }}</div>
+              <div class="cm-cell cm-fp">FP: {{ m.confusion_matrix[0][1] }}</div>
+              <div class="cm-cell cm-fn">FN: {{ m.confusion_matrix[1][0] }}</div>
+              <div class="cm-cell cm-tp">TP: {{ m.confusion_matrix[1][1] }}</div>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </details>
+
+    <!-- ══ DETAILED CLASSIFICATION REPORTS ══════════════════════════ -->
+    <div class="sh" style="text-align:left;margin-bottom:20px">
+      <h2>Classification Reports</h2>
+      <p>Per-class precision, recall, and F1 — full sklearn output</p>
+    </div>
+
+    {% for m in sorted_metrics %}
+    {% set is_best   = (metadata.best_model and m.name == metadata.best_model) %}
+    {% set is_active = (active_model and m.name == active_model) %}
+    <details class="dblock" style="margin-bottom:16px">
+      <summary>
+        {{ m.name }}
+        {% if is_active %}<span class="badge badge-legit" style="margin-left:8px"><i class="fi fi-rr-arrows-repeat"></i> Active</span>{% endif %}
+        {% if is_best   %}<span class="badge badge-info"  style="margin-left:8px"><i class="fi fi-rr-star"></i> Best F1</span>{% endif %}
+        &nbsp;—&nbsp; Fraud F1: <strong>{{ "%.2f"|format(m.f1_fraud*100) }}%</strong>
+        &nbsp;|&nbsp; Fraud Recall: <strong>{{ "%.2f"|format(m.recall_fraud*100) }}%</strong>
+        {% if m.cv_f1_mean %}
+        &nbsp;|&nbsp; CV F1: <strong>{{ "%.2f"|format(m.cv_f1_mean*100) }}%</strong>
+        {% endif %}
+      </summary>
+      <div class="dbody">
+        {% if m.classification_report %}
+        <pre class="clf-report">{{ m.classification_report }}</pre>
+        {% else %}
+        <p>Report not available. Retrain to generate.</p>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+
+    <!-- ══ DATASET INFO ══════════════════════════════════════════════ -->
+    {% if metadata %}
+    <div class="sh" style="text-align:left;margin-top:40px;margin-bottom:20px">
+      <h2>Training Configuration</h2>
+    </div>
+    <div class="about-grid">
+      <div class="acard">
+        <h3><i class="fi fi-rr-box"></i> Dataset</h3>
+        <table class="info-tbl">
+          <tr><td>Total Records</td>   <td><strong>{{ metadata.dataset_rows | default("17,880") }}</strong></td></tr>
+          <tr><td>Legitimate</td>      <td>{{ metadata.legit_count | default("17,014") }}</td></tr>
+          <tr><td>Fraudulent</td>      <td>{{ metadata.fraud_count | default("866") }}</td></tr>
+          <tr><td>Test Split</td>      <td>{{ (metadata.test_size * 100) | int if metadata.test_size else 20 }}%</td></tr>
+          <tr><td>Trained At</td>      <td>{{ metadata.trained_at[:19] | default("—") if metadata.trained_at else "—" }}</td></tr>
+        </table>
+      </div>
+      <div class="acard">
+        <h3><i class="fi fi-rr-settings"></i> Feature Extraction</h3>
+        <table class="info-tbl">
+          <tr><td>Method</td>          <td><strong>TF-IDF</strong></td></tr>
+          <tr><td>Max Features</td>    <td>{{ metadata.tfidf_features | default(10000) | int }}</td></tr>
+          <tr><td>N-gram Range</td>    <td>(1, 2) — unigrams + bigrams</td></tr>
+          <tr><td>min_df</td>          <td>2 (at least 2 documents)</td></tr>
+          <tr><td>max_df</td>          <td>0.95 (ignore very common terms)</td></tr>
+          <tr><td>sublinear_tf</td>    <td>True (log-frequency scaling)</td></tr>
+        </table>
+      </div>
+      <div class="acard">
+        <h3><i class="fi fi-rr-magic-wand"></i> NLP Pipeline</h3>
+        <table class="info-tbl">
+          <tr><td>HTML stripping</td>      <td><i class="fi fi-rr-check" style="color:#16a34a"></i> Tags + entity decode</td></tr>
+          <tr><td>Contractions</td>        <td><i class="fi fi-rr-check" style="color:#16a34a"></i> don't → do not</td></tr>
+          <tr><td>URL removal</td>         <td><i class="fi fi-rr-check" style="color:#16a34a"></i> http/www stripped</td></tr>
+          <tr><td>Tokenisation</td>        <td><i class="fi fi-rr-check" style="color:#16a34a"></i> NLTK word_tokenize</td></tr>
+          <tr><td>Stopword removal</td>    <td><i class="fi fi-rr-check" style="color:#16a34a"></i> NLTK English set</td></tr>
+          <tr><td>Lemmatisation</td>       <td><i class="fi fi-rr-check" style="color:#16a34a"></i> WordNetLemmatizer</td></tr>
+        </table>
+      </div>
+      <div class="acard">
+        <h3><i class="fi fi-rr-arrows-repeat"></i> Runtime Model Switch</h3>
+        <table class="info-tbl">
+          <tr><td>Active model</td>    <td><strong>{{ active_model or "default" }}</strong></td></tr>
+          <tr><td>Registry size</td>   <td>{{ registry | length }} models saved</td></tr>
+          <tr><td>Hot-swap</td>        <td><i class="fi fi-rr-check" style="color:#16a34a"></i> No restart required</td></tr>
+          <tr><td>API endpoint</td>    <td><code>GET /api/models</code></td></tr>
+          <tr><td>Switch API</td>      <td><code>POST /select-model</code></td></tr>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ══ API REFERENCE ════════════════════════════════════════════ -->
+    <div class="sh" style="text-align:left;margin-top:40px;margin-bottom:20px">
+      <h2><i class="fi fi-rr-plug"></i> REST API Reference</h2>
+    </div>
+    <div class="about-grid">
+      <div class="acard" style="grid-column:1/-1">
+        <h3>Available Endpoints</h3>
+        <table class="info-tbl">
+          <tr>
+            <td><code>POST /api/predict</code></td>
+            <td>JSON prediction with explanation. Pass <code>model</code> field to override active model per-request.</td>
+          </tr>
+          <tr>
+            <td><code>GET  /api/models</code></td>
+            <td>List all trained models with metrics. Returns <code>active_model</code> name.</td>
+          </tr>
+          <tr>
+            <td><code>POST /select-model</code></td>
+            <td>Switch active model. Form field: <code>model_name</code>. Persists across restarts.</td>
+          </tr>
+          <tr>
+            <td><code>GET  /health</code></td>
+            <td>Service health check — returns active model name, vectorizer status.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    {% endif %} {# end metrics check #}
+
+  </div>
+</section>
+
+{% endblock %}
