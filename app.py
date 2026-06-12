@@ -1,15 +1,3 @@
-"""
-app.py  —  Fake Job Posting Prediction (v4 — Multi-Model Runtime Switching)
-============================================================================
-New in v4:
-  ✅ /select-model  POST route — switch active model at runtime (no restart)
-  ✅ /api/models    GET  route — JSON list of all available models + metrics
-  ✅ Model registry loaded from models/model_registry.json
-  ✅ Active model name displayed in navbar / result page
-  ✅ All individual model .pkl files loaded from registry on demand
-  ✅ models/active_model.json remembers last selected model across restarts
-"""
-
 import os
 import sys
 import pickle
@@ -20,10 +8,18 @@ import math
 import json
 import time
 
+# ── Load .env (dev convenience; no-op if python-dotenv not installed) ──
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from flask import (Flask, render_template, request,
                    redirect, url_for, jsonify, flash)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from utils.preprocessing import preprocess
 from utils.evaluation import (
     load_metrics,
@@ -40,23 +36,75 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fjp_dev_secret_2026_change_in_prod")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
-BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH  = os.path.join(BASE_DIR, "models", "model.pkl")
-VEC_PATH    = os.path.join(BASE_DIR, "models", "vectorizer.pkl")
-MD_PATH     = os.path.join(BASE_DIR, "models", "model_metadata.json")
-ACTIVE_PATH = os.path.join(BASE_DIR, "models", "active_model.json")
-DB_PATH     = os.path.join(BASE_DIR, "data",   "predictions.db")
+# ── Secret key validation ──────────────────────────────────────────────
+if not app.secret_key:
+    if os.environ.get("FLASK_ENV") == "production":
+        raise RuntimeError(
+            "FLASK_SECRET_KEY must be set in production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    # Dev fallback — loud warning so it's never silently used
+    logger.warning(
+        "FLASK_SECRET_KEY not set — using insecure dev default. "
+        "Set it in .env or as an environment variable."
+    )
+    app.secret_key = "fjp_dev_secret_only_not_for_production"
+
+# ── Rate limiting ──────────────────────────────────────────────────────
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "60 per hour"],
+        storage_uri="memory://",   # swap for redis:// in multi-worker setups
+    )
+    _limiter_available = True
+except ImportError:
+    logger.warning("Flask-Limiter not installed — API rate limiting disabled. "
+                   "Run: pip install Flask-Limiter")
+    _limiter_available = False
+
+    # Stub decorator so routes don't fail at import time
+    class _NoopLimiter:
+        def limit(self, *a, **kw):
+            def decorator(f): return f
+            return decorator
+    limiter = _NoopLimiter()
+
+# ── Paths ──────────────────────────────────────────────────────────────
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "model.pkl")
+VEC_PATH   = os.path.join(BASE_DIR, "models", "vectorizer.pkl")
+MD_PATH    = os.path.join(BASE_DIR, "models", "model_metadata.json")
+ACTIVE_PATH= os.path.join(BASE_DIR, "models", "active_model.json")
+THRESH_PATH= os.path.join(BASE_DIR, "models", "threshold.json")
+DB_PATH    = os.path.join(BASE_DIR, "data", "predictions.db")
 
 MAX_TEXT_LEN = 20_000
 
+# ══════════════════════════════════════════════════════════════════════
+# CLASSIFICATION THRESHOLD
+# Loaded from threshold.json (written by train.py).
+# Falls back to 0.5 if the file doesn't exist yet.
+# ══════════════════════════════════════════════════════════════════════
+_threshold = 0.5
+if os.path.exists(THRESH_PATH):
+    try:
+        with open(THRESH_PATH) as f:
+            _threshold = float(json.load(f).get("threshold", 0.5))
+        logger.info(f"Loaded classification threshold: {_threshold:.2f}")
+    except Exception:
+        logger.warning("Could not parse threshold.json — using 0.5")
 
 # ══════════════════════════════════════════════════════════════════════
-#  MODEL LOADING + RUNTIME SWITCHING
+# MODEL LOADING + RUNTIME SWITCHING
 # ══════════════════════════════════════════════════════════════════════
 
-# Load vectorizer once — it never changes between model switches
+# Vectorizer is loaded once — it never changes between model switches.
 try:
     with open(VEC_PATH, "rb") as f:
         vectorizer = pickle.load(f)
@@ -65,8 +113,12 @@ except FileNotFoundError:
     logger.warning("Vectorizer not found. Run train.py first.")
     vectorizer = None
 
-# Mutable container so we can hot-swap the model without restarting
-_active_state = {
+# ⚠ SINGLE-WORKER ONLY: _active_state lives in one process's memory.
+# With gunicorn -w N (N > 1), only the worker that receives /select-model
+# switches — other workers keep their old model.
+# For multi-worker production: read active_model.json per-request,
+# or store the selection in the database / Redis.
+_active_state: dict = {
     "model": None,
     "name":  None,
 }
@@ -79,12 +131,11 @@ def load_metadata() -> dict:
     return {}
 
 
-def _load_active_model():
+def _load_active_model() -> None:
     """
     Load the active model, preferring the persisted selection in
     active_model.json, falling back to model.pkl (best model from training).
     """
-    # Try to restore previously selected model
     if os.path.exists(ACTIVE_PATH):
         try:
             with open(ACTIVE_PATH) as f:
@@ -104,7 +155,6 @@ def _load_active_model():
     try:
         with open(MODEL_PATH, "rb") as f:
             _active_state["model"] = pickle.load(f)
-        # Determine its name from metadata
         md = load_metadata()
         _active_state["name"] = md.get("best_model", type(_active_state["model"]).__name__)
         logger.info(f"Loaded default best model: {_active_state['name']}")
@@ -118,46 +168,54 @@ _load_active_model()
 def switch_model(name: str) -> bool:
     """
     Hot-swap the active model by name. Persists selection to active_model.json.
-
     Returns True on success, False if model not found.
+    See ⚠ single-worker note above.
     """
     m = load_model_by_name(name)
     if m is None:
         return False
     _active_state["model"] = m
     _active_state["name"]  = name
-    # Persist so Flask remembers after restart
     os.makedirs(os.path.dirname(ACTIVE_PATH), exist_ok=True)
     with open(ACTIVE_PATH, "w") as f:
-        json.dump({"active_model": name, "switched_at": datetime.datetime.now().isoformat()}, f)
+        json.dump({
+            "active_model": name,
+            "switched_at": datetime.datetime.now().isoformat(),
+        }, f)
     logger.info(f"Switched active model → {name}")
     return True
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  ML PREDICTION
+# ML PREDICTION
 # ══════════════════════════════════════════════════════════════════════
 
 def ml_predict(combined: str, raw_for_explain: str = "") -> dict:
     """
     Run inference and explainability on combined text using the active model.
+    Uses the optimal threshold from threshold.json (default 0.5).
     """
     model = _active_state["model"]
     if not model:
         return {"error": "Model not loaded. Run train.py first."}
 
     combined = combined[:MAX_TEXT_LEN]
+    cleaned  = preprocess(combined)
+    vec      = vectorizer.transform([cleaned])
 
-    cleaned = preprocess(combined)
-    vec     = vectorizer.transform([cleaned])
-    pred    = int(model.predict(vec)[0])
-
+    # ── Threshold-aware prediction ─────────────────────────────────
+    # Models with predict_proba (LR, RF, NB) use the tuned threshold.
+    # Models without it (LinearSVC) fall back to predict().
     if hasattr(model, "predict_proba"):
-        conf = round(float(model.predict_proba(vec)[0][pred]) * 100, 2)
+        prob_fraud = float(model.predict_proba(vec)[0][1])
+        pred       = int(prob_fraud >= _threshold)
+        conf       = round((prob_fraud if pred == 1 else 1 - prob_fraud) * 100, 2)
     elif hasattr(model, "decision_function"):
         s    = float(model.decision_function(vec)[0])
+        pred = int(model.predict(vec)[0])
         conf = round((1 / (1 + math.exp(-abs(s)))) * 100, 2)
     else:
+        pred = int(model.predict(vec)[0])
         conf = 95.0
 
     explain_input = (raw_for_explain or combined)[:MAX_TEXT_LEN]
@@ -173,7 +231,7 @@ def ml_predict(combined: str, raw_for_explain: str = "") -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  DATABASE
+# DATABASE
 # ══════════════════════════════════════════════════════════════════════
 
 def get_db():
@@ -202,10 +260,16 @@ def init_db():
                 model_used   TEXT,
                 submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )""")
-        try:
-            c.execute("ALTER TABLE predictions ADD COLUMN model_used TEXT")
-        except Exception:
-            pass
+        # Idempotent schema migrations
+        for col_sql in [
+            "ALTER TABLE predictions ADD COLUMN model_used TEXT",
+            "ALTER TABLE predictions ADD COLUMN url_risk TEXT",
+            "ALTER TABLE predictions ADD COLUMN url_score REAL",
+        ]:
+            try:
+                c.execute(col_sql)
+            except Exception:
+                pass
         c.commit()
 
 
@@ -219,7 +283,7 @@ def save_pred(fd: dict, result: dict, url_risk: str = "low", url_score: float = 
             (fd.get("job_title",""), fd.get("company",""), fd.get("location",""),
              fd.get("salary",""),    fd.get("website",""), fd.get("description",""),
              fd.get("requirements",""), result["label"], result["confidence"],
-             url_risk, url_score, result.get("model_name","")))
+             url_risk, url_score,    result.get("model_name","")))
         c.commit()
 
 
@@ -240,7 +304,7 @@ def get_stats() -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  ROUTES
+# ROUTES
 # ══════════════════════════════════════════════════════════════════════
 
 @app.route("/")
@@ -250,8 +314,7 @@ def home():
 
 @app.route("/classify")
 def classify():
-    return render_template("classify.html",
-                           active_model=_active_state["name"])
+    return render_template("classify.html", active_model=_active_state["name"])
 
 
 @app.route("/predict", methods=["POST"])
@@ -274,8 +337,8 @@ def predict_route():
         fd["job_title"], fd["company"], fd["description"], fd["requirements"]
     ]))
     raw_for_explain = " ".join(filter(None, [
-        fd["job_title"], fd["company"], fd["description"], fd["requirements"],
-        fd["salary"]
+        fd["job_title"], fd["company"], fd["description"],
+        fd["requirements"], fd["salary"]
     ]))
 
     result = ml_predict(combined, raw_for_explain)
@@ -286,6 +349,11 @@ def predict_route():
 
     analysis = analyse_all(fd.get("website", ""), fd.get("company", ""))
 
+    # Heuristic confidence nudge based on URL risk.
+    # This has no statistical grounding — it's a UX signal only.
+    # A high-risk URL reinforces a fraud prediction (+5 pp, capped 99.9)
+    # or weakens a legit prediction (-15 pp, floor 55) to surface doubt.
+    # TODO: Replace with a calibrated ensemble (e.g. isotonic regression).
     if analysis["overall_risk"] == "high" and result["is_fraud"]:
         result["confidence"] = min(result["confidence"] + 5, 99.9)
     elif analysis["overall_risk"] == "high" and not result["is_fraud"]:
@@ -296,7 +364,7 @@ def predict_route():
     elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
     logger.info("Prediction: %s | conf=%.1f%% | %dms | model=%s",
                 result["label"], result["confidence"], elapsed_ms,
-                result.get("model_name","?"))
+                result.get("model_name", "?"))
 
     return render_template("result.html",
                            result=result,
@@ -334,13 +402,13 @@ def clear_history():
     return redirect(url_for("history"))
 
 
-# ── Model switching route  ← NEW ───────────────────────────────────────
+# ── Model switching ────────────────────────────────────────────────────
 @app.route("/select-model", methods=["POST"])
 def select_model():
     """
     Switch the active inference model without restarting Flask.
-
-    Form field: model_name  (exact name from model registry)
+    Form field: model_name (exact name from model registry)
+    ⚠ Single-worker only — see module docstring.
     """
     name = request.form.get("model_name", "").strip()
     if not name:
@@ -351,23 +419,23 @@ def select_model():
         flash(f"✅ Active model switched to: {name}", "success")
     else:
         flash(f"❌ Model '{name}' not found in registry. Run train.py first.", "error")
-
     return redirect(url_for("models_page"))
 
 
 # ── JSON API ───────────────────────────────────────────────────────────
 @app.route("/api/predict", methods=["POST"])
+@limiter.limit("30 per minute")
 def api_predict():
     """
     Full JSON API with explanation.
 
     Request body (JSON):
-        title        : str  (optional)
-        company      : str  (optional)
-        description  : str  (REQUIRED)
-        requirements : str  (optional)
-        website      : str  (optional)
-        model        : str  (optional — name of model to use for this request)
+        title       : str (optional)
+        company     : str (optional)
+        description : str (REQUIRED)
+        requirements: str (optional)
+        website     : str (optional)
+        model       : str (optional — name of model to use for this request)
     """
     data = request.get_json(force=True, silent=True) or {}
 
@@ -375,11 +443,12 @@ def api_predict():
     if not description:
         return jsonify({"error": "description is required"}), 400
 
-    # Per-request model override (optional)
-    req_model_name = str(data.get("model", "")).strip()
-    original_model = _active_state["model"]
-    original_name  = _active_state["name"]
-    _switched = False
+    # Per-request model override (optional, reverted after request)
+    req_model_name  = str(data.get("model", "")).strip()
+    original_model  = _active_state["model"]
+    original_name   = _active_state["name"]
+    _switched       = False
+
     if req_model_name and req_model_name != _active_state["name"]:
         m = load_model_by_name(req_model_name)
         if m:
@@ -388,8 +457,8 @@ def api_predict():
             _switched = True
 
     combined = " ".join(filter(None, [
-        str(data.get("title",        "")),
-        str(data.get("company",      "")),
+        str(data.get("title", "")),
+        str(data.get("company", "")),
         description,
         str(data.get("requirements", "")),
     ]))
@@ -408,8 +477,8 @@ def api_predict():
         str(data.get("website", "")),
         str(data.get("company", "")),
     )
-    exp = result.get("explanation", {})
 
+    exp = result.get("explanation", {})
     return jsonify({
         "prediction":     result["label"],
         "is_fraud":       result["is_fraud"],
@@ -418,16 +487,16 @@ def api_predict():
         "url_risk":       analysis["overall_risk"],
         "combined_score": analysis["combined_score"],
         "explanation": {
-            "top_fraud_words":  exp.get("top_fraud_words", []),
-            "top_legit_words":  exp.get("top_legit_words", []),
-            "fraud_patterns":   [
+            "top_fraud_words": exp.get("top_fraud_words", []),
+            "top_legit_words": exp.get("top_legit_words", []),
+            "fraud_patterns": [
                 {"label":    p["label"],
                  "severity": p["severity"],
                  "reason":   p["reason"],
                  "matched":  p["matched"]}
                 for p in exp.get("fraud_patterns", [])
             ],
-            "reasons": exp.get("reasons", []),
+            "reasons":        exp.get("reasons", []),
             "decision_score": exp.get("decision_score", 0),
         },
     })
@@ -436,16 +505,16 @@ def api_predict():
 @app.route("/api/models", methods=["GET"])
 def api_models():
     """
-    NEW: Returns JSON list of all available models with their metrics.
+    Returns JSON list of all available models with their metrics.
 
     Response:
-        active_model : str  — currently active model name
-        models       : list[dict]  — name, path, metrics per model
+        active_model : str — currently active model name
+        models       : list[dict] — name, path, metrics per model
     """
-    registry = load_model_registry()
+    registry    = load_model_registry()
     all_metrics = {m["name"]: m for m in load_metrics()}
-
     models_list = []
+
     for name, path in registry.items():
         entry = {
             "name":      name,
@@ -455,36 +524,38 @@ def api_models():
         if name in all_metrics:
             m = all_metrics[name]
             entry.update({
-                "accuracy":       m.get("accuracy"),
-                "f1_fraud":       m.get("f1_fraud"),
-                "recall_fraud":   m.get("recall_fraud"),
-                "precision_fraud":m.get("precision_fraud"),
-                "roc_auc":        m.get("roc_auc"),
-                "cv_f1_mean":     m.get("cv_f1_mean"),
-                "cv_f1_std":      m.get("cv_f1_std"),
+                "accuracy":        m.get("accuracy"),
+                "f1_fraud":        m.get("f1_fraud"),
+                "recall_fraud":    m.get("recall_fraud"),
+                "precision_fraud": m.get("precision_fraud"),
+                "roc_auc":         m.get("roc_auc"),
+                "cv_f1_mean":      m.get("cv_f1_mean"),
+                "cv_f1_std":       m.get("cv_f1_std"),
             })
         models_list.append(entry)
 
     return jsonify({
         "active_model": _active_state["name"],
-        "models": models_list,
+        "models":       models_list,
     })
 
 
 @app.route("/health")
 def health():
     return jsonify({
-        "status":        "ok",
-        "model_loaded":  _active_state["model"] is not None,
-        "active_model":  _active_state["name"],
-        "vectorizer_ok": vectorizer is not None,
-        "timestamp":     datetime.datetime.now().isoformat(),
+        "status":         "ok",
+        "model_loaded":   _active_state["model"] is not None,
+        "active_model":   _active_state["name"],
+        "vectorizer_ok":  vectorizer is not None,
+        "threshold":      _threshold,
+        "timestamp":      datetime.datetime.now().isoformat(),
     })
 
 
 # ══════════════════════════════════════════════════════════════════════
-
 if __name__ == "__main__":
     init_db()
-    logger.info("Fake Job Posting Prediction — http://localhost:5000")
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    debug = os.environ.get("FLASK_ENV") == "development"
+    port  = int(os.environ.get("PORT", 5000))
+    logger.info(f"Fake Job Posting Prediction — http://localhost:{port}")
+    app.run(debug=debug, host="0.0.0.0", port=port)
