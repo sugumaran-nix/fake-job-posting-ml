@@ -1,36 +1,61 @@
 """
-fix_db.py  —  Run this ONCE to fix the database schema
-Place this file in your Project folder and run: py fix_db.py
+fix_db.py — Safe, idempotent schema migration helper.
+
+Applies missing columns to an existing predictions.db without dropping data.
+Run any time — already-applied migrations are silently skipped.
+
+Usage:
+    python fix_db.py
 """
-import sqlite3, os
+import sqlite3
+import os
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "predictions.db")
 
-if not os.path.exists(DB_PATH):
-    print("No database found — nothing to fix. Just run app.py normally.")
-else:
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+# Each entry is (description, SQL statement).
+# ADD COLUMN migrations are idempotent — duplicate columns are caught and skipped.
+MIGRATIONS: list[tuple[str, str]] = [
+    (
+        "Add model_used column",
+        "ALTER TABLE predictions ADD COLUMN model_used TEXT",
+    ),
+    (
+        "Add url_risk column",
+        "ALTER TABLE predictions ADD COLUMN url_risk TEXT",
+    ),
+    (
+        "Add url_score column",
+        "ALTER TABLE predictions ADD COLUMN url_score REAL",
+    ),
+]
 
-    # Check existing columns
-    cols = [row[1] for row in cursor.execute("PRAGMA table_info(predictions)").fetchall()]
-    print(f"Current columns: {cols}")
 
-    # Add missing columns if not present
-    needed = {
-        "website":   "TEXT",
-        "url_risk":  "TEXT",
-        "url_score": "REAL",
-    }
-    for col, typ in needed.items():
-        if col not in cols:
-            cursor.execute(f"ALTER TABLE predictions ADD COLUMN {col} {typ}")
-            print(f"  ✅ Added column: {col}")
-        else:
-            print(f"  ℹ️  Column already exists: {col}")
+def run() -> None:
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found at {DB_PATH}. Run app.py first to create it.")
+        return
 
-    # Remove old phone/email columns safely (SQLite workaround — recreate table)
-    conn.commit()
-    conn.close()
-    print("\n✅ Database schema updated successfully!")
-    print("   Now run:  py app.py")
+    applied = 0
+    skipped = 0
+
+    with sqlite3.connect(DB_PATH) as conn:
+        for desc, sql in MIGRATIONS:
+            try:
+                conn.execute(sql)
+                conn.commit()
+                print(f"  ✅ Applied  : {desc}")
+                applied += 1
+            except sqlite3.OperationalError as exc:
+                msg = str(exc).lower()
+                if "duplicate column" in msg or "already exists" in msg:
+                    print(f"  ⏭  Skipped : {desc} (already applied)")
+                    skipped += 1
+                else:
+                    print(f"  ❌ Error   : {desc} — {exc}")
+                    raise
+
+    print(f"\nDone. {applied} applied, {skipped} already up to date.")
+
+
+if __name__ == "__main__":
+    run()
