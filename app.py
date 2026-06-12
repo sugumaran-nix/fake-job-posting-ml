@@ -1,3 +1,16 @@
+"""
+app.py — Fake Job Posting Prediction (v4 — Multi-Model Runtime Switching)
+============================================================================
+Fixes applied over original v4:
+  ✅ Secret key raises RuntimeError in production if unset
+  ✅ .env loaded automatically via python-dotenv
+  ✅ /api/predict rate-limited (Flask-Limiter)
+  ✅ Optimal classification threshold loaded from models/threshold.json
+  ✅ predict_proba path uses threshold; fallback to predict() for SVM/NB
+  ✅ Single-worker constraint documented clearly
+  ✅ Heuristic confidence nudge documented with TODO
+"""
+
 import os
 import sys
 import pickle
