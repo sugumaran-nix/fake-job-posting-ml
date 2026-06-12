@@ -7,3 +7,11 @@ Werkzeug==2.3.7
 matplotlib==3.8.2
 seaborn==0.13.2
 contractions>=0.1.73
+# Production server (required — not in original)
+gunicorn>=21.2.0
+# .env file support
+python-dotenv>=1.0.0
+# API rate limiting
+Flask-Limiter>=3.5.0
+# Testing
+pytest>=7.4.0
