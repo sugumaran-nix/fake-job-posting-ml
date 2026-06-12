@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:?Set FLASK_SECRET_KEY in .env}
+      - FLASK_ENV=${FLASK_ENV:-production}
+    volumes:
+      # Persist dataset, trained models, and DB outside the container
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./static/images:/app/static/images
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

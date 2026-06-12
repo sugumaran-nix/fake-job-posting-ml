@@ -1,0 +1,55 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environments ───────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── Environment / secrets ─────────────────────────────────────────────
+.env
+# .env.example is intentionally NOT ignored — it's a safe template
+
+# ── Dataset (large file, download from Kaggle) ────────────────────────
+data/fake_job_postings.csv
+
+# ── Trained model artifacts ───────────────────────────────────────────
+# Uncomment these if you don't want to commit model binaries to git.
+# models/*.pkl
+# models/active_model.json
+
+# ── SQLite database ───────────────────────────────────────────────────
+data/predictions.db
+
+# ── Generated plots ───────────────────────────────────────────────────
+static/images/cm_*.png
+static/images/all_confusion_matrices.png
+static/images/model_comparison.png
+static/images/roc_curves.png
+
+# ── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── IDE / OS ──────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── pytest / coverage ─────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
