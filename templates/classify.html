@@ -14,7 +14,7 @@
 
     {% with msgs = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in msgs %}
-      <div class="alert alert-{{ cat }}"><i class="fi fi-rr-warning"></i> {{ msg }}</div>
+      <div class="alert alert-{{ cat }}"><i class="fa-solid fa-triangle-exclamation"></i> {{ msg }}</div>
       {% endfor %}
     {% endwith %}
 
@@ -22,7 +22,7 @@
 
       <!-- ── Card 1: Basic Info ──────────────────────────── -->
       <div class="fcard">
-        <div class="fcard-hdr"><span><i class="fi fi-rr-document"></i></span><h3>Basic Information</h3></div>
+        <div class="fcard-hdr"><span><i class="fa-solid fa-file-lines"></i></span><h3>Basic Information</h3></div>
         <div class="fgrid2">
           <div class="fg">
             <label>Job Title</label>
@@ -55,7 +55,7 @@
 
       <!-- ── Card 2: Company Website URL ────────────────── -->
       <div class="fcard">
-        <div class="fcard-hdr"><span><i class="fi fi-rr-globe"></i></span>
+        <div class="fcard-hdr"><span><i class="fa-solid fa-globe"></i></span>
           <h3>Company Website URL
             <span class="fcard-badge">Automated Fraud Detection</span>
           </h3>
@@ -66,22 +66,22 @@
                  placeholder="e.g. https://www.company.com/careers"
                  value="{{ (form or {}).get('website','') }}">
           <div class="url-checks">
-            <span><i class="fi fi-rr-lock"></i> HTTPS / SSL</span>
-            <span><i class="fi fi-rr-chart-histogram"></i> URL Entropy</span>
-            <span><i class="fi fi-rr-tag"></i> TLD Risk</span>
-            <span><i class="fi fi-rr-link"></i> Typosquatting</span>
-            <span><i class="fi fi-rr-home"></i> Free Hosting</span>
-            <span><i class="fi fi-rr-calculator"></i> Digit Density</span>
-            <span><i class="fi fi-rr-list"></i> Subdomain Depth</span>
-            <span><i class="fi fi-rr-key"></i> Keyword Score</span>
+            <span><i class="fa-solid fa-lock"></i> HTTPS / SSL</span>
+            <span><i class="fa-solid fa-chart-bar"></i> URL Entropy</span>
+            <span><i class="fa-solid fa-tag"></i> TLD Risk</span>
+            <span><i class="fa-solid fa-link"></i> Typosquatting</span>
+            <span><i class="fa-solid fa-house"></i> Free Hosting</span>
+            <span><i class="fa-solid fa-calculator"></i> Digit Density</span>
+            <span><i class="fa-solid fa-list"></i> Subdomain Depth</span>
+            <span><i class="fa-solid fa-key"></i> Keyword Score</span>
           </div>
-          <div class="field-hint"><i class="fi fi-rr-map-marker"></i> The URL is analysed automatically — no manual checks needed</div>
+          <div class="field-hint"><i class="fa-solid fa-location-dot"></i> The URL is analysed automatically — no manual checks needed</div>
         </div>
       </div>
 
       <!-- ── Card 3: Job Content ─────────────────────────── -->
       <div class="fcard">
-        <div class="fcard-hdr"><span><i class="fi fi-rr-document-signed"></i></span><h3>Job Content <span class="req-tag">Required</span></h3></div>
+        <div class="fcard-hdr"><span><i class="fa-solid fa-file-signature"></i></span><h3>Job Content <span class="req-tag">Required</span></h3></div>
         <div class="fg" style="padding:16px 24px 0">
           <label>Job Description <span class="req">*</span></label>
           <textarea id="desc" name="description" rows="7" required
@@ -97,18 +97,18 @@
 
       <!-- Samples -->
       <div class="sample-bar">
-        <span><i class="fi fi-rr-flask"></i> Try a sample:</span>
-        <button type="button" class="btn btn-sample" onclick="loadSample('fraud')"><i class="fi fi-rr-warning"></i> Fraudulent Sample</button>
-        <button type="button" class="btn btn-sample" onclick="loadSample('legit')"><i class="fi fi-rr-check"></i> Legitimate Sample</button>
+        <span><i class="fa-solid fa-flask"></i> Try a sample:</span>
+        <button type="button" class="btn btn-sample" onclick="loadSample('fraud')"><i class="fa-solid fa-xmark"></i> Fraudulent Sample</button>
+        <button type="button" class="btn btn-sample" onclick="loadSample('legit')"><i class="fa-solid fa-check"></i> Legitimate Sample</button>
       </div>
 
       <div class="form-actions">
         <button type="submit" class="btn btn-primary btn-lg btn-full" id="sbtn">
-          <i class="fi fi-rr-search"></i> Analyse This Job Posting
+          <i class="fa-solid fa-magnifying-glass"></i> Analyse This Job Posting
         </button>
         <button type="reset" class="btn btn-outline btn-lg"
                 onclick="document.getElementById('cc').textContent='0'">
-          <i class="fi fi-rr-refresh"></i> Clear
+          <i class="fa-solid fa-rotate"></i> Clear
         </button>
       </div>
 

@@ -10,7 +10,7 @@
     </div>
     {% if metadata.trained_at %}
     <div class="meta-pill">
-      <i class="fi fi-rr-clock"></i> Trained: {{ metadata.trained_at[:10] }} &nbsp;·&nbsp;
+      <i class="fa-solid fa-clock"></i> Trained: {{ metadata.trained_at[:10] }} &nbsp;·&nbsp;
       ★ Best: <strong>{{ metadata.best_model }}</strong>
     </div>
     {% endif %}
@@ -23,17 +23,17 @@
     {% if not metrics %}
     <!-- ── NOT TRAINED YET ─────────────────────────────────────────── -->
     <div class="empty-state">
-      <div class="empty-icon"><i class="fi fi-rr-brain"></i></div>
+      <div class="empty-icon"><i class="fa-solid fa-brain"></i></div>
       <h3>Models not trained yet</h3>
       <p>Run <code>python train.py</code> to train all four classifiers and generate evaluation plots.</p>
     </div>
 
     {% else %}
 
-    <!-- ══ ACTIVE MODEL SWITCHER  ← NEW ═════════════════════════════ -->
+    <!-- ══ ACTIVE MODEL SWITCHER ═════════════════════════════════════ -->
     {% if registry %}
     <div class="info-banner" style="margin-bottom:32px;align-items:flex-start;flex-wrap:wrap;gap:16px">
-      <span style="font-size:1.3rem"><i class="fi fi-rr-arrows-repeat"></i></span>
+      <span style="font-size:1.3rem"><i class="fa-solid fa-arrows-rotate"></i></span>
       <div style="flex:1;min-width:240px">
         <strong>Active Inference Model</strong>
         <p style="margin:4px 0 12px;color:#555">
@@ -104,9 +104,9 @@
             </td>
             <td>
               {% if is_active %}
-              <span class="badge badge-legit"><i class="fi fi-rr-arrows-repeat"></i> Active</span>
+              <span class="badge badge-legit"><i class="fa-solid fa-arrows-rotate"></i> Active</span>
               {% elif is_best %}
-              <span class="badge badge-info"><i class="fi fi-rr-star"></i> Best</span>
+              <span class="badge badge-info"><i class="fa-solid fa-star"></i> Best</span>
               {% else %}—{% endif %}
             </td>
           </tr>
@@ -117,7 +117,7 @@
 
     <!-- ── METRIC EXPLANATION ──────────────────────────────────────── -->
     <div class="info-banner" style="margin-bottom:40px">
-      <span><i class="fi fi-rr-info"></i></span>
+      <span><i class="fa-solid fa-circle-info"></i></span>
       <div>
         <strong>Why Fraud-class F1, not overall Accuracy?</strong>
         The EMSCAD dataset is heavily imbalanced (~95% legitimate, ~5% fraudulent).
@@ -146,7 +146,7 @@
            onerror="this.parentElement.innerHTML='<p class=plot-missing>Chart not found. Run python train.py to generate plots.</p>'">
     </div>
 
-    <!-- ══ ROC CURVES  ← NEW ════════════════════════════════════════ -->
+    <!-- ══ ROC CURVES ════════════════════════════════════════════════ -->
     <div class="sh" style="text-align:left;margin-bottom:20px">
       <h2>ROC Curves</h2>
       <p>Receiver Operating Characteristic curves — higher AUC = better discrimination between legitimate and fraudulent</p>
@@ -165,7 +165,6 @@
       <p>True Positive / True Negative / False Positive / False Negative for each model</p>
     </div>
 
-    <!-- All-in-one grid image -->
     {% set all_cm = "images/all_confusion_matrices.png" %}
     <div class="plot-card" style="margin-bottom:32px">
       <img src="{{ url_for('static', filename=all_cm) }}"
@@ -176,7 +175,7 @@
 
     <!-- Individual confusion matrices (collapsible) -->
     <details class="dblock" style="margin-bottom:40px">
-      <summary><i class="fi fi-rr-search"></i> View Individual Confusion Matrices</summary>
+      <summary><i class="fa-solid fa-magnifying-glass"></i> View Individual Confusion Matrices</summary>
       <div class="dbody">
         <div class="cm-grid">
           {% for m in metrics %}
@@ -213,8 +212,8 @@
     <details class="dblock" style="margin-bottom:16px">
       <summary>
         {{ m.name }}
-        {% if is_active %}<span class="badge badge-legit" style="margin-left:8px"><i class="fi fi-rr-arrows-repeat"></i> Active</span>{% endif %}
-        {% if is_best   %}<span class="badge badge-info"  style="margin-left:8px"><i class="fi fi-rr-star"></i> Best F1</span>{% endif %}
+        {% if is_active %}<span class="badge badge-legit" style="margin-left:8px"><i class="fa-solid fa-arrows-rotate"></i> Active</span>{% endif %}
+        {% if is_best   %}<span class="badge badge-info"  style="margin-left:8px"><i class="fa-solid fa-star"></i> Best F1</span>{% endif %}
         &nbsp;—&nbsp; Fraud F1: <strong>{{ "%.2f"|format(m.f1_fraud*100) }}%</strong>
         &nbsp;|&nbsp; Fraud Recall: <strong>{{ "%.2f"|format(m.recall_fraud*100) }}%</strong>
         {% if m.cv_f1_mean %}
@@ -238,7 +237,7 @@
     </div>
     <div class="about-grid">
       <div class="acard">
-        <h3><i class="fi fi-rr-box"></i> Dataset</h3>
+        <h3><i class="fa-solid fa-box"></i> Dataset</h3>
         <table class="info-tbl">
           <tr><td>Total Records</td>   <td><strong>{{ metadata.dataset_rows | default("17,880") }}</strong></td></tr>
           <tr><td>Legitimate</td>      <td>{{ metadata.legit_count | default("17,014") }}</td></tr>
@@ -248,7 +247,7 @@
         </table>
       </div>
       <div class="acard">
-        <h3><i class="fi fi-rr-settings"></i> Feature Extraction</h3>
+        <h3><i class="fa-solid fa-gear"></i> Feature Extraction</h3>
         <table class="info-tbl">
           <tr><td>Method</td>          <td><strong>TF-IDF</strong></td></tr>
           <tr><td>Max Features</td>    <td>{{ metadata.tfidf_features | default(10000) | int }}</td></tr>
@@ -259,22 +258,22 @@
         </table>
       </div>
       <div class="acard">
-        <h3><i class="fi fi-rr-magic-wand"></i> NLP Pipeline</h3>
+        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> NLP Pipeline</h3>
         <table class="info-tbl">
-          <tr><td>HTML stripping</td>      <td><i class="fi fi-rr-check" style="color:#16a34a"></i> Tags + entity decode</td></tr>
-          <tr><td>Contractions</td>        <td><i class="fi fi-rr-check" style="color:#16a34a"></i> don't → do not</td></tr>
-          <tr><td>URL removal</td>         <td><i class="fi fi-rr-check" style="color:#16a34a"></i> http/www stripped</td></tr>
-          <tr><td>Tokenisation</td>        <td><i class="fi fi-rr-check" style="color:#16a34a"></i> NLTK word_tokenize</td></tr>
-          <tr><td>Stopword removal</td>    <td><i class="fi fi-rr-check" style="color:#16a34a"></i> NLTK English set</td></tr>
-          <tr><td>Lemmatisation</td>       <td><i class="fi fi-rr-check" style="color:#16a34a"></i> WordNetLemmatizer</td></tr>
+          <tr><td>HTML stripping</td>      <td><i class="fa-solid fa-check" style="color:#16a34a"></i> Tags + entity decode</td></tr>
+          <tr><td>Contractions</td>        <td><i class="fa-solid fa-check" style="color:#16a34a"></i> don't → do not</td></tr>
+          <tr><td>URL removal</td>         <td><i class="fa-solid fa-check" style="color:#16a34a"></i> http/www stripped</td></tr>
+          <tr><td>Tokenisation</td>        <td><i class="fa-solid fa-check" style="color:#16a34a"></i> NLTK word_tokenize</td></tr>
+          <tr><td>Stopword removal</td>    <td><i class="fa-solid fa-check" style="color:#16a34a"></i> NLTK English set</td></tr>
+          <tr><td>Lemmatisation</td>       <td><i class="fa-solid fa-check" style="color:#16a34a"></i> WordNetLemmatizer</td></tr>
         </table>
       </div>
       <div class="acard">
-        <h3><i class="fi fi-rr-arrows-repeat"></i> Runtime Model Switch</h3>
+        <h3><i class="fa-solid fa-arrows-rotate"></i> Runtime Model Switch</h3>
         <table class="info-tbl">
           <tr><td>Active model</td>    <td><strong>{{ active_model or "default" }}</strong></td></tr>
           <tr><td>Registry size</td>   <td>{{ registry | length }} models saved</td></tr>
-          <tr><td>Hot-swap</td>        <td><i class="fi fi-rr-check" style="color:#16a34a"></i> No restart required</td></tr>
+          <tr><td>Hot-swap</td>        <td><i class="fa-solid fa-check" style="color:#16a34a"></i> No restart required</td></tr>
           <tr><td>API endpoint</td>    <td><code>GET /api/models</code></td></tr>
           <tr><td>Switch API</td>      <td><code>POST /select-model</code></td></tr>
         </table>
@@ -284,7 +283,7 @@
 
     <!-- ══ API REFERENCE ════════════════════════════════════════════ -->
     <div class="sh" style="text-align:left;margin-top:40px;margin-bottom:20px">
-      <h2><i class="fi fi-rr-plug"></i> REST API Reference</h2>
+      <h2><i class="fa-solid fa-plug"></i> REST API Reference</h2>
     </div>
     <div class="about-grid">
       <div class="acard" style="grid-column:1/-1">

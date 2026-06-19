@@ -7,7 +7,7 @@
   <div class="hero-dots"></div>
   <div class="hero-accent-line"></div>
   <div class="hero-wrap">
-    <div class="hero-pill"><i class="fi fi-rr-bolt"></i> NLP + Machine Learning + URL Analysis</div>
+    <div class="hero-pill"><i class="fa-solid fa-bolt"></i> NLP + Machine Learning + URL Analysis</div>
     <h1 class="hero-h1">Fake Job <br><span class="blue-txt">Post Prediction</span></h1>
     <p class="hero-sub">
       Paste any job description — our AI analyses text content and
@@ -50,10 +50,10 @@
     <div class="sh"><h2>How It Works</h2><p>Three-layer analysis in under a second</p></div>
     <div class="steps-row">
       {% for num,icon,title,desc in [
-        ("01",'<i class="fi fi-rr-document"></i>',"Enter Job Details",    "Provide job title, company name, website URL, description and requirements."),
-        ("02",'<i class="fi fi-rr-magic-wand"></i>',"NLP Preprocessing",   "Text is cleaned, tokenised, stopwords removed and lemmatised automatically."),
-        ("03",'<i class="fi fi-rr-brain"></i>',"ML Classification",   "Four classifiers compared (LR, RF, SVM, NB). Best Fraud-class F1 model auto-selected."),
-        ("04",'<i class="fi fi-rr-globe"></i>',"URL Fraud Engine",     "Company URL is independently scored using 10 automated domain-level checks."),
+        ("01",'<i class="fa-solid fa-file-lines"></i>',"Enter Job Details",    "Provide job title, company name, website URL, description and requirements."),
+        ("02",'<i class="fa-solid fa-wand-magic-sparkles"></i>',"NLP Preprocessing",   "Text is cleaned, tokenised, stopwords removed and lemmatised automatically."),
+        ("03",'<i class="fa-solid fa-brain"></i>',"ML Classification",   "Four classifiers compared (LR, RF, SVM, NB). Best Fraud-class F1 model auto-selected."),
+        ("04",'<i class="fa-solid fa-globe"></i>',"URL Fraud Engine",     "Company URL is independently scored using 10 automated domain-level checks."),
       ] %}
       <div class="step-card">
         <div class="step-num">{{ num }}</div>
@@ -72,12 +72,12 @@
     <div class="sh light"><h2>What the System Detects</h2><p>Automated signals across text and domain analysis</p></div>
     <div class="flags-row">
       {% for icon,title,desc in [
-        ('<i class="fi fi-rr-hand-holding-usd"></i>',"Unrealistic Salary",     "Promises of very high guaranteed pay for no experience."),
-        ('<i class="fi fi-rr-globe"></i>',"Suspicious Domain",      "Free TLDs, free hosting, HTTP-only, high entropy domains."),
-        ('<i class="fi fi-rr-link"></i>',"Typosquatting",          "Domains that mimic real brands like infosys-jobs.tk."),
-        ('<i class="fi fi-rr-document"></i>',"Vague Requirements",     "No skills or qualifications listed for high salary."),
-        ('<i class="fi fi-rr-building"></i>',"Fake Company Names",     "Generic or scam-keyword names like 'Global Earn Solutions'."),
-        ('<i class="fi fi-rr-lock"></i>',"No SSL Certificate",     "Company website without HTTPS is a critical trust failure."),
+        ('<i class="fa-solid fa-hand-holding-dollar"></i>',"Unrealistic Salary",     "Promises of very high guaranteed pay for no experience."),
+        ('<i class="fa-solid fa-globe"></i>',"Suspicious Domain",      "Free TLDs, free hosting, HTTP-only, high entropy domains."),
+        ('<i class="fa-solid fa-link"></i>',"Typosquatting",          "Domains that mimic real brands like infosys-jobs.tk."),
+        ('<i class="fa-solid fa-file-lines"></i>',"Vague Requirements",     "No skills or qualifications listed for high salary."),
+        ('<i class="fa-solid fa-building"></i>',"Fake Company Names",     "Generic or scam-keyword names like 'Global Earn Solutions'."),
+        ('<i class="fa-solid fa-lock"></i>',"No SSL Certificate",     "Company website without HTTPS is a critical trust failure."),
       ] %}
       <div class="flag-card">
         <span class="flag-icon">{{ icon | safe }}</span>

@@ -11,12 +11,12 @@
       <p>Job: <strong>{{ job.job_title }}</strong>
         {% if job.company %} at <strong>{{ job.company }}</strong>{% endif %}
         {% if elapsed_ms %}
-        <span class="perf-badge"><i class="fi fi-rr-bolt"></i> {{ elapsed_ms }}ms</span>
+        <span class="perf-badge"><i class="fa-solid fa-bolt"></i> {{ elapsed_ms }}ms</span>
         {% endif %}
       </p>
       {% endif %}
     </div>
-    <a href="{{ url_for('classify') }}" class="btn btn-ghost"><i class="fi fi-rr-arrow-left"></i> Classify Another</a>
+    <a href="{{ url_for('classify') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Classify Another</a>
   </div>
 </section>
 
@@ -25,7 +25,7 @@
 
     <!-- ══ VERDICT BANNER ═══════════════════════════════════════════ -->
     <div class="verdict {% if result.is_fraud %}vfraud{% else %}vlegit{% endif %}">
-      <div class="v-icon">{% if result.is_fraud %}<i class="fi fi-rr-warning"></i>{% else %}<i class="fi fi-rr-check"></i>{% endif %}</div>
+      <div class="v-icon">{% if result.is_fraud %}<i class="fa-solid fa-xmark"></i>{% else %}<i class="fa-solid fa-check"></i>{% endif %}</div>
       <div class="v-body">
         <h2>{% if result.is_fraud %}FRAUDULENT JOB POSTING DETECTED
              {% else %}LEGITIMATE JOB POSTING{% endif %}</h2>
@@ -34,7 +34,7 @@
           {% else %}This posting appears genuine. Always verify independently before applying.{% endif %}</p>
         <!-- Model used tag -->
         <div class="model-tag">
-          <i class="fi fi-rr-brain"></i> Model: <strong>{{ result.model_name }}</strong>
+          <i class="fa-solid fa-brain"></i> Model: <strong>{{ result.model_name }}</strong>
         </div>
       </div>
     </div>
@@ -93,7 +93,7 @@
     {% if exp.fraud_patterns %}
     <div class="expl-section">
       <div class="expl-section-hdr">
-        <span><i class="fi fi-rr-flag"></i></span>
+        <span><i class="fa-solid fa-flag"></i></span>
         <div>
           <h3>Fraud Pattern Detection</h3>
           <p>{{ exp.fraud_patterns|length }} known fraud pattern{{ 's' if exp.fraud_patterns|length != 1 }} matched in the text</p>
@@ -128,7 +128,7 @@
     {% if exp.reasons %}
     <div class="expl-section">
       <div class="expl-section-hdr">
-        <span><i class="fi fi-rr-brain"></i></span>
+        <span><i class="fa-solid fa-brain"></i></span>
         <div>
           <h3>Why This Prediction?</h3>
           <p>Key factors that drove the {{ result.model_name }} decision</p>
@@ -149,7 +149,7 @@
     {% if exp.top_fraud_words or exp.top_legit_words %}
     <div class="expl-section">
       <div class="expl-section-hdr">
-        <span><i class="fi fi-rr-chart-histogram"></i></span>
+        <span><i class="fa-solid fa-chart-bar"></i></span>
         <div>
           <h3>Token Influence Analysis</h3>
           <p>How each word pushed the model toward Fraud or Legitimate (TF-IDF × Coefficient)</p>
@@ -161,7 +161,7 @@
         {% if exp.top_fraud_words %}
         <div class="influence-col">
           <div class="inf-col-hdr inf-fraud-hdr">
-            <i class="fi fi-rr-warning"></i> Fraud Signals
+            <i class="fa-solid fa-triangle-exclamation"></i> Fraud Signals
             <span class="inf-sub">words pushing toward Fraudulent</span>
           </div>
           {% for item in exp.top_fraud_words %}
@@ -180,7 +180,7 @@
         {% if exp.top_legit_words %}
         <div class="influence-col">
           <div class="inf-col-hdr inf-legit-hdr">
-            <i class="fi fi-rr-check"></i> Legitimacy Signals
+            <i class="fa-solid fa-check"></i> Legitimacy Signals
             <span class="inf-sub">words pushing toward Legitimate</span>
           </div>
           {% for item in exp.top_legit_words %}
@@ -203,7 +203,7 @@
     {% if exp.highlighted_html %}
     <div class="expl-section">
       <div class="expl-section-hdr">
-        <span><i class="fi fi-rr-search"></i></span>
+        <span><i class="fa-solid fa-magnifying-glass"></i></span>
         <div>
           <h3>Highlighted Text Analysis</h3>
           <p>
@@ -218,15 +218,15 @@
     {% endif %}
 
     <!-- ══════════════════════════════════════════════════════════════
-         DOMAIN ANALYSIS  (existing — preserved)
+         DOMAIN ANALYSIS
     ══════════════════════════════════════════════════════════════════ -->
 
     <div class="adv-header">
-      <h2><i class="fi fi-rr-microscope"></i> Automated Domain Analysis</h2>
+      <h2><i class="fa-solid fa-microscope"></i> Automated Domain Analysis</h2>
       <div class="adv-overall risk-{{ analysis.overall_risk }}">
-        {% if analysis.overall_risk == 'high' %}<i class="fi fi-rr-warning"></i> HIGH RISK
-        {% elif analysis.overall_risk == 'medium' %}<i class="fi fi-rr-exclamation"></i> MEDIUM RISK
-        {% else %}<i class="fi fi-rr-check"></i> LOW RISK{% endif %}
+        {% if analysis.overall_risk == 'high' %}<i class="fa-solid fa-triangle-exclamation"></i> HIGH RISK
+        {% elif analysis.overall_risk == 'medium' %}<i class="fa-solid fa-exclamation"></i> MEDIUM RISK
+        {% else %}<i class="fa-solid fa-check"></i> LOW RISK{% endif %}
         &nbsp;·&nbsp; Combined Score: {{ analysis.combined_score }}/100
         &nbsp;·&nbsp; {{ analysis.total_red_flags }} red flag{% if analysis.total_red_flags != 1 %}s{% endif %}
       </div>
@@ -235,7 +235,7 @@
     <!-- URL FRAUD DETECTION CARD -->
     <div class="adv-card adv-{{ analysis.url.risk_level }}">
       <div class="adv-card-hdr">
-        <span class="adv-icon"><i class="fi fi-rr-globe"></i></span>
+        <span class="adv-icon"><i class="fa-solid fa-globe"></i></span>
         <div>
           <h3>Company URL Fraud Detection</h3>
           <span class="adv-val">{{ job.website or 'No URL provided' }}</span>
@@ -245,14 +245,14 @@
         </div>
       </div>
       <div class="url-verdict-bar verdict-{{ analysis.url.risk_level }}">
-        {% if analysis.url.risk_level == 'high' %}<i class="fi fi-rr-warning"></i> Fraudulent Domain
-        {% elif analysis.url.risk_level == 'medium' %}<i class="fi fi-rr-exclamation"></i> Suspicious Domain
-        {% else %}<i class="fi fi-rr-check"></i> Legitimate Domain{% endif %}
+        {% if analysis.url.risk_level == 'high' %}<i class="fa-solid fa-triangle-exclamation"></i> Fraudulent Domain
+        {% elif analysis.url.risk_level == 'medium' %}<i class="fa-solid fa-exclamation"></i> Suspicious Domain
+        {% else %}<i class="fa-solid fa-check"></i> Legitimate Domain{% endif %}
         &nbsp;—&nbsp; {{ analysis.url.summary }}
       </div>
       {% if analysis.url.domain %}
       <div class="adv-domain-pill">
-        <i class="fi fi-rr-link"></i> Resolved domain: <strong>{{ analysis.url.domain }}</strong>
+        <i class="fa-solid fa-link"></i> Resolved domain: <strong>{{ analysis.url.domain }}</strong>
       </div>
       {% endif %}
       {% if analysis.url.flags %}
@@ -265,7 +265,7 @@
         {% endfor %}
       </div>
       {% else %}
-      <p class="adv-clean"><i class="fi fi-rr-check"></i> No suspicious URL patterns detected.</p>
+      <p class="adv-clean"><i class="fa-solid fa-check"></i> No suspicious URL patterns detected.</p>
       {% endif %}
       {% if analysis.url.techniques %}
       <div class="adv-tech">
@@ -279,7 +279,7 @@
     <!-- COMPANY NAME ANALYSIS CARD -->
     <div class="adv-card adv-{{ analysis.company.risk_level }}">
       <div class="adv-card-hdr">
-        <span class="adv-icon"><i class="fi fi-rr-building"></i></span>
+        <span class="adv-icon"><i class="fa-solid fa-building"></i></span>
         <div>
           <h3>Company Name Analysis</h3>
           <span class="adv-val">{{ job.company or 'Not provided' }}</span>
@@ -290,7 +290,7 @@
       </div>
       <p class="adv-summary">{{ analysis.company.summary }}</p>
       {% if analysis.company.is_known %}
-      <div class="adv-known-badge"><i class="fi fi-rr-check"></i> Verified known company in the system database</div>
+      <div class="adv-known-badge"><i class="fa-solid fa-check"></i> Verified known company in the system database</div>
       {% endif %}
       {% if analysis.company.flags %}
       <div class="adv-flags">
@@ -302,7 +302,7 @@
         {% endfor %}
       </div>
       {% else %}
-      <p class="adv-clean"><i class="fi fi-rr-check"></i> No suspicious patterns detected in company name.</p>
+      <p class="adv-clean"><i class="fa-solid fa-check"></i> No suspicious patterns detected in company name.</p>
       {% endif %}
       <div class="adv-tech">
         <span class="tech-badge">Known Company DB</span>
@@ -315,7 +315,7 @@
 
     <!-- ══ ADVICE ═════════════════════════════════════════════════════ -->
     <div class="advice {% if result.is_fraud %}advice-bad{% else %}advice-good{% endif %}">
-      <h4>{% if result.is_fraud %}<i class="fi fi-rr-shield-check"></i> What You Should Do{% else %}<i class="fi fi-rr-briefcase"></i> Next Steps{% endif %}</h4>
+      <h4>{% if result.is_fraud %}<i class="fa-solid fa-shield-halved"></i> What You Should Do{% else %}<i class="fa-solid fa-briefcase"></i> Next Steps{% endif %}</h4>
       {% if result.is_fraud %}
       <ul>
         <li>Do <strong>not</strong> pay any registration or training fee.</li>
@@ -336,7 +336,7 @@
 
     <!-- ══ SUBMITTED DETAILS (collapsible) ════════════════════════════ -->
     <details class="dblock">
-      <summary><i class="fi fi-rr-document"></i> View All Submitted Details</summary>
+      <summary><i class="fa-solid fa-file-lines"></i> View All Submitted Details</summary>
       <div class="dbody">
         <div class="job-info-grid">
           {% if job.job_title %}<div class="job-info-item"><strong>Job Title</strong>{{ job.job_title }}</div>{% endif %}
@@ -359,8 +359,8 @@
     </details>
 
     <div class="result-acts">
-      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg"><i class="fi fi-rr-search"></i> Classify Another</a>
-      <a href="{{ url_for('history') }}"  class="btn btn-outline  btn-lg"><i class="fi fi-rr-time-past"></i> View History</a>
+      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass"></i> Classify Another</a>
+      <a href="{{ url_for('history') }}"  class="btn btn-outline  btn-lg"><i class="fa-solid fa-clock-rotate-left"></i> View History</a>
     </div>
 
   </div>

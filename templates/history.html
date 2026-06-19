@@ -11,7 +11,7 @@
     {% if records %}
     <form method="POST" action="{{ url_for('clear_history') }}"
           onsubmit="return confirm('Clear all history? This cannot be undone.')">
-      <button type="submit" class="btn btn-danger"><i class="fi fi-rr-trash"></i> Clear All</button>
+      <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Clear All</button>
     </form>
     {% endif %}
   </div>
@@ -83,7 +83,7 @@
             </td>
             <td>
               <span class="badge {% if r.prediction=='Fraudulent' %}badge-fraud{% else %}badge-legit{% endif %}">
-                {% if r.prediction=='Fraudulent' %}<i class="fi fi-rr-warning"></i>{% else %}<i class="fi fi-rr-check"></i>{% endif %} {{ r.prediction }}
+                {% if r.prediction=='Fraudulent' %}<i class="fa-solid fa-xmark"></i>{% else %}<i class="fa-solid fa-check"></i>{% endif %} {{ r.prediction }}
               </span>
             </td>
             <td>
@@ -103,10 +103,10 @@
 
     {% else %}
     <div class="empty-state">
-      <div class="empty-icon"><i class="fi fi-rr-inbox"></i></div>
+      <div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>
       <h3>No history yet</h3>
       <p>Start by classifying a job posting.</p>
-      <a href="{{ url_for('classify') }}" class="btn btn-primary"><i class="fi fi-rr-search"></i> Classify a Job →</a>
+      <a href="{{ url_for('classify') }}" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Classify a Job →</a>
     </div>
     {% endif %}
 
