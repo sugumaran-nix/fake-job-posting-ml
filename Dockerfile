@@ -24,5 +24,4 @@ EXPOSE 5000
 
 # Single worker — required for in-process model switching.
 # See README "Known Limitations" for multi-worker notes.
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", \
-     "--timeout", "120", "--access-logfile", "-", "app:app"]
+CMD ["sh", "-c", "gunicorn -w 1 -b 0.0.0.0:${PORT:-5000} --timeout 120 --access-logfile - app:app"]
