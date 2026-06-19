@@ -11,8 +11,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
-# Download NLTK data used by preprocessing
-RUN python -c "import nltk; nltk.download('stopwords'); nltk.download('punkt')"
+# Download all NLTK data used by preprocessing (wordnet for lemmatizer,
+# punkt/punkt_tab for tokenizer, stopwords, omw-1.4 for wordnet support).
+COPY nltk_setup.py .
+RUN python nltk_setup.py
 
 # Copy source
 COPY . .
