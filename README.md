@@ -69,7 +69,7 @@ fake-job-posting-ml/
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/an0nl/fake-job-posting-ml.git
+git clone https://github.com/suguamaran-nix/fake-job-posting-ml.git
 cd fake-job-posting-ml
 python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
