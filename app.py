@@ -1,5 +1,5 @@
 """
-app.py — Fake Job Posting Prediction (v4 — Multi-Model Runtime Switching)
+app.py — JobGuard: AI-Powered Job Fraud Detection (v5)
 ============================================================================
 Fixes applied over original v4:
   ✅ Secret key raises RuntimeError in production if unset
@@ -63,7 +63,7 @@ if not app.secret_key:
         "FLASK_SECRET_KEY not set — using insecure dev default. "
         "Set it in .env or as an environment variable."
     )
-    app.secret_key = "fjp_dev_secret_only_not_for_production"
+    app.secret_key = "jobguard_dev_secret_not_for_production"
 
 # ── Rate limiting ──────────────────────────────────────────────────────
 try:
@@ -389,7 +389,7 @@ def predict_route():
 @app.route("/history")
 def history():
     return render_template("history.html",
-                           records=get_history(), stats=get_stats())
+                           history=get_history(), stats=get_stats())
 
 
 @app.route("/about")
@@ -566,9 +566,24 @@ def health():
 
 
 # ══════════════════════════════════════════════════════════════════════
+# ERROR HANDLERS
+# ══════════════════════════════════════════════════════════════════════
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error("500 error: %s", e)
+    return render_template("500.html"), 500
+
+
+# ══════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     init_db()
     debug = os.environ.get("FLASK_ENV") == "development"
     port  = int(os.environ.get("PORT", 5000))
-    logger.info(f"Fake Job Posting Prediction — http://localhost:{port}")
+    logger.info(f"JobGuard — http://localhost:{port}")
     app.run(debug=debug, host="0.0.0.0", port=port)

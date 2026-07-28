@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}500 — Server Error · JobGuard{% endblock %}
+{% block content %}
+<section class="section error-page">
+  <div class="tc">
+    <div class="error-code">500</div>
+    <h1 class="error-title">Something Went Wrong</h1>
+    <p class="error-sub">An unexpected error occurred. Try again or go back to the home page.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="{{ url_for('home') }}"     class="btn btn-primary btn-lg"><i class="fa-solid fa-house"></i> Go Home</a>
+      <a href="{{ url_for('classify') }}" class="btn btn-ghost btn-lg"><i class="fa-solid fa-rotate"></i> Try Again</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,63 +1,85 @@
 {% extends "base.html" %}
-{% block title %}Fake Job Posting Prediction — Detect Fake Job Postings{% endblock %}
+{% block title %}JobGuard — Detect Fake Job Postings with AI{% endblock %}
+{% block meta_desc %}Analyse any job posting for fraud in seconds. JobGuard uses NLP and machine learning trained on 17,880 real job records to detect scams before you apply.{% endblock %}
+
 {% block content %}
 
-<!-- HERO -->
+<!-- ══ HERO ═════════════════════════════════════════════════ -->
 <section class="hero">
   <div class="hero-dots"></div>
   <div class="hero-accent-line"></div>
   <div class="hero-wrap">
-    <div class="hero-pill"><i class="fa-solid fa-bolt"></i> NLP + Machine Learning + URL Analysis</div>
-    <h1 class="hero-h1">Fake Job <br><span class="blue-txt">Post Prediction</span></h1>
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      NLP · Machine Learning · URL Analysis
+    </div>
+    <h1 class="hero-h1">
+      Stop Fake Job Scams<br>
+      <span class="grad-txt">Before You Apply</span>
+    </h1>
     <p class="hero-sub">
-      Paste any job description — our AI analyses text content and
-      automatically evaluates the company website URL for domain-level fraud signals.
+      Paste any job description. JobGuard analyses the text using a Linear SVM
+      trained on 17,880 real postings, then independently scores the company domain
+      across 10 automated fraud checks — all in under a second.
     </p>
     <div class="hero-btns">
-      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">Start Classifying →</a>
-      <a href="{{ url_for('about') }}"    class="btn btn-ghost   btn-lg">Learn More</a>
+      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">
+        <i class="fa-solid fa-magnifying-glass"></i> Analyse a Job Posting
+      </a>
+      <a href="{{ url_for('about') }}" class="btn btn-ghost btn-lg">
+        How It Works
+      </a>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-item"><i class="fa-solid fa-bolt"></i> &lt; 1 second analysis</div>
+      <div class="trust-item"><i class="fa-solid fa-brain"></i> 98.83% accuracy</div>
+      <div class="trust-item"><i class="fa-solid fa-lock"></i> No data stored externally</div>
+      <div class="trust-item"><i class="fa-solid fa-code"></i> Open source</div>
     </div>
   </div>
 </section>
 
-<!-- STATS -->
-<section class="section bg-lav">
+<!-- ══ STATS ════════════════════════════════════════════════ -->
+<section class="section bg2">
   <div class="wrap">
     <div class="stat-row">
       <div class="stat-box">
-        <span class="stat-n" data-target="98">0</span><span class="stat-unit">%</span>
-        <span class="stat-l">Model Accuracy</span>
+        <span class="stat-n" data-target="{{ stats.total }}">0</span>
+        <span class="stat-l">Jobs Analysed</span>
+      </div>
+      <div class="stat-box sb-fraud">
+        <span class="stat-n" data-target="{{ stats.fraud }}">0</span>
+        <span class="stat-l">Frauds Caught</span>
+      </div>
+      <div class="stat-box sb-legit">
+        <span class="stat-n" data-target="{{ stats.legit }}">0</span>
+        <span class="stat-l">Legitimate Jobs</span>
       </div>
       <div class="stat-box">
         <span class="stat-n" data-target="17880">0</span>
         <span class="stat-l">Training Records</span>
       </div>
-      <div class="stat-box">
-        <span class="stat-n" data-target="{{ stats.total }}">0</span>
-        <span class="stat-l">Jobs Analysed</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-n" data-target="{{ stats.fraud }}">0</span>
-        <span class="stat-l">Frauds Caught</span>
-      </div>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
+<!-- ══ HOW IT WORKS ══════════════════════════════════════════ -->
 <section class="section">
   <div class="wrap">
-    <div class="sh"><h2>How It Works</h2><p>Three-layer analysis in under a second</p></div>
+    <div class="sh">
+      <h2>Three-Layer Detection</h2>
+      <p>Analysis completes in under a second — no manual checks required</p>
+    </div>
     <div class="steps-row">
-      {% for num,icon,title,desc in [
-        ("01",'<i class="fa-solid fa-file-lines"></i>',"Enter Job Details",    "Provide job title, company name, website URL, description and requirements."),
-        ("02",'<i class="fa-solid fa-wand-magic-sparkles"></i>',"NLP Preprocessing",   "Text is cleaned, tokenised, stopwords removed and lemmatised automatically."),
-        ("03",'<i class="fa-solid fa-brain"></i>',"ML Classification",   "Four classifiers compared (LR, RF, SVM, NB). Best Fraud-class F1 model auto-selected."),
-        ("04",'<i class="fa-solid fa-globe"></i>',"URL Fraud Engine",     "Company URL is independently scored using 10 automated domain-level checks."),
+      {% for num, icon, title, desc in [
+        ("01", "fa-file-lines",        "Enter Job Details",     "Provide the job title, company name, optional website URL, description, and requirements. More detail yields a more accurate result."),
+        ("02", "fa-wand-magic-sparkles","NLP Preprocessing",    "Text is cleaned, tokenised, stop words removed, and lemmatised. A TF-IDF vectoriser transforms it into 10,000 weighted features."),
+        ("03", "fa-brain",              "ML Classification",    "A Linear SVM — the highest Fraud-class F1 model across four classifiers — produces a probability score and fraud decision."),
+        ("04", "fa-globe",              "URL Fraud Engine",     "The company domain is independently scored across 10 checks: SSL, TLD risk, entropy, typosquatting, free hosting, and more."),
       ] %}
       <div class="step-card">
         <div class="step-num">{{ num }}</div>
-        <div class="step-icon">{{ icon | safe }}</div>
+        <div class="step-icon"><i class="fa-solid {{ icon }}"></i></div>
         <h3>{{ title }}</h3>
         <p>{{ desc }}</p>
       </div>
@@ -66,21 +88,24 @@
   </div>
 </section>
 
-<!-- RED FLAGS -->
-<section class="section bg-dark">
+<!-- ══ WHAT WE DETECT ════════════════════════════════════════ -->
+<section class="section bg3">
   <div class="wrap">
-    <div class="sh light"><h2>What the System Detects</h2><p>Automated signals across text and domain analysis</p></div>
+    <div class="sh">
+      <h2>What JobGuard Detects</h2>
+      <p>Automated signals across text content and domain analysis</p>
+    </div>
     <div class="flags-row">
-      {% for icon,title,desc in [
-        ('<i class="fa-solid fa-hand-holding-dollar"></i>',"Unrealistic Salary",     "Promises of very high guaranteed pay for no experience."),
-        ('<i class="fa-solid fa-globe"></i>',"Suspicious Domain",      "Free TLDs, free hosting, HTTP-only, high entropy domains."),
-        ('<i class="fa-solid fa-link"></i>',"Typosquatting",          "Domains that mimic real brands like infosys-jobs.tk."),
-        ('<i class="fa-solid fa-file-lines"></i>',"Vague Requirements",     "No skills or qualifications listed for high salary."),
-        ('<i class="fa-solid fa-building"></i>',"Fake Company Names",     "Generic or scam-keyword names like 'Global Earn Solutions'."),
-        ('<i class="fa-solid fa-lock"></i>',"No SSL Certificate",     "Company website without HTTPS is a critical trust failure."),
+      {% for icon, title, desc in [
+        ("fa-hand-holding-dollar", "Unrealistic Salary",    "Promises of guaranteed high pay with no experience or qualifications required."),
+        ("fa-globe",               "Suspicious Domain",     "Free TLDs, HTTP-only sites, high-entropy domains, and known free hosting platforms."),
+        ("fa-link",                "Typosquatting",         "Domains mimicking real brands — for example, infosys-jobs.tk or infosyss.com."),
+        ("fa-file-lines",          "Vague Requirements",    "No skills, qualifications, or experience listed despite a high advertised salary."),
+        ("fa-building",            "Scam Company Patterns", "Generic or keyword-heavy names inconsistent with legitimate corporate naming."),
+        ("fa-lock",                "No SSL Certificate",    "Company website operating without HTTPS is a critical trust and security failure."),
       ] %}
       <div class="flag-card">
-        <span class="flag-icon">{{ icon | safe }}</span>
+        <div class="flag-icon"><i class="fa-solid {{ icon }}"></i></div>
         <h4>{{ title }}</h4>
         <p>{{ desc }}</p>
       </div>
@@ -89,12 +114,16 @@
   </div>
 </section>
 
-<!-- CTA -->
+<!-- ══ CTA ═══════════════════════════════════════════════════ -->
 <section class="section cta-sec">
-  <div class="wrap tc">
-    <h2>Ready to Verify a Job Posting?</h2>
-    <p>It takes less than 30 seconds. Protect yourself before you apply.</p>
-    <a href="{{ url_for('classify') }}" class="btn btn-primary btn-xl">Analyse a Job Now →</a>
+  <div class="wrap">
+    <div class="cta-card">
+      <h2>Ready to Verify a Job Posting?</h2>
+      <p>Takes under 30 seconds. Protect yourself before you apply.</p>
+      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-xl">
+        <i class="fa-solid fa-magnifying-glass"></i> Analyse a Job Now
+      </a>
+    </div>
   </div>
 </section>
 

@@ -1,154 +1,152 @@
 {% extends "base.html" %}
-{% block title %}About — Fake Job Posting Prediction{% endblock %}
+{% block title %}About JobGuard — System & Architecture{% endblock %}
+{% block meta_desc %}JobGuard uses Linear SVM + TF-IDF trained on EMSCAD and an independent 10-check URL fraud engine to detect fake job postings in under a second.{% endblock %}
+
 {% block content %}
 
 <section class="page-hdr">
   <div class="wrap">
-    <h1>About the System</h1>
-    <p>Fake Job Posting Prediction — Fraud Detection using NLP and Machine Learning</p>
+    <h1>About JobGuard</h1>
+    <p>System design, dataset, pipeline, and architectural decisions.</p>
   </div>
 </section>
 
 <section class="section">
   <div class="wrap">
 
+    <!-- Banner -->
     <div class="about-banner">
-      <div class="about-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+      <div class="about-icon"><i class="fa-solid fa-shield-halved"></i></div>
       <div>
-        <h2>Fake Job Posting Prediction</h2>
-        <p>An automated three-layer fraud detection system combining Natural Language Processing,
-           Machine Learning classification, and an automated URL fraud detection engine.
-           The system analyses job description text and independently evaluates company
-           website domains using 10 rule-based checks — covering domain entropy, SSL validity,
-           HTTPS usage, suspicious TLDs, free hosting platforms, typosquatting, subdomain depth,
-           scam keywords, digit density, and domain length anomalies.</p>
+        <h2>What is JobGuard?</h2>
+        <p>
+          JobGuard is an NLP-powered fraud detection system for job postings. It combines a Linear SVM
+          trained on 17,880 real-world records from the EMSCAD dataset with an independent 10-check
+          URL fraud analysis engine. The two signals are fused into a single combined risk score —
+          giving users both a machine learning verdict and an automated domain credibility assessment
+          in under a second.
+        </p>
+        <p style="margin-top:10px">
+          Built as an MCA final-year project at Anna University, Coimbatore (2025–26). The system targets
+          entry-level job seekers most vulnerable to work-from-home scams, data-harvesting postings,
+          and fee-charging fraud.
+        </p>
       </div>
     </div>
 
-    <div class="about-grid">
-
+    <!-- Core info + tech -->
+    <div class="about-grid" style="margin-bottom:32px">
       <div class="acard">
-        <h3><i class="fa-solid fa-brain"></i> ML Model Details</h3>
+        <h3><i class="fa-solid fa-database"></i> Dataset — EMSCAD</h3>
         <table class="info-tbl">
-          <tr><td>Best Model</td> <td><strong>{{ metadata.best_model or "Run train.py" }}</strong></td></tr>
-          <tr><td>Features</td>   <td>TF-IDF (10,000 features, bigrams)</td></tr>
-          <tr><td>Dataset</td>    <td>EMSCAD — 17,880 job records</td></tr>
-          <tr><td>Accuracy</td>   <td><strong>{{ "%.2f"|format(metadata.accuracy*100) if metadata.accuracy else "~98%" }}%</strong></td></tr>
-          <tr><td>Fraud F1</td>   <td><strong>{{ "%.2f"|format(metadata.f1_fraud*100) if metadata.f1_fraud else "—" }}%</strong></td></tr>
-          <tr><td>ROC-AUC</td>    <td>{{ "%.4f"|format(metadata.roc_auc) if metadata.roc_auc else "—" }}</td></tr>
-          <tr><td>Selection</td>  <td>Best Fraud-class F1 (data-driven)</td></tr>
-          <tr><td>Split</td>      <td>80% Train / 20% Test (stratified)</td></tr>
-          <tr><td>Trained</td>    <td>{{ metadata.trained_at[:10] if metadata.trained_at else "—" }}</td></tr>
-        </table>
-        <div style="margin-top:14px">
-          <a href="{{ url_for('models_page') }}" class="btn btn-outline" style="font-size:.82rem;padding:7px 16px">
-            <i class="fa-solid fa-chart-bar"></i> View Full Model Evaluation →
-          </a>
-        </div>
-      </div>
-
-      <div class="acard">
-        <h3><i class="fa-solid fa-globe"></i> URL Fraud Detection Engine</h3>
-        <table class="info-tbl">
-          <tr><td>1. HTTPS Check</td>      <td>SSL/TLS encryption validation</td></tr>
-          <tr><td>2. IP Detection</td>     <td>Raw IP address instead of domain</td></tr>
-          <tr><td>3. Free Hosting</td>     <td>26 known free hosting platforms</td></tr>
-          <tr><td>4. TLD Risk Score</td>   <td>20 suspicious + 10 trusted TLDs</td></tr>
-          <tr><td>5. URL Entropy</td>      <td>Shannon entropy for randomness detection</td></tr>
-          <tr><td>6. Keyword Score</td>    <td>22 scam URL keywords matched</td></tr>
-          <tr><td>7. Subdomain Depth</td>  <td>Excessive nesting detection</td></tr>
-          <tr><td>8. Typosquatting</td>    <td>13 brand domains checked</td></tr>
-          <tr><td>9. Digit Density</td>    <td>Auto-registered domain pattern</td></tr>
-          <tr><td>10. Length Anomaly</td>  <td>Too short / too long domain name</td></tr>
+          <tr><td>Full name</td>     <td><strong>Employment Scam Aegean Dataset</strong></td></tr>
+          <tr><td>Total records</td> <td><strong>17,880</strong></td></tr>
+          <tr><td>Fraudulent</td>    <td><strong>866 (4.8%)</strong></td></tr>
+          <tr><td>Legitimate</td>    <td><strong>17,014 (95.2%)</strong></td></tr>
+          <tr><td>Language</td>      <td>English</td></tr>
+          <tr><td>Imbalance fix</td> <td>SMOTE oversampling on training split</td></tr>
+          <tr><td>Source</td>        <td>University of the Aegean</td></tr>
         </table>
       </div>
-
       <div class="acard">
-        <h3><i class="fa-solid fa-chart-bar"></i> Dataset — EMSCAD</h3>
+        <h3><i class="fa-solid fa-brain"></i> Best Model — Linear SVM</h3>
         <table class="info-tbl">
-          <tr><td>Total Records</td>   <td><strong>17,880</strong></td></tr>
-          <tr><td>Legitimate Jobs</td> <td>17,014 (95.2%)</td></tr>
-          <tr><td>Fraudulent Jobs</td> <td>866 (4.8%)</td></tr>
-          <tr><td>Text Features</td>   <td>Title, Description, Requirements, Company</td></tr>
-          <tr><td>Source</td>          <td>University of the Aegean, Greece</td></tr>
+          <tr><td>Accuracy</td>       <td><strong>98.83%</strong></td></tr>
+          <tr><td>Fraud Precision</td><td><strong>97.61%</strong></td></tr>
+          <tr><td>Fraud Recall</td>   <td><strong>88.57%</strong></td></tr>
+          <tr><td>Fraud F1</td>       <td><strong>92.88%</strong></td></tr>
+          <tr><td>Selection basis</td><td>Highest Fraud-class F1</td></tr>
+          <tr><td>Train/Test split</td><td>80 / 20 stratified</td></tr>
+          <tr><td>Features</td>       <td>TF-IDF, 10,000 n-grams</td></tr>
         </table>
       </div>
-
       <div class="acard">
-        <h3><i class="fa-solid fa-gear"></i> Tech Stack</h3>
+        <h3><i class="fa-solid fa-globe"></i> URL Fraud Engine</h3>
+        <table class="info-tbl">
+          <tr><td>Total checks</td><td><strong>10 automated signals</strong></td></tr>
+          <tr><td>SSL / HTTPS</td> <td>Missing certificate → +30 pts</td></tr>
+          <tr><td>URL entropy</td> <td>High randomness detection</td></tr>
+          <tr><td>TLD risk</td>    <td>.tk .ml .ga .cf .xyz → elevated</td></tr>
+          <tr><td>Free hosting</td><td>000webhostapp, byet.host, etc.</td></tr>
+          <tr><td>Typosquatting</td><td>Levenshtein vs top-100 brands</td></tr>
+          <tr><td>Digit density</td><td>Excessive numbers in domain</td></tr>
+          <tr><td>Subdomains</td>  <td>Deep subdomain chains</td></tr>
+          <tr><td>Keywords</td>    <td>earn, jobs4u, hirenow, etc.</td></tr>
+        </table>
+      </div>
+      <div class="acard">
+        <h3><i class="fa-solid fa-code"></i> Technology Stack</h3>
         <div class="tech-cloud">
-          {% for t in ["Python 3.8+","Flask 2.x","NLTK","scikit-learn",
-                       "pandas","NumPy","Matplotlib","Seaborn",
-                       "TF-IDF","Logistic Regression","Random Forest",
-                       "Linear SVM","Naive Bayes","Shannon Entropy",
-                       "HTML5","CSS3","Jinja2","SQLite","analyzer.py",
-                       "utils/preprocessing.py","utils/evaluation.py"] %}
-          <span class="tech-tag">{{ t }}</span>
-          {% endfor %}
+          <span class="tech-tag">Python 3.11</span>
+          <span class="tech-tag">Flask</span>
+          <span class="tech-tag">Scikit-learn</span>
+          <span class="tech-tag">NLTK</span>
+          <span class="tech-tag">TF-IDF Vectoriser</span>
+          <span class="tech-tag">Linear SVM</span>
+          <span class="tech-tag">Logistic Regression</span>
+          <span class="tech-tag">Random Forest</span>
+          <span class="tech-tag">XGBoost</span>
+          <span class="tech-tag">SMOTE</span>
+          <span class="tech-tag">Pandas</span>
+          <span class="tech-tag">NumPy</span>
+          <span class="tech-tag">Joblib</span>
+          <span class="tech-tag">Gunicorn</span>
+          <span class="tech-tag">Render</span>
+          <span class="tech-tag">Space Grotesk</span>
         </div>
       </div>
-
     </div>
 
-    <!-- NLP Pipeline -->
-    <div class="pipeline-box" style="margin-bottom:24px">
-      <h3>NLP Preprocessing Pipeline
-        <span style="font-size:.78rem;font-weight:400;color:var(--sub);margin-left:8px">
-          — defined once in <code>utils/preprocessing.py</code>, shared by train.py and app.py
-        </span>
-      </h3>
-      <div class="pipeline">
-        {% for n,t,d in [
-          ("1","Concatenate","Merge title + profile + description + requirements"),
-          ("2","Strip HTML","Remove &lt;b&gt;, &lt;br/&gt;, &lt;p&gt; tags"),
-          ("3","Lowercase","Convert entire string to lowercase"),
-          ("4","Punctuation","Remove all non-alpha characters"),
-          ("5","Tokenise","NLTK word_tokenize"),
-          ("6","Stopwords","Remove NLTK English stopword list"),
-          ("7","Lemmatise","WordNetLemmatizer → base forms"),
-          ("8","TF-IDF","Vectorise → 10,000 features, bigrams"),
+    <!-- Pipeline -->
+    <div class="pipeline-box" style="margin-bottom:32px">
+      <h3><i class="fa-solid fa-diagram-project" style="color:var(--accent3);margin-right:8px"></i>Detection Pipeline</h3>
+      <div class="pipeline-steps">
+        {% for num, title, desc in [
+          ("1","Text Input",         "Job title, company, description, requirements, website URL accepted via form."),
+          ("2","Text Cleaning",      "Lowercasing, HTML tag removal, punctuation stripping, contraction expansion."),
+          ("3","Tokenisation",       "NLTK word tokenisation. Stop word removal. Lemmatisation with WordNetLemmatizer."),
+          ("4","TF-IDF Vectorising", "Combined text transformed into a 10,000-feature sparse vector. Fitted on training corpus only."),
+          ("5","SVM Classification", "LinearSVC with calibrated probability estimation. Decision function → confidence score."),
+          ("6","Explainability",     "Top token influences computed from TF-IDF weights × SVM coefficients. Fraud pattern regex matching."),
+          ("7","URL Analysis",       "Company website independently scored across 10 checks in parallel with ML step."),
+          ("8","Result Fusion",      "ML verdict + URL risk score + pattern matches combined into final analysis report."),
         ] %}
-        <div class="pip-step">
-          <div class="pip-n">{{ n }}</div>
-          <div class="pip-info"><strong>{{ t }}</strong><span>{{ d }}</span></div>
+        <div class="ps-item">
+          <div class="ps-num">{{ num }}</div>
+          <div class="ps-content">
+            <h4>{{ title }}</h4>
+            <p>{{ desc }}</p>
+          </div>
         </div>
-        {% if not loop.last %}<div class="pip-arr">→</div>{% endif %}
         {% endfor %}
       </div>
     </div>
 
-    <!-- Classifier comparison -->
-    <div class="acard">
-      <h3><i class="fa-solid fa-chart-line"></i> Classifier Comparison</h3>
-      <p style="font-size:.85rem;color:var(--sub);margin-bottom:14px">
-        All four models are trained and compared. The model with the highest
-        <strong>Fraud-class F1</strong> is automatically selected — not hardcoded.
-        See <a href="{{ url_for('models_page') }}">📊 Model Evaluation</a> for full metrics, confusion matrices, and plots.
-      </p>
-      <div class="tbl-wrap">
-        <table class="htbl">
-          <thead>
-            <tr><th>Model</th><th>Accuracy</th><th>Fraud F1</th><th>ROC-AUC</th><th>Auto-Selected?</th></tr>
-          </thead>
-          <tbody>
-            <tr class="row-best">
-              <td><strong>Logistic Regression</strong></td>
-              <td>~98.2%</td><td>~95.6%</td><td>~0.99</td>
-              <td><span class="badge badge-legit"><i class="fa-solid fa-star"></i> Typically best</span></td>
-            </tr>
-            <tr><td>SVM (Linear)</td>  <td>~97.9%</td><td>~95.0%</td><td>N/A</td><td>—</td></tr>
-            <tr><td>Random Forest</td> <td>~97.5%</td><td>~94.1%</td><td>~0.98</td><td>—</td></tr>
-            <tr><td>Naïve Bayes</td>   <td>~96.8%</td><td>~91.7%</td><td>~0.97</td><td>—</td></tr>
-          </tbody>
-        </table>
+    <!-- Limitations -->
+    <div class="sh" style="margin-bottom:24px"><h2>Scope &amp; Limitations</h2></div>
+    <div class="adv-grid">
+      {% for icon, col, title, desc in [
+        ("fa-language","var(--warn)","English Only",
+         "The model is trained on English-language postings from EMSCAD. Accuracy on multilingual or code-mixed text is not guaranteed."),
+        ("fa-database","var(--warn)","Static Training Set",
+         "Scam tactics evolve. The model reflects patterns in the EMSCAD corpus; novel fraud techniques not present at training time may be missed."),
+        ("fa-triangle-exclamation","var(--fraud)","Not a Legal Authority",
+         "JobGuard provides a probabilistic risk signal, not a legal determination. Always verify independently before taking action."),
+        ("fa-link","var(--text3)","URL Without Content",
+         "The URL engine analyses domain structure and DNS signals only — it does not crawl or render the company website."),
+        ("fa-users","var(--accent3)","Imbalanced Classes",
+         "Fraud is rare (4.8% of EMSCAD). Despite SMOTE, extreme precision / recall trade-offs may apply in production distributions."),
+        ("fa-clock","var(--text3)","Session-scoped History",
+         "Analysis history is stored in the Flask session only. Results are lost when the browser tab closes. No persistent database."),
+      ] %}
+      <div class="adv-card">
+        <h4><i class="fa-solid {{ icon }}" style="color:{{ col }};margin-right:7px"></i>{{ title }}</h4>
+        <p>{{ desc }}</p>
       </div>
-      <div style="margin-top:14px">
-        <a href="{{ url_for('models_page') }}" class="btn btn-primary" style="font-size:.85rem">
-          <i class="fa-solid fa-chart-bar"></i> View Live Metrics After Training →
-        </a>
-      </div>
+      {% endfor %}
     </div>
 
   </div>
 </section>
+
 {% endblock %}
