@@ -1,73 +1,69 @@
-/* JobGuard — Minimal Custom CSS
-   Tailwind + Flowbite handle everything else.
-   This file: animations, highlight colors, mono font, transitions only. */
+/* JobGuard — Custom CSS (animations + font import only)
+   Tailwind + Flowbite handle layout/components */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Geist+Mono:wght@400;500&display=swap');
 
-/* Custom page bg (deeper than gray-900) */
-body { background-color: #07090f; }
-
-/* Font aliases for Tailwind font-display / font-mono */
-.font-display { font-family: 'Space Grotesk', sans-serif; }
-.font-mono    { font-family: 'JetBrains Mono', monospace; }
+body { background-color: #05070d; }
 
 /* Gradient text */
 .grad-text {
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 50%, #60a5fa 100%);
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 60%, #60a5fa 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmer 4s linear infinite;
+  animation: shimmer 5s linear infinite;
 }
 @keyframes shimmer { to { background-position: 200% center; } }
 
-/* Hero mesh glow */
+/* Hero ambient glow */
 .hero-glow::before {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 50% -5%, rgba(59,130,246,.18) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 80% 80%,  rgba(99,102,241,.09) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(99,102,241,.15) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 85% 80%,  rgba(59,130,246,.07) 0%, transparent 60%);
 }
-.hero-dots-bg {
+.hero-grid {
   position: absolute; inset: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 80%);
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 80%);
 }
 
-/* Pulse dot */
+/* Pulse */
 @keyframes pulse-dot {
-  0%,100%{ opacity:1; transform:scale(1);   }
-  50%    { opacity:.4; transform:scale(.7); }
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%    { opacity:.3; transform:scale(.65); }
 }
-.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+.pulse-dot { animation: pulse-dot 2.2s ease-in-out infinite; }
 
-/* Confidence fill transition */
-.conf-fill { transition: width 1.4s cubic-bezier(.4,0,.2,1); }
+/* Transitions */
+.conf-fill { transition: width 1.5s cubic-bezier(.4,0,.2,1); }
+.bar-anim  { transition: width 1s  cubic-bezier(.4,0,.2,1); }
 
-/* Bar transitions */
-.bar-anim { transition: width .9s cubic-bezier(.4,0,.2,1); }
-
-/* Highlight colors */
-.hl-fraud { color: #fca5a5; background: rgba(239,68,68,.15); border-radius: 3px; padding: 1px 3px; }
-.hl-legit { color: #86efac; background: rgba(34,197,94,.12);  border-radius: 3px; padding: 1px 3px; }
-
-/* Navbar top accent line */
-.navbar-line { border-bottom: 1px solid rgba(59,130,246,.25); }
-
-/* Flash auto-dismiss */
-.flash-out { transition: opacity .4s; opacity: 0; }
-
-/* Scrollbar */
-::-webkit-scrollbar       { width: 6px; }
-::-webkit-scrollbar-track { background: #0d1117; }
-::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+/* Highlight tokens */
+.hl-fraud { color:#fca5a5; background:rgba(239,68,68,.12); border-radius:3px; padding:1px 3px; }
+.hl-legit { color:#86efac; background:rgba(34,197,94,.10);  border-radius:3px; padding:1px 3px; }
 
 /* Code chip */
-code { font-family:'JetBrains Mono',monospace; font-size:.84em; background:#1f2937; border:1px solid #374151; padding:1px 6px; border-radius:5px; color:#93c5fd; }
+code {
+  font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+  font-size:.83em; background:#1a1f2e;
+  border:1px solid #2d3748; padding:1px 6px; border-radius:4px; color:#93c5fd;
+}
 
-/* Details / summary custom */
-details > summary { list-style: none; }
-details > summary::-webkit-details-marker { display: none; }
+/* Scrollbar */
+::-webkit-scrollbar       { width:5px; }
+::-webkit-scrollbar-track { background:#05070d; }
+::-webkit-scrollbar-thumb { background:#2d3748; border-radius:3px; }
+
+/* Details marker */
+details > summary { list-style:none; }
+details > summary::-webkit-details-marker { display:none; }
+
+/* Flash */
+.flash-msg { animation: slide-in .3s ease; }
+@keyframes slide-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }

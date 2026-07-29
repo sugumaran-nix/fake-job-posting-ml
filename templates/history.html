@@ -10,7 +10,7 @@
         {% if history %}
           {% set fc = history|selectattr('prediction','equalto','Fraudulent')|list|length %}
           {{ history|length }} job{{ 's' if history|length != 1 }} analysed — {{ fc }} fraud{{ 's' if fc != 1 }} detected
-        {% else %}No analyses yet{% endif %}
+        {% else %}No analyses yet — <a href="/classify" class="text-blue-400 hover:underline">run your first check</a>{% endif %}
       </p>
     </div>
     {% if history %}
@@ -31,7 +31,7 @@
   {% if not history %}
   <div class="text-center py-24 bg-gray-800/40 border border-gray-700 rounded-2xl">
     <div class="text-5xl mb-5 text-gray-600"><i class="fa-solid fa-clock-rotate-left"></i></div>
-    <h3 class="font-display font-semibold text-gray-300 text-lg mb-2">No analyses yet</h3>
+    <h3 class="font-display font-semibold text-gray-300 text-lg mb-2">No analyses yet — <a href="/classify" class="text-blue-400 hover:underline">run your first check</a></h3>
     <p class="text-gray-500 text-sm mb-6">Run your first analysis to see results here.</p>
     <a href="{{ url_for('classify') }}"
        class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500
