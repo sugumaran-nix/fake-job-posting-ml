@@ -1,38 +1,48 @@
-/* ═══════════════════════════════════════════════════════════
-   JobGuard — main.js
-   ═══════════════════════════════════════════════════════════ */
+/* JobGuard — main.js */
 
-/* ── Navbar scroll state ─────────────────────────────────── */
+/* ── Navbar scroll shadow ──────────────────────── */
 (function () {
   const nav = document.getElementById('navbar');
   if (!nav) return;
-  const toggle = () => nav.classList.toggle('scrolled', window.scrollY > 20);
-  toggle();
-  window.addEventListener('scroll', toggle, { passive: true });
+  const fn = () => {
+    if (window.scrollY > 24) {
+      nav.style.boxShadow = '0 1px 0 rgba(59,130,246,.15), 0 4px 24px rgba(0,0,0,.5)';
+    } else {
+      nav.style.boxShadow = '';
+    }
+  };
+  fn();
+  window.addEventListener('scroll', fn, { passive: true });
 })();
 
-/* ── Counter animation (home stats) ──────────────────────── */
+/* ── Hamburger ─────────────────────────────────── */
+(function () {
+  const btn  = document.getElementById('hamburger');
+  const menu = document.getElementById('mob-menu');
+  if (!btn || !menu) return;
+  btn.addEventListener('click', () => {
+    menu.classList.toggle('hidden');
+  });
+})();
+
+/* ── Counter animation (home stats) ───────────── */
 (function () {
   const els = document.querySelectorAll('[data-target]');
   if (!els.length) return;
-
-  const animate = (el) => {
+  const animate = el => {
     const target = parseInt(el.dataset.target, 10);
     if (isNaN(target)) return;
-    const duration = 1200;
-    const step = 16;
-    const steps = duration / step;
-    const inc = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current = Math.min(current + inc, target);
-      el.textContent = Math.floor(current).toLocaleString();
-      if (current >= target) clearInterval(timer);
+    const duration = 1200, step = 16;
+    const inc = target / (duration / step);
+    let cur = 0;
+    const t = setInterval(() => {
+      cur = Math.min(cur + inc, target);
+      el.textContent = Math.floor(cur).toLocaleString();
+      if (cur >= target) clearInterval(t);
     }, step);
   };
-
   if ('IntersectionObserver' in window) {
-    const obs = new IntersectionObserver((entries) => {
+    const obs = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) { animate(e.target); obs.unobserve(e.target); } });
     }, { threshold: 0.4 });
     els.forEach(el => obs.observe(el));
@@ -41,63 +51,17 @@
   }
 })();
 
-/* ── Classify form: description char counter ─────────────── */
-(function () {
-  const desc = document.getElementById('desc');
-  const cc   = document.getElementById('cc');
-  if (!desc || !cc) return;
-
-  const update = () => {
-    const len  = desc.value.length;
-    const good = len >= 150;
-    cc.innerHTML = `
-      <div class="char-rail ${good ? 'good' : len > 50 ? 'warn' : ''}">
-        <div class="char-fill" style="width:${Math.min(len / 5, 100)}%"></div>
-      </div>
-      <span class="char-count-label">
-        ${len} chars ${good ? '— <span style="color:var(--legit)">good length</span>' : '— aim for 150+'}
-      </span>`;
-  };
-
-  window.updateCC = update;
-  desc.addEventListener('input', update);
-  update();
-})();
-
-/* ── Classify form: submit spinner ───────────────────────── */
-(function () {
-  const form = document.getElementById('cform');
-  const btn  = document.getElementById('sbtn');
-  if (!form || !btn) return;
-  form.addEventListener('submit', () => {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analysing…';
-  });
-})();
-
-/* ── Result: animate confidence fill bar ─────────────────── */
+/* ── Confidence bar (result page) ─────────────── */
 (function () {
   document.querySelectorAll('.conf-fill[data-target]').forEach(el => {
-    const target = parseFloat(el.dataset.target) || 0;
     el.style.width = '0%';
-    setTimeout(() => { el.style.width = target + '%'; }, 250);
+    setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 250);
   });
 })();
 
-/* ── Result: animate influence bars ─────────────────────── */
+/* ── Flash auto-dismiss ────────────────────────── */
 (function () {
-  const bars = document.querySelectorAll('.inf-bar-fraud, .inf-bar-legit');
-  if (!bars.length) return;
-  bars.forEach(b => {
-    const w = b.style.width;
-    b.style.width = '0';
-    setTimeout(() => { b.style.width = w; }, 500);
-  });
-})();
-
-/* ── Auto-dismiss flash messages ─────────────────────────── */
-(function () {
-  document.querySelectorAll('.flash').forEach(f => {
+  document.querySelectorAll('.flash-msg').forEach(f => {
     setTimeout(() => {
       f.style.transition = 'opacity .5s';
       f.style.opacity = '0';

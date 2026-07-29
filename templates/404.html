@@ -1,15 +1,23 @@
 {% extends "base.html" %}
-{% block title %}404 — Page Not Found · JobGuard{% endblock %}
+{% block title %}404 — Not Found · JobGuard{% endblock %}
 {% block content %}
-<section class="section error-page">
-  <div class="tc">
-    <div class="error-code">404</div>
-    <h1 class="error-title">Page Not Found</h1>
-    <p class="error-sub">The page you're looking for doesn't exist or has been moved.</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-      <a href="{{ url_for('home') }}"     class="btn btn-primary btn-lg"><i class="fa-solid fa-house"></i> Go Home</a>
-      <a href="{{ url_for('classify') }}" class="btn btn-ghost btn-lg"><i class="fa-solid fa-magnifying-glass"></i> Analyse a Job</a>
+<div class="min-h-[70vh] flex items-center justify-center px-6 text-center">
+  <div>
+    <div class="font-display font-bold text-[8rem] leading-none text-gray-800 mb-4 tracking-tight select-none">404</div>
+    <h1 class="font-display font-bold text-2xl text-white mb-3">Page Not Found</h1>
+    <p class="text-gray-400 text-sm mb-8 max-w-xs mx-auto">The page you're looking for doesn't exist or has been moved.</p>
+    <div class="flex justify-center gap-3 flex-wrap">
+      <a href="{{ url_for('home') }}"
+         class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500
+                text-white font-semibold text-sm rounded-xl transition-all">
+        <i class="fa-solid fa-house text-xs"></i> Go Home
+      </a>
+      <a href="{{ url_for('classify') }}"
+         class="inline-flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700
+                border border-gray-700 text-gray-300 font-semibold text-sm rounded-xl transition-all">
+        <i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse a Job
+      </a>
     </div>
   </div>
-</section>
+</div>
 {% endblock %}

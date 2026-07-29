@@ -1,113 +1,192 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}JobGuard — AI-Powered Job Fraud Detection{% endblock %}</title>
-  <meta name="description" content="{% block meta_desc %}JobGuard uses NLP and machine learning to detect fraudulent job postings before you apply. Protect yourself from job scams instantly.{% endblock %}">
-  <meta name="theme-color" content="#070B14">
-
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:title"       content="{% block og_title %}JobGuard — AI-Powered Job Fraud Detection{% endblock %}">
-  <meta property="og:description" content="Detect fraudulent job postings using NLP + machine learning. Free, instant, and accurate.">
-  <meta property="og:site_name"   content="JobGuard">
+  <meta name="description" content="{% block meta_desc %}Detect fraudulent job postings with NLP and machine learning. Trained on 17,880 real records.{% endblock %}">
+  <meta name="theme-color" content="#07090f">
+  <meta property="og:site_name" content="JobGuard">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}JobGuard — AI-Powered Job Fraud Detection{% endblock %}">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans:    ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono:    ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: { 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb' },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Flowbite CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css">
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <!-- Custom (animations only) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="bg-[#07090f] text-gray-100 font-sans antialiased min-h-screen flex flex-col">
 
-<!-- ═══ NAVBAR ══════════════════════════════════════════════ -->
-<nav class="navbar" id="navbar">
-  <div class="nav-inner">
-    <a href="{{ url_for('home') }}" class="nav-brand">
-      <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
-      <span class="brand-name">Job<em>Guard</em></span>
+<!-- ═══════════════ NAVBAR ═══════════════════════════════════ -->
+<nav class="fixed top-0 left-0 right-0 z-50 bg-[#07090f]/90 backdrop-blur-md navbar-line" id="navbar">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+
+    <!-- Brand -->
+    <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 group">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-shield-halved text-white text-sm"></i>
+      </div>
+      <span class="font-display font-bold text-white text-[1.05rem] tracking-tight">
+        Job<span class="text-blue-400">Guard</span>
+      </span>
     </a>
-    <ul class="nav-links">
-      <li><a href="{{ url_for('home') }}"        class="{% if request.endpoint == 'home' %}active{% endif %}">Home</a></li>
-      <li><a href="{{ url_for('classify') }}"    class="{% if request.endpoint in ['classify','predict_route'] %}active{% endif %}">Analyse</a></li>
-      <li><a href="{{ url_for('models_page') }}" class="{% if request.endpoint == 'models_page' %}active{% endif %}">Models</a></li>
-      <li><a href="{{ url_for('history') }}"     class="{% if request.endpoint == 'history' %}active{% endif %}">History</a></li>
-      <li><a href="{{ url_for('about') }}"       class="{% if request.endpoint == 'about' %}active{% endif %}">About</a></li>
+
+    <!-- Desktop links -->
+    <ul class="hidden md:flex items-center gap-1">
+      {% for label, endpoint in [
+        ('Home',    'home'),
+        ('Analyse', 'classify'),
+        ('Models',  'models_page'),
+        ('History', 'history'),
+        ('About',   'about'),
+      ] %}
+      <li>
+        <a href="{{ url_for(endpoint) }}"
+           class="px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all
+                  {% if request.endpoint == endpoint
+                     or (endpoint == 'classify' and request.endpoint == 'predict_route') %}
+                    text-blue-400 bg-blue-500/10
+                  {% else %}
+                    text-gray-400 hover:text-gray-100 hover:bg-gray-800
+                  {% endif %}">
+          {{ label }}
+        </a>
+      </li>
+      {% endfor %}
     </ul>
-    <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu">
-      <i class="fa-solid fa-bars"></i>
-    </button>
+
+    <!-- CTA + hamburger -->
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('classify') }}"
+         class="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold
+                transition-all shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse
+      </a>
+      <button id="hamburger" type="button" aria-label="Menu"
+              class="md:hidden p-2 rounded-lg text-gray-400 hover:text-gray-100
+                     hover:bg-gray-800 border border-gray-700 transition-all">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+
   </div>
-  <div class="mob-menu" id="mob">
-    <a href="{{ url_for('home') }}">Home</a>
-    <a href="{{ url_for('classify') }}">Analyse a Job</a>
-    <a href="{{ url_for('models_page') }}">Model Evaluation</a>
-    <a href="{{ url_for('history') }}">History</a>
-    <a href="{{ url_for('about') }}">About</a>
+  <!-- Mobile menu -->
+  <div id="mob-menu" class="hidden md:hidden bg-gray-900 border-t border-gray-800 px-6 pb-4 pt-3">
+    {% for label, endpoint in [
+      ('Home','home'),('Analyse a Job','classify'),
+      ('Models','models_page'),('History','history'),('About','about')
+    ] %}
+    <a href="{{ url_for(endpoint) }}"
+       class="flex items-center py-3 text-sm text-gray-300 border-b border-gray-800
+              hover:text-blue-400 transition-colors last:border-0">
+      {{ label }}
+    </a>
+    {% endfor %}
   </div>
 </nav>
 
-<!-- ═══ FLASH ═══════════════════════════════════════════════ -->
+<!-- ═══════════════ FLASH ════════════════════════════════════ -->
 {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-  <div class="flash-zone">
-    {% for cat, msg in messages %}
-    <div class="flash flash-{{ cat }}">{{ msg }}</div>
-    {% endfor %}
+{% if messages %}
+<div class="max-w-6xl mx-auto px-6 mt-20 space-y-2" id="flash-zone">
+  {% for cat, msg in messages %}
+  <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+    {% if cat == 'error'   %}bg-red-900/40 border border-red-500/30 text-red-300
+    {% elif cat == 'success'%}bg-green-900/40 border border-green-500/30 text-green-300
+    {% else %}bg-amber-900/40 border border-amber-500/30 text-amber-300{% endif %}">
+    <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"></i>
+    {{ msg }}
   </div>
-  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
 {% endwith %}
 
-<main>{% block content %}{% endblock %}</main>
+<main class="flex-1 pt-16">{% block content %}{% endblock %}</main>
 
-<!-- ═══ FOOTER ══════════════════════════════════════════════ -->
-<footer class="site-footer">
-  <div class="footer-grid">
+<!-- ═══════════════ FOOTER ═══════════════════════════════════ -->
+<footer class="mt-24 border-t border-gray-800 bg-gray-900/60">
+  <div class="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-10">
+
     <div>
-      <div class="footer-brand">
-        <i class="fa-solid fa-shield-halved"></i> JobGuard
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+          <i class="fa-solid fa-shield-halved text-white text-xs"></i>
+        </div>
+        <span class="font-display font-bold text-white">Job<span class="text-blue-400">Guard</span></span>
       </div>
-      <p class="footer-brand-sub">
-        AI-powered fraud detection for job seekers.<br>
-        Combining NLP, machine learning, and automated<br>
-        URL analysis to protect you before you apply.
+      <p class="text-sm text-gray-400 leading-7">
+        AI-powered job fraud detection.<br>
+        NLP + Machine Learning + URL Analysis<br>
+        trained on 17,880 real job records.
       </p>
     </div>
-    <div class="footer-col">
-      <strong>Navigation</strong>
-      <div class="footer-links">
-        <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('classify') }}">Analyse a Job Posting</a>
-        <a href="{{ url_for('models_page') }}">Model Evaluation</a>
-        <a href="{{ url_for('history') }}">Analysis History</a>
-        <a href="{{ url_for('about') }}">About the System</a>
-      </div>
+
+    <div>
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Navigation</p>
+      <ul class="space-y-2.5">
+        {% for label, endpoint in [
+          ('Home','home'),('Analyse a Job','classify'),
+          ('Model Evaluation','models_page'),
+          ('Analysis History','history'),('About','about')
+        ] %}
+        <li><a href="{{ url_for(endpoint) }}" class="text-sm text-gray-400 hover:text-blue-400 transition-colors">{{ label }}</a></li>
+        {% endfor %}
+      </ul>
     </div>
-    <div class="footer-col">
-      <strong>System</strong>
-      <div class="footer-system-info">
-        <div>Models &nbsp;&nbsp;: 4 classifiers</div>
-        <div>Dataset &nbsp;: EMSCAD — 17,880 records</div>
-        <div>Selection: Best Fraud-class F1</div>
-        <div>URL Engine: 10 detection checks</div>
-        <div>API &nbsp;&nbsp;&nbsp;: <code>/api/predict</code></div>
-      </div>
+
+    <div>
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">System</p>
+      <ul class="space-y-2 text-sm text-gray-400 font-mono">
+        <li>Models &nbsp;&nbsp;: 4 classifiers</li>
+        <li>Dataset &nbsp;: EMSCAD 17,880 records</li>
+        <li>Selection: Best Fraud F1</li>
+        <li>URL Checks: 10 automated</li>
+        <li>API &nbsp;&nbsp;&nbsp;&nbsp;: <code>/api/predict</code></li>
+      </ul>
     </div>
+
   </div>
-  <div class="wrap">
-    <div class="footer-bar">
-      <span>&copy; 2026 JobGuard — Fraud Detection in Job Postings using NLP &amp; Machine Learning</span>
-      <span class="footer-legal">
-        <a href="{{ url_for('about') }}">About</a>
-        <a href="{{ url_for('health') }}">Health</a>
-      </span>
+  <div class="border-t border-gray-800 max-w-6xl mx-auto px-6 py-5 flex flex-wrap justify-between items-center gap-3 text-xs text-gray-500">
+    <span>&copy; 2026 JobGuard — Job Fraud Detection using NLP &amp; ML</span>
+    <div class="flex gap-4">
+      <a href="{{ url_for('about') }}"  class="hover:text-blue-400 transition-colors">About</a>
+      <a href="{{ url_for('health') }}" class="hover:text-blue-400 transition-colors">Health</a>
     </div>
   </div>
 </footer>
 
+<!-- Flowbite + Custom JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>

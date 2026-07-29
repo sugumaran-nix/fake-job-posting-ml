@@ -1,166 +1,179 @@
 {% extends "base.html" %}
 {% block title %}Model Evaluation — JobGuard{% endblock %}
-{% block meta_desc %}Compare all four classifiers evaluated for fraud detection: Logistic Regression, SVM, Random Forest, and XGBoost — with precision, recall, and F1 scores.{% endblock %}
 
 {% block content %}
-
-<section class="page-hdr">
-  <div class="wrap">
-    <h1>Model Evaluation</h1>
-    <p>Four classifiers evaluated on EMSCAD — selected by Fraud-class F1 score.</p>
+<div class="bg-gray-900/60 border-b border-gray-800 px-6 py-10">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="font-display font-bold text-2xl text-white tracking-tight">Model Evaluation</h1>
+    <p class="text-gray-400 text-sm mt-1">Four classifiers evaluated on EMSCAD — selected by Fraud-class F1 score.</p>
   </div>
-</section>
+</div>
 
-<section class="section">
-  <div class="wrap">
+<div class="px-6 py-10">
+<div class="max-w-6xl mx-auto space-y-8">
 
-    <div class="info-banner" style="margin-bottom:28px">
+  <!-- Active model banner -->
+  <div class="flex items-start gap-4 bg-blue-900/15 border border-blue-500/25 rounded-2xl p-5">
+    <div class="w-9 h-9 shrink-0 rounded-xl bg-blue-500/20 border border-blue-500/25 flex items-center justify-center text-blue-400 text-sm mt-0.5">
       <i class="fa-solid fa-brain"></i>
-      <div>
-        <strong>Active Model: {{ active_model or 'Not loaded — run train.py first' }}</strong>
-        <p>Selected by highest Fraud-class F1. Fraud-class recall is prioritised: a missed fraud is worse than a false alarm.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
-          <span class="meta-pill">Dataset: <strong>EMSCAD — 17,880 records</strong></span>
-          <span class="meta-pill">Fraud samples: <strong>866 (4.8%)</strong></span>
-          <span class="meta-pill">Features: <strong>TF-IDF, 10,000 n-grams</strong></span>
-          <span class="meta-pill">Split: <strong>80 / 20 stratified</strong></span>
-        </div>
+    </div>
+    <div class="flex-1">
+      <p class="font-display font-semibold text-white text-sm mb-1">
+        Active Model: {{ active_model or 'Not loaded — run train.py first' }}
+      </p>
+      <p class="text-gray-400 text-xs leading-relaxed mb-3">
+        Selected by highest Fraud-class F1. Missing a fraud is treated as more costly than a false alarm.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        {% for label, val in [
+          ('Dataset','EMSCAD — 17,880 records'),
+          ('Fraud samples','866 (4.8%)'),
+          ('Features','TF-IDF 10,000 n-grams'),
+          ('Split','80 / 20 stratified'),
+        ] %}
+        <span class="bg-gray-800 border border-gray-700 rounded-full px-3 py-1 text-xs text-gray-300">
+          {{ label }}: <strong class="text-blue-400">{{ val }}</strong>
+        </span>
+        {% endfor %}
       </div>
     </div>
-
-    {% if metrics %}
-    <div class="tbl-wrap" style="margin-bottom:40px">
-      <table class="htbl">
-        <thead>
-          <tr>
-            <th>Model</th>
-            <th>Accuracy</th>
-            <th>Fraud Precision</th>
-            <th>Fraud Recall</th>
-            <th>Fraud F1</th>
-            <th>ROC-AUC</th>
-            <th>CV F1 Mean</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for m in metrics %}
-          {% set is_active = m.name == active_model %}
-          <tr class="{% if is_active %}row-best{% endif %}">
-            <td>
-              <div style="display:flex;align-items:center;gap:8px">
-                {% if is_active %}<i class="fa-solid fa-crown" style="color:var(--accent3);font-size:.75rem"></i>{% endif %}
-                <span style="font-weight:600;color:var(--text)">{{ m.name }}</span>
-              </div>
-            </td>
-            <td><strong style="color:var(--text)">{{ "%.2f"|format(m.accuracy * 100) }}%</strong></td>
-            <td style="color:{% if m.precision_fraud >= 0.9 %}var(--legit){% elif m.precision_fraud >= 0.7 %}var(--warn){% else %}var(--fraud){% endif %}">
-              {{ "%.2f"|format(m.precision_fraud * 100) }}%
-            </td>
-            <td style="color:{% if m.recall_fraud >= 0.9 %}var(--legit){% elif m.recall_fraud >= 0.7 %}var(--warn){% else %}var(--fraud){% endif %}">
-              {{ "%.2f"|format(m.recall_fraud * 100) }}%
-            </td>
-            <td>
-              <strong style="font-family:'Space Grotesk',sans-serif;
-                color:{% if is_active %}var(--accent3){% elif m.f1_fraud >= 0.9 %}var(--legit){% else %}var(--text){% endif %}">
-                {{ "%.2f"|format(m.f1_fraud * 100) }}%
-              </strong>
-              {% if is_active %}<span class="badge badge-neutral" style="margin-left:6px">Active</span>{% endif %}
-            </td>
-            <td style="color:var(--text2)">
-              {% if m.roc_auc %}{{ "%.4f"|format(m.roc_auc) }}{% else %}—{% endif %}
-            </td>
-            <td style="color:var(--text2)">
-              {% if m.cv_f1_mean %}
-                {{ "%.4f"|format(m.cv_f1_mean) }}
-                {% if m.cv_f1_std %}<span style="color:var(--text3)"> ±{{ "%.4f"|format(m.cv_f1_std) }}</span>{% endif %}
-              {% else %}—{% endif %}
-            </td>
-            <td>
-              {% if is_active %}
-              <span class="badge badge-legit">Selected</span>
-              {% else %}
-              <span class="badge badge-neutral">Evaluated</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Model switcher -->
-    {% if registry %}
-    <div class="fcard" style="margin-bottom:40px">
-      <div class="fcard-hdr">
-        <span><i class="fa-solid fa-shuffle"></i></span>
-        <h3>Switch Active Model <span class="fcard-badge">Runtime</span></h3>
-      </div>
-      <div style="padding:18px 22px">
-        <p style="font-size:.85rem;color:var(--text2);margin-bottom:16px">
-          Hot-swap the inference model without restarting the server.
-          <strong style="color:var(--warn)">Single-worker only</strong> — with multiple Gunicorn workers, only the receiving worker switches.
-        </p>
-        <form method="POST" action="{{ url_for('select_model') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <select name="model_name" style="flex:1;min-width:200px">
-            {% for name in registry %}
-            <option value="{{ name }}" {% if name == active_model %}selected{% endif %}>{{ name }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn btn-outline">
-            <i class="fa-solid fa-shuffle"></i> Switch Model
-          </button>
-        </form>
-      </div>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <div class="empty-state" style="margin-bottom:40px">
-      <div class="empty-icon"><i class="fa-solid fa-vials"></i></div>
-      <h3>No metrics available</h3>
-      <p>Run <code>python train.py</code> to train all models and generate evaluation metrics.</p>
-    </div>
-    {% endif %}
-
-    <!-- Methodology -->
-    <div class="sh" style="margin-bottom:32px"><h2>Evaluation Methodology</h2></div>
-    <div class="steps-row" style="margin-bottom:48px">
-      {% for num, icon, title, desc in [
-        ("01","fa-database","Dataset",
-         "EMSCAD — 17,880 real postings, 866 fraudulent (4.8%). Class imbalance handled with SMOTE on the training split only."),
-        ("02","fa-wand-magic-sparkles","Features",
-         "Job title, company, description, and requirements concatenated. TF-IDF vectorised into 10,000 weighted n-gram features."),
-        ("03","fa-vials","Evaluation",
-         "Stratified 80/20 train/test split. 5-fold cross-validation on training data. Full classification report per model."),
-        ("04","fa-trophy","Selection",
-         "Highest Fraud-class F1 wins. Missing a fraud (false negative) is prioritised as the more costly error."),
-      ] %}
-      <div class="step-card">
-        <div class="step-num">{{ num }}</div>
-        <div class="step-icon"><i class="fa-solid {{ icon }}"></i></div>
-        <h3>{{ title }}</h3>
-        <p>{{ desc }}</p>
-      </div>
-      {% endfor %}
-    </div>
-
-    <div class="adv-grid">
-      {% for icon, col, title, desc in [
-        ("fa-bullseye","var(--legit)","Why Fraud-class F1?",
-         "Overall accuracy inflates on imbalanced data. A model predicting everything as legitimate would score 95.2% accuracy yet catch zero fraud. F1 balances precision and recall on the minority class."),
-        ("fa-magnifying-glass","var(--warn)","Why not just Recall?",
-         "Maximising recall alone produces a classifier that flags everything as fraud. F1 enforces a useful precision/recall trade-off for real-world applicability."),
-        ("fa-shuffle","var(--accent3)","Why SMOTE?",
-         "866 fraud vs 17,014 legitimate records — an 18:1 imbalance. SMOTE synthesises minority class samples during training only, reducing structural bias toward the majority class."),
-      ] %}
-      <div class="adv-card">
-        <h4><i class="fa-solid {{ icon }}" style="color:{{ col }};margin-right:7px"></i>{{ title }}</h4>
-        <p>{{ desc }}</p>
-      </div>
-      {% endfor %}
-    </div>
-
   </div>
-</section>
+
+  <!-- Metrics table -->
+  {% if metrics %}
+  <div class="overflow-x-auto rounded-2xl border border-gray-700">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-800 border-b border-gray-700">
+          {% for h in ['Model','Accuracy','Fraud Precision','Fraud Recall','Fraud F1','ROC-AUC','CV F1 Mean','Status'] %}
+          <th class="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        {% for m in metrics %}
+        {% set is_active = m.name == active_model %}
+        <tr class="hover:bg-gray-800/50 transition-colors {% if is_active %}bg-blue-900/10{% endif %}">
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              {% if is_active %}<i class="fa-solid fa-crown text-blue-400 text-xs"></i>{% endif %}
+              <span class="font-semibold {% if is_active %}text-blue-300{% else %}text-gray-100{% endif %}">{{ m.name }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 font-semibold text-gray-100">{{ "%.2f"|format(m.accuracy * 100) }}%</td>
+          <td class="px-4 py-3 font-semibold
+            {% if m.precision_fraud >= 0.9 %}text-green-400
+            {% elif m.precision_fraud >= 0.7 %}text-amber-400
+            {% else %}text-red-400{% endif %}">{{ "%.2f"|format(m.precision_fraud * 100) }}%</td>
+          <td class="px-4 py-3 font-semibold
+            {% if m.recall_fraud >= 0.9 %}text-green-400
+            {% elif m.recall_fraud >= 0.7 %}text-amber-400
+            {% else %}text-red-400{% endif %}">{{ "%.2f"|format(m.recall_fraud * 100) }}%</td>
+          <td class="px-4 py-3">
+            <span class="font-display font-bold {% if is_active %}text-blue-400{% elif m.f1_fraud >= 0.9 %}text-green-400{% else %}text-gray-100{% endif %}">
+              {{ "%.2f"|format(m.f1_fraud * 100) }}%
+            </span>
+            {% if is_active %}
+            <span class="ml-1.5 inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-blue-500/15 border border-blue-500/25 text-blue-400">Active</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-400">{% if m.roc_auc %}{{ "%.4f"|format(m.roc_auc) }}{% else %}—{% endif %}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">
+            {% if m.cv_f1_mean %}{{ "%.4f"|format(m.cv_f1_mean) }}{% if m.cv_f1_std %} <span class="text-gray-600">±{{ "%.4f"|format(m.cv_f1_std) }}</span>{% endif %}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider
+              {% if is_active %}bg-green-500/15 border border-green-500/25 text-green-400
+              {% else %}bg-gray-700/50 border border-gray-600 text-gray-400{% endif %}">
+              {% if is_active %}Selected{% else %}Evaluated{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Model switcher -->
+  {% if registry %}
+  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
+      <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
+        <i class="fa-solid fa-shuffle"></i>
+      </div>
+      <div>
+        <h3 class="font-display font-semibold text-white text-sm">Switch Active Model</h3>
+        <p class="text-gray-400 text-xs">Hot-swap without restarting the server — single-worker only</p>
+      </div>
+    </div>
+    <div class="p-5">
+      <form method="POST" action="{{ url_for('select_model') }}" class="flex gap-3 flex-wrap items-center">
+        <select name="model_name"
+                class="flex-1 min-w-[200px] px-3.5 py-2.5 bg-gray-900 border border-gray-600 rounded-xl
+                       text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+          {% for name in registry %}
+          <option value="{{ name }}" {% if name == active_model %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-5 py-2.5 border border-blue-500 text-blue-400
+                       rounded-xl text-sm font-semibold hover:bg-blue-500/10 transition-all">
+          <i class="fa-solid fa-shuffle text-xs"></i> Switch Model
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="text-center py-20 bg-gray-800/40 border border-gray-700 rounded-2xl">
+    <div class="text-5xl text-gray-600 mb-4"><i class="fa-solid fa-vials"></i></div>
+    <h3 class="font-display font-semibold text-gray-300 text-lg mb-2">No metrics available</h3>
+    <p class="text-gray-500 text-sm">Run <code>python train.py</code> to train all models and generate evaluation metrics.</p>
+  </div>
+  {% endif %}
+
+  <!-- Methodology -->
+  <div>
+    <div class="text-center mb-10">
+      <h2 class="font-display font-bold text-2xl text-white tracking-tight mb-2">Evaluation Methodology</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      {% for num, icon, title, desc in [
+        ('01','fa-database','Dataset','EMSCAD — 17,880 real postings, 866 fraudulent (4.8%). Class imbalance handled with SMOTE on training split only.'),
+        ('02','fa-wand-magic-sparkles','Features','Job title, company, description and requirements concatenated. TF-IDF vectorised into 10,000 weighted n-gram features.'),
+        ('03','fa-vials','Evaluation','Stratified 80/20 train/test split. 5-fold cross-validation on training data. Full classification report per model.'),
+        ('04','fa-trophy','Selection','Highest Fraud-class F1 wins. Missing a fraud (false negative) is treated as the costlier error.'),
+      ] %}
+      <div class="relative bg-gray-800/50 border border-gray-700 rounded-2xl p-5 overflow-hidden
+                  hover:border-blue-500/40 hover:-translate-y-1 transition-all group">
+        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="inline-flex items-center bg-blue-500/10 border border-blue-500/20 text-blue-400
+                    rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-widest mb-4">{{ num }}</div>
+        <div class="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-sm mb-3">
+          <i class="fa-solid {{ icon }}"></i>
+        </div>
+        <h3 class="font-display font-semibold text-white text-sm mb-2">{{ title }}</h3>
+        <p class="text-gray-400 text-xs leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {% for icon, col, title, desc in [
+        ('fa-bullseye','text-green-400','Why Fraud-class F1?','Overall accuracy inflates on imbalanced data. A model predicting everything as legitimate scores 95.2% accuracy yet catches zero fraud.'),
+        ('fa-magnifying-glass','text-amber-400','Why not just Recall?','Maximising recall alone classifies everything as fraud. F1 enforces a precision/recall balance for real-world applicability.'),
+        ('fa-shuffle','text-blue-400','Why SMOTE?','866 fraud vs 17,014 legitimate — an 18:1 imbalance. SMOTE synthesises minority class samples during training only.'),
+      ] %}
+      <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-5">
+        <h4 class="font-display font-semibold text-sm text-white mb-2 flex items-center gap-2">
+          <i class="fa-solid {{ icon }} {{ col }}"></i> {{ title }}
+        </h4>
+        <p class="text-gray-400 text-xs leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+</div>
 {% endblock %}
