@@ -8,6 +8,8 @@ services:
     environment:
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:?Set FLASK_SECRET_KEY in .env}
       - FLASK_ENV=${FLASK_ENV:-production}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      - RATELIMIT_STORAGE_URI=${RATELIMIT_STORAGE_URI:-memory://}
     volumes:
       # Persist dataset, trained models, and DB outside the container
       - ./data:/app/data
@@ -19,3 +21,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    # NOTE: Keep workers=1. In-process model cache is per-worker.
+    # To scale: use a load balancer + shared Redis for rate limiting.
+    command: >
+      sh -c "gunicorn -w 1 -b 0.0.0.0:${PORT:-5000}
+             --timeout 120 --access-logfile - app:app"

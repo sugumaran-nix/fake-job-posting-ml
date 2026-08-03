@@ -52,7 +52,7 @@ def _entropy(s: str) -> float:
 
 FREE_HOSTING = [
     "000webhost", "wix.com", "weebly.com", "blogspot", "wordpress.com",
-    "sites.google", "github.io", "netlify.app", "vercel.app", "glitch.me",
+    "sites.google", "github.io", "glitch.me",
     "repl.co", "web.app", "firebaseapp", "x10host", "byethost", "heliohost",
     "hostfree", "epizy.com", "rf.gd", "esy.es", "atwebpages", "bravenet",
     "000.pe", "freehosting", "infinityfree", "awardspace",
