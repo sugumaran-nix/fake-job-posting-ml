@@ -2,6 +2,30 @@
 {% block title %}Analyse a Job — JobGuard{% endblock %}
 
 {% block content %}
+<!-- ── Loading overlay (shown on form submit) ──────────────────────── -->
+<div id="loading-overlay" class="hidden fixed inset-0 z-[200] bg-[#05070d]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6">
+  <div class="flex flex-col items-center gap-4">
+    <div class="relative w-16 h-16">
+      <div class="absolute inset-0 rounded-full border-4 border-blue-500/20"></div>
+      <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
+      <div class="absolute inset-2 rounded-full bg-blue-500/10 flex items-center justify-center">
+        <i class="fa-solid fa-shield-halved text-blue-400 text-lg"></i>
+      </div>
+    </div>
+    <div class="text-center">
+      <p class="font-display font-bold text-white text-lg" id="load-title">Analysing job posting…</p>
+      <p class="text-gray-400 text-sm mt-1" id="load-sub">Running AI detection + URL analysis</p>
+    </div>
+    <!-- Cold-start warning (appears after 5s on Render free tier) -->
+    <div id="cold-start-note" class="hidden mt-2 max-w-xs text-center bg-amber-900/30 border border-amber-500/25 rounded-xl px-4 py-3">
+      <p class="text-amber-300 text-xs font-medium flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-moon text-amber-400"></i> Server is waking up…
+      </p>
+      <p class="text-amber-400/70 text-xs mt-1">Render free tier sleeps after 15 min of inactivity. First request takes ~20–30s.</p>
+    </div>
+  </div>
+</div>
+
 <!-- Page header -->
 <div class="bg-gray-900/60 border-b border-gray-800 px-6 py-10">
   <div class="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-4">
@@ -33,7 +57,7 @@
 
     <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform">
 
-      <!-- ── Card: Basic Info ─────────────────────────── -->
+      <!-- ── Basic Info ───────────────────────────────────────── -->
       <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden mb-4">
         <div class="flex items-center gap-3 px-6 py-4 bg-gray-800 border-b border-gray-700">
           <div class="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20
@@ -64,7 +88,7 @@
         </div>
       </div>
 
-      <!-- ── Card: Website URL ────────────────────────── -->
+      <!-- ── Website URL ─────────────────────────────────────── -->
       <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden mb-4">
         <div class="flex items-center gap-3 px-6 py-4 bg-gray-800 border-b border-gray-700">
           <div class="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20
@@ -101,7 +125,7 @@
         </div>
       </div>
 
-      <!-- ── Card: Job Content ────────────────────────── -->
+      <!-- ── Job Content ─────────────────────────────────────── -->
       <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden mb-4">
         <div class="flex items-center gap-3 px-6 py-4 bg-gray-800 border-b border-gray-700">
           <div class="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20
@@ -120,17 +144,22 @@
               Job Description <span class="text-red-400">*</span>
             </label>
             <textarea id="desc" name="description" rows="8" required
-                      placeholder="Paste the full job description here — the more detail provided, the more accurate the result…"
+                      placeholder="Paste the full job description here — include responsibilities, requirements, and compensation for the most accurate result…"
                       class="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-600 rounded-xl text-gray-100
                              text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50
                              focus:border-blue-500 transition-all resize-y leading-relaxed">{{ (form or {}).get('description', '') }}</textarea>
-            <!-- Char counter -->
             <div id="char-counter" class="flex items-center gap-3 mt-2">
               <div class="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
                 <div id="char-fill" class="h-full bg-gray-600 rounded-full transition-all duration-300" style="width:0%"></div>
               </div>
               <span id="char-label" class="text-xs text-gray-500 whitespace-nowrap">0 chars — aim for 150+</span>
             </div>
+            <!-- Guard hint -->
+            <p class="text-xs text-gray-600 mt-1.5 flex items-start gap-1.5">
+              <i class="fa-solid fa-circle-info text-gray-600 mt-0.5 shrink-0"></i>
+              Include role title, responsibilities, requirements, and apply instructions for best accuracy.
+              Random text will be rejected before analysis.
+            </p>
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
@@ -145,7 +174,7 @@
         </div>
       </div>
 
-      <!-- ── Sample buttons ───────────────────────────── -->
+      <!-- ── Sample buttons ──────────────────────────────────── -->
       <div class="flex items-center flex-wrap gap-2 mb-5">
         <span class="text-xs text-gray-500 font-medium mr-1"><i class="fa-solid fa-flask"></i> Try a sample:</span>
         <button type="button" onclick="loadSample('fraud')"
@@ -160,7 +189,7 @@
         </button>
       </div>
 
-      <!-- ── Submit ────────────────────────────────────── -->
+      <!-- ── Submit ──────────────────────────────────────────── -->
       <div class="flex gap-3 flex-wrap">
         <button type="submit" id="sbtn"
                 class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2.5 px-8 py-3.5
@@ -178,52 +207,94 @@
     </form>
   </div>
 </div>
+{% endblock %}
 
 {% block scripts %}
 <script>
 const SAMPLES = {
   fraud: {
-    job_title:'Work From Home — Easy Data Entry',company:'QuickEarn Digital Pvt Ltd',
-    location:'Remote, Anywhere in India',salary:'₹50,000 – ₹1,20,000 / month guaranteed',
-    website:'http://quickearnnow.in.free.hosting.com',
-    description:'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed — no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register immediately. Pay a one-time registration fee of ₹799 to receive your starter kit. 1,00,000 happy members already earning! 100% legitimate. No risk. Start today!',
-    requirements:'No degree needed. Must have a bank account. Registration fee of ₹799 compulsory.'
+    job_title: 'Work From Home — Easy Data Entry',
+    company:   'QuickEarn Digital Pvt Ltd',
+    location:  'Remote, Anywhere in India',
+    salary:    '₹50,000 – ₹1,20,000 / month guaranteed',
+    website:   'http://quickearnnow.in.free.hosting.com',
+    description: 'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed — no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. This legitimate opportunity requires candidates to apply immediately. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
+    requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive your joining kit.'
   },
   legit: {
-    job_title:'Junior Backend Developer (Python)',company:'Zoho Corporation',
-    location:'Chennai, Tamil Nadu',salary:'₹4,00,000 – ₹7,00,000 per annum',
-    website:'https://careers.zohocorp.com',
-    description:'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office.',
-    requirements:'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0–2 years experience or strong internship background.'
+    job_title: 'Junior Backend Developer (Python)',
+    company:   'Zoho Corporation',
+    location:  'Chennai, Tamil Nadu',
+    salary:    '₹4,00,000 – ₹7,00,000 per annum',
+    website:   'https://careers.zohocorp.com',
+    description: 'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office. Apply by sending your resume to careers@zohocorp.com.',
+    requirements: 'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0–2 years experience or strong internship background. Qualification: Degree from recognized university.'
   }
 };
-function loadSample(t){
-  const s=SAMPLES[t];
-  Object.keys(s).forEach(k=>{const el=document.querySelector(`[name="${k}"]`);if(el)el.value=s[k]||'';});
+
+function loadSample(t) {
+  const s = SAMPLES[t];
+  Object.keys(s).forEach(k => {
+    const el = document.querySelector(`[name="${k}"]`);
+    if (el) el.value = s[k] || '';
+  });
   updateCounter();
-  document.getElementById('desc').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('desc').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
-function updateCounter(){
-  const desc=document.getElementById('desc');
-  const fill=document.getElementById('char-fill');
-  const label=document.getElementById('char-label');
-  if(!desc||!fill||!label)return;
-  const len=desc.value.length;
-  const pct=Math.min(len/5,100);
-  fill.style.width=pct+'%';
-  if(len>=150){fill.className='h-full bg-blue-500 rounded-full transition-all duration-300';label.innerHTML=len+' chars — <span class="text-green-400">good length</span>';}
-  else if(len>50){fill.className='h-full bg-amber-500 rounded-full transition-all duration-300';label.textContent=len+' chars — aim for 150+';}
-  else{fill.className='h-full bg-gray-600 rounded-full transition-all duration-300';label.textContent=len+' chars — aim for 150+';}
+
+function updateCounter() {
+  const desc  = document.getElementById('desc');
+  const fill  = document.getElementById('char-fill');
+  const label = document.getElementById('char-label');
+  if (!desc || !fill || !label) return;
+  const len = desc.value.length;
+  const pct = Math.min(len / 5, 100);
+  fill.style.width = pct + '%';
+  if (len >= 150) {
+    fill.className = 'h-full bg-blue-500 rounded-full transition-all duration-300';
+    label.innerHTML = len + ' chars — <span class="text-green-400">good length</span>';
+  } else if (len > 50) {
+    fill.className = 'h-full bg-amber-500 rounded-full transition-all duration-300';
+    label.textContent = len + ' chars — aim for 150+';
+  } else {
+    fill.className = 'h-full bg-gray-600 rounded-full transition-all duration-300';
+    label.textContent = len + ' chars — aim for 150+';
+  }
 }
-function resetCounter(){setTimeout(updateCounter,10);}
-window.updateCC=updateCounter;
-document.getElementById('desc').addEventListener('input',updateCounter);
+
+function resetCounter() { setTimeout(updateCounter, 10); }
+
+document.getElementById('desc').addEventListener('input', updateCounter);
 updateCounter();
-document.getElementById('cform').addEventListener('submit',function(){
-  const b=document.getElementById('sbtn');
-  b.disabled=true;
-  b.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Analysing…';
+
+// ── Loading overlay + cold-start detection ─────────────────────────
+let _coldTimer = null;
+
+document.getElementById('cform').addEventListener('submit', function() {
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.remove('hidden');
+
+  // Cold-start warning after 5 seconds
+  _coldTimer = setTimeout(function() {
+    document.getElementById('cold-start-note').classList.remove('hidden');
+    document.getElementById('load-title').textContent = 'Still working…';
+    document.getElementById('load-sub').textContent = 'Complex analysis in progress';
+  }, 5000);
+
+  const b = document.getElementById('sbtn');
+  b.disabled = true;
+  b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analysing…';
+});
+
+// Clean up on back-navigation (browser caches page)
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) {
+    document.getElementById('loading-overlay').classList.add('hidden');
+    if (_coldTimer) clearTimeout(_coldTimer);
+    const b = document.getElementById('sbtn');
+    b.disabled = false;
+    b.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Analyse This Job Posting';
+  }
 });
 </script>
-{% endblock %}
 {% endblock %}

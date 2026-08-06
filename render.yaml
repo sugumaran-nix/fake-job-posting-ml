@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: jobguard
+    runtime: python
+    plan: free
+    region: singapore        # closest to India; change to oregon if you prefer
+    buildCommand: pip install -r requirements.txt && python nltk_setup.py
+    startCommand: gunicorn app:app --workers 1 --timeout 120 --preload --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_SECRET_KEY
+        generateValue: true   # Render auto-generates a secure random value
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11.9"

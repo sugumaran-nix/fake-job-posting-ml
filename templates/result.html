@@ -29,7 +29,7 @@
 <div class="px-6 py-10">
 <div class="max-w-3xl mx-auto space-y-4">
 
-  <!-- ══ VERDICT ══════════════════════════════════════════ -->
+  <!-- ══ VERDICT ════════════════════════════════════════════ -->
   <div class="rounded-2xl p-5 border flex items-start gap-4
     {% if result.is_fraud %}bg-red-900/20 border-red-500/30{% else %}bg-green-900/20 border-green-500/30{% endif %}">
     <div class="w-11 h-11 rounded-full flex items-center justify-center text-lg shrink-0
@@ -53,7 +53,7 @@
     </div>
   </div>
 
-  <!-- ══ CONFIDENCE ════════════════════════════════════════ -->
+  <!-- ══ CONFIDENCE BAR ══════════════════════════════════════ -->
   <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-5">
     <div class="flex justify-between items-center mb-2.5">
       <span class="text-sm text-gray-400">Model Confidence — {{ result.model_name }}</span>
@@ -73,25 +73,37 @@
     </div>
   </div>
 
-  <!-- ══ METRIC TRIO ══════════════════════════════════════ -->
+  <!-- ══ METRIC TRIO ═════════════════════════════════════════
+       FIX: Cards 1 & 2 always show Fraud Probability and Legit Probability
+       respectively — no label/colour flip based on prediction direction.
+       result.fraud_prob and result.legit_prob are always P(fraud) and P(legit)
+       returned from ml_predict(), not swapped "confidence of predicted class".
+  ═══════════════════════════════════════════════════════════ -->
   <div class="grid grid-cols-3 gap-3">
-    <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 text-center">
-      <div class="font-display font-bold text-2xl tracking-tight mb-1
-        {% if result.is_fraud %}text-red-400{% else %}text-green-400{% endif %}">
-        {{ result.confidence }}%
+
+    <!-- Card 1: Always P(Fraud) — red ───────────────────────── -->
+    <div class="bg-gray-800/60 border rounded-2xl p-4 text-center
+      {% if result.is_fraud %}border-red-500/30 bg-red-900/10{% else %}border-gray-700{% endif %}">
+      <div class="font-display font-bold text-2xl tracking-tight mb-1 text-red-400">
+        {{ result.fraud_prob }}%
       </div>
       <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-        {% if result.is_fraud %}Fraud{% else %}Legit{% endif %} Confidence
+        Fraud Probability
       </div>
     </div>
-    <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 text-center">
-      <div class="font-display font-bold text-2xl tracking-tight mb-1 text-gray-500">
-        {{ "%.1f"|format(100 - result.confidence) }}%
+
+    <!-- Card 2: Always P(Legit) — green ─────────────────────── -->
+    <div class="bg-gray-800/60 border rounded-2xl p-4 text-center
+      {% if not result.is_fraud %}border-green-500/30 bg-green-900/10{% else %}border-gray-700{% endif %}">
+      <div class="font-display font-bold text-2xl tracking-tight mb-1 text-green-400">
+        {{ result.legit_prob }}%
       </div>
       <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-        {% if result.is_fraud %}Legit{% else %}Fraud{% endif %} Probability
+        Legit Probability
       </div>
     </div>
+
+    <!-- Card 3: URL Fraud Score ─────────────────────────────── -->
     <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 text-center">
       <div class="font-display font-bold text-2xl tracking-tight mb-1
         {% if analysis.url.risk_level == 'high' %}text-red-400
@@ -101,11 +113,12 @@
       </div>
       <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">URL Fraud Score</div>
     </div>
+
   </div>
 
   {% set exp = result.explanation %}
 
-  <!-- ══ FRAUD PATTERNS ═══════════════════════════════════ -->
+  <!-- ══ FRAUD PATTERNS ══════════════════════════════════════ -->
   {% if exp.fraud_patterns %}
   <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
     <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
@@ -149,7 +162,7 @@
   </div>
   {% endif %}
 
-  <!-- ══ REASONS ═══════════════════════════════════════════ -->
+  <!-- ══ WHY THIS PREDICTION ═════════════════════════════════ -->
   {% if exp.reasons %}
   <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
     <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
@@ -175,7 +188,7 @@
   </div>
   {% endif %}
 
-  <!-- ══ TOKEN INFLUENCE ══════════════════════════════════ -->
+  <!-- ══ TOKEN INFLUENCE ═════════════════════════════════════ -->
   {% if exp.top_fraud_words or exp.top_legit_words %}
   <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
     <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
@@ -226,7 +239,7 @@
   </div>
   {% endif %}
 
-  <!-- ══ HIGHLIGHTED TEXT ═══════════════════════════════════ -->
+  <!-- ══ HIGHLIGHTED TEXT ════════════════════════════════════ -->
   {% if exp.highlighted_html %}
   <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
     <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
@@ -245,7 +258,7 @@
   </div>
   {% endif %}
 
-  <!-- ══ DOMAIN ANALYSIS HEADER ═══════════════════════════ -->
+  <!-- ══ DOMAIN ANALYSIS HEADER ══════════════════════════════ -->
   <div class="flex items-center gap-3 pt-2">
     <h2 class="font-display font-semibold text-white text-base flex items-center gap-2">
       <i class="fa-solid fa-microscope text-blue-400"></i> Automated Domain Analysis
@@ -364,7 +377,7 @@
     </div>
   </div>
 
-  <!-- ══ ADVICE ════════════════════════════════════════════ -->
+  <!-- ══ ADVICE ══════════════════════════════════════════════ -->
   <div class="rounded-2xl p-5 border
     {% if result.is_fraud %}bg-red-900/15 border-red-500/25{% else %}bg-green-900/15 border-green-500/25{% endif %}">
     <h4 class="font-display font-bold text-sm mb-4 flex items-center gap-2
@@ -401,7 +414,7 @@
     </ul>
   </div>
 
-  <!-- ══ SUBMITTED DETAILS (collapsible) ══════════════════ -->
+  <!-- ══ SUBMITTED DETAILS ════════════════════════════════════ -->
   <details class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden group">
     <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer text-sm text-gray-400
                     hover:text-gray-200 transition-colors select-none bg-gray-800">
@@ -416,6 +429,7 @@
         {% if job.salary    %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Salary</p><p class="text-sm text-gray-200">{{ job.salary }}</p></div>{% endif %}
         {% if job.website   %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Website</p><a href="{{ job.website }}" target="_blank" class="text-sm text-blue-400 hover:underline break-all">{{ job.website }}</a></div>{% endif %}
         <div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Model</p><p class="text-sm text-gray-200">{{ result.model_name }}</p></div>
+        <div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Fraud Score</p><p class="text-sm {% if result.is_fraud %}text-red-400{% else %}text-green-400{% endif %}">{{ result.fraud_prob }}% P(fraud) · {{ result.legit_prob }}% P(legit)</p></div>
         {% if elapsed_ms %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Inference Time</p><p class="text-sm text-gray-200">{{ elapsed_ms }}ms</p></div>{% endif %}
       </div>
       {% if job.description %}
@@ -427,7 +441,7 @@
     </div>
   </details>
 
-  <!-- ══ ACTIONS ══════════════════════════════════════════ -->
+  <!-- ══ ACTIONS ═════════════════════════════════════════════ -->
   <div class="flex gap-3 flex-wrap pt-2">
     <a href="{{ url_for('classify') }}"
        class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500
@@ -443,18 +457,19 @@
 
 </div>
 </div>
+{% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
-  document.querySelectorAll('.conf-fill[data-target]').forEach(el=>{
-    setTimeout(()=>{ el.style.width = el.dataset.target+'%'; }, 200);
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.conf-fill[data-target]').forEach(el => {
+    setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 200);
   });
-  document.querySelectorAll('.bar-anim').forEach(el=>{
-    const w=el.style.width; el.style.width='0';
-    setTimeout(()=>{ el.style.width=w; }, 400);
+  document.querySelectorAll('.bar-anim').forEach(el => {
+    const w = el.style.width;
+    el.style.width = '0';
+    setTimeout(() => { el.style.width = w; }, 400);
   });
 });
 </script>
-{% endblock %}
 {% endblock %}

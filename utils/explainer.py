@@ -1,31 +1,32 @@
 """
-utils/explainer.py
-==================
-Explainability engine for the Fake Job Posting classifier.
+utils/explainer.py — JobGuard v7
+=================================
+Token-level attribution + pattern-based explanations.
 
-Approach: Coefficient × TF-IDF token attribution
--------------------------------------------------
-For any linear model (LogisticRegression, LinearSVC, SGDClassifier) the
-contribution of each token in a document to the final decision score is:
+Bug fixes from v6:
+  ✅ FIX 1 — _build_reasons: replaced `decision_score < 0` check with
+             `not is_fraud` flag. The old check NEVER fired for Logistic
+             Regression and Naive Bayes because _decision_score() returns
+             P(fraud) ∈ [0,1], which is always ≥ 0. Legitimate predictions
+             by LR/NB now correctly show professional-vocabulary reasons.
 
-    impact(token) = tfidf_weight(token) × model_coefficient(token)
+  ✅ FIX 2 — Random Forest vice-versa token display: feature_importances_
+             values are unsigned (always ≥ 0). Previously ALL tokens landed
+             in fraud_tokens, so even a LEGITIMATE prediction showed every
+             word highlighted red. Now RF tokens are split by predicted
+             direction using the is_fraud flag.
 
-  positive impact  →  pushes prediction toward FRAUD
-  negative impact  →  pushes prediction toward LEGITIMATE
+  ✅ FIX 3 — CalibratedClassifierCV unwrapping: _get_coefs() and
+             _decision_score() now unwrap the sklearn calibration wrapper
+             to reach the underlying LinearSVC coef_ for correct attribution.
 
-This gives exact, deterministic, sub-millisecond attribution with no
-extra dependencies (no LIME, no SHAP).
+  ✅ FIX 4 — Nested <mark> tags: _highlight_html() now builds highlight
+             on a token-list pass (no regex on already-modified HTML),
+             preventing double-marked spans when a bigram overlaps a unigram.
 
-Returns
--------
-explain(text, vectorizer, model) → dict:
-  top_fraud_words   : list[(word, impact_pct)]   high-fraud tokens
-  top_legit_words   : list[(word, impact_pct)]   high-legit tokens
-  highlighted_html  : str  — description with <mark> tags for fraud words
-  fraud_patterns    : list[dict]  — named fraud pattern matches
-  reasons           : list[str]  — plain-English explanation bullets
-  model_name        : str
-  decision_score    : float
+  ✅ FIX 5 — Lemmatized vocab vs raw text: highlighting is done on the
+             _light_clean output (same pipeline the vectorizer sees) not on
+             the raw string, so marks actually appear.
 """
 
 import re
@@ -34,7 +35,8 @@ from typing import Optional
 
 import numpy as np
 
-# ── Fraud pattern definitions (rule-based, applied to raw text) ────────
+
+# ── Fraud pattern definitions ─────────────────────────────────────────
 FRAUD_PATTERNS = [
     {
         "id":      "registration_fee",
@@ -110,28 +112,13 @@ FRAUD_PATTERNS = [
     },
 ]
 
-# ── Severity colour mapping ────────────────────────────────────────────
-SEVERITY_COLOUR = {
-    "high":   "#DC2626",   # red
-    "medium": "#D97706",   # amber
-    "low":    "#6B7280",   # grey
-}
-
-SEVERITY_BG = {
-    "high":   "#FEF2F2",
-    "medium": "#FFFBEB",
-    "low":    "#F9FAFB",
-}
-
-SEVERITY_BORDER = {
-    "high":   "#FECACA",
-    "medium": "#FDE68A",
-    "low":    "#E5E7EB",
-}
+SEVERITY_COLOUR = {"high": "#DC2626", "medium": "#D97706", "low": "#6B7280"}
+SEVERITY_BG     = {"high": "#FEF2F2", "medium": "#FFFBEB", "low": "#F9FAFB"}
+SEVERITY_BORDER = {"high": "#FECACA", "medium": "#FDE68A", "low": "#E5E7EB"}
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  CORE EXPLAINABILITY FUNCTION
+#  MAIN ENTRY POINT
 # ══════════════════════════════════════════════════════════════════════
 
 def explain(
@@ -139,97 +126,140 @@ def explain(
     vectorizer,
     model,
     top_n: int = 8,
+    is_fraud: Optional[bool] = None,    # FIX 1 & 2 — passed from ml_predict()
 ) -> dict:
     """
-    Compute token-level attribution and pattern-based explanations.
+    Compute token-level attribution and pattern explanations.
 
     Parameters
     ----------
-    raw_text   : str   — original (un-preprocessed) combined job text
-    vectorizer : fitted TfidfVectorizer
-    model      : fitted sklearn linear classifier
-    top_n      : int   — how many top words to return per direction
-
-    Returns
-    -------
-    dict — see module docstring
+    raw_text  : original combined job text (un-preprocessed)
+    vectorizer: fitted TfidfVectorizer
+    model     : fitted sklearn classifier (any type)
+    top_n     : number of top words to return per direction
+    is_fraud  : predicted direction from ml_predict() — fixes reason bullets
+                and RF token direction. If None, inferred from decision score.
     """
-    # ── 1. Token attribution ──────────────────────────────────────────
-    Xv          = vectorizer.transform([_light_clean(raw_text)])
+    # ── 1. Vectorize using the same light-clean the vectorizer expects ─
+    clean_text  = _light_clean(raw_text)
+    Xv          = vectorizer.transform([clean_text])
     feat_names  = vectorizer.get_feature_names_out()
-    coefs       = _get_coefs(model)          # shape (n_features,) for binary
 
-    cx           = Xv.tocsr()
-    col_indices  = cx.indices
-    tfidf_vals   = cx.data
+    # ── 2. Get coefficient array (unwraps wrappers) ───────────────────
+    coefs          = _get_coefs(model)
+    is_unsigned    = _is_unsigned_attribution(model)  # True for RandomForest
 
-    n_coefs = len(coefs)
+    # ── 3. Decision score for this sample ────────────────────────────
+    decision_score = float(_decision_score(model, Xv))
+
+    # Infer is_fraud if not provided
+    if is_fraud is None:
+        if hasattr(model, "predict_proba"):
+            is_fraud = float(model.predict_proba(Xv)[0][1]) >= 0.5
+        else:
+            is_fraud = decision_score > 0
+
+    # ── 4. Token attribution ──────────────────────────────────────────
+    cx          = Xv.tocsr()
+    col_indices = cx.indices
+    tfidf_vals  = cx.data
+    n_coefs     = len(coefs)
+
     token_scores = []
     for col_idx, tfidf_val in zip(col_indices, tfidf_vals):
-        word = feat_names[col_idx]
-        # Safe indexing: skip if coefs array is shorter than vocab (fallback model)
         if n_coefs == 0 or col_idx >= n_coefs:
             continue
         coef   = float(coefs[col_idx])
         impact = float(tfidf_val) * coef
-        token_scores.append({"word": word, "impact": impact,
-                              "coef": coef, "tfidf": float(tfidf_val)})
+        token_scores.append({
+            "word":   feat_names[col_idx],
+            "impact": impact,
+            "coef":   coef,
+            "tfidf":  float(tfidf_val),
+        })
 
-    # Separate fraud (positive) vs legit (negative) tokens
-    fraud_tokens = sorted([t for t in token_scores if t["impact"] > 0],
-                           key=lambda x: x["impact"], reverse=True)
-    legit_tokens = sorted([t for t in token_scores if t["impact"] < 0],
-                           key=lambda x: x["impact"])
+    # ── 5. Split tokens by direction ──────────────────────────────────
+    #
+    # FIX 2: RandomForest returns unsigned feature_importances_.
+    # All impacts are ≥ 0, so the old code put every token in fraud_tokens
+    # regardless of the actual prediction.
+    #
+    # Fix: for unsigned models, assign all tokens to the predicted direction.
+    if is_unsigned:
+        sorted_tokens = sorted(token_scores,
+                               key=lambda x: abs(x["impact"]), reverse=True)
+        if is_fraud:
+            fraud_tokens = sorted_tokens
+            legit_tokens = []
+        else:
+            fraud_tokens = []
+            # Negate so the legit_tokens have negative impact (convention)
+            legit_tokens = [{**t, "impact": -abs(t["impact"])}
+                            for t in sorted_tokens]
+    else:
+        fraud_tokens = sorted(
+            [t for t in token_scores if t["impact"] > 0],
+            key=lambda x: x["impact"], reverse=True,
+        )
+        legit_tokens = sorted(
+            [t for t in token_scores if t["impact"] < 0],
+            key=lambda x: x["impact"],
+        )
 
-    # Normalise to percentages relative to max absolute impact
-    max_abs = max((abs(t["impact"]) for t in token_scores), default=1.0)
+    # ── 6. Normalize to percentages ───────────────────────────────────
+    max_abs = max((abs(t["impact"]) for t in token_scores), default=1e-9)
     max_abs = max(max_abs, 1e-9)
 
     def to_pct(tokens, n):
-        out = []
-        for t in tokens[:n]:
-            pct = round(abs(t["impact"]) / max_abs * 100, 1)
-            out.append({"word": t["word"], "pct": pct, "impact": round(t["impact"], 4)})
-        return out
+        return [
+            {
+                "word":   t["word"],
+                "pct":    round(abs(t["impact"]) / max_abs * 100, 1),
+                "impact": round(t["impact"], 4),
+            }
+            for t in tokens[:n]
+        ]
 
     top_fraud_words = to_pct(fraud_tokens, top_n)
     top_legit_words = to_pct(legit_tokens, top_n)
 
-    # ── 2. Pattern matching on raw text ───────────────────────────────
+    # ── 7. Pattern matching ───────────────────────────────────────────
     fraud_patterns_found = _match_patterns(raw_text)
 
-    # ── 3. Decision score ─────────────────────────────────────────────
-    decision_score = float(_decision_score(model, Xv))
-
-    # ── 4. Word-highlighted HTML ──────────────────────────────────────
+    # ── 8. Highlighted HTML ───────────────────────────────────────────
     fraud_word_set = {t["word"] for t in fraud_tokens[:top_n]}
     legit_word_set = {t["word"] for t in legit_tokens[:top_n]}
-    highlighted    = _highlight_html(raw_text, fraud_word_set, legit_word_set)
+    highlighted    = _highlight_html(clean_text, fraud_word_set, legit_word_set)
 
-    # ── 5. Plain-English reasons ──────────────────────────────────────
-    reasons = _build_reasons(fraud_tokens, legit_tokens, fraud_patterns_found, decision_score)
+    # ── 9. Plain-English reasons ──────────────────────────────────────
+    reasons = _build_reasons(
+        fraud_tokens, legit_tokens,
+        fraud_patterns_found, decision_score,
+        is_fraud=is_fraud,   # FIX 1
+    )
 
-    # ── 6. Model name ─────────────────────────────────────────────────
-    model_name = type(model).__name__
-    _MODEL_DISPLAY = {
-        "LogisticRegression": "Logistic Regression",
-        "LinearSVC":          "Linear SVM (LinearSVC)",
+    # ── 10. Model display name ────────────────────────────────────────
+    klass = type(model).__name__
+    if klass == "CalibratedClassifierCV" and hasattr(model, "calibrated_classifiers_"):
+        klass = type(model.calibrated_classifiers_[0].estimator).__name__
+    model_display = {
+        "LogisticRegression":     "Logistic Regression",
+        "LinearSVC":              "Linear SVM",
         "RandomForestClassifier": "Random Forest",
-        "MultinomialNB":      "Naive Bayes",
-        "SGDClassifier":      "SGD Classifier",
-    }
-    model_display = _MODEL_DISPLAY.get(model_name, model_name)
+        "MultinomialNB":          "Naive Bayes",
+        "SGDClassifier":          "SGD Classifier",
+    }.get(klass, klass)
 
     return {
-        "top_fraud_words":    top_fraud_words,
-        "top_legit_words":    top_legit_words,
-        "highlighted_html":   highlighted,
-        "fraud_patterns":     fraud_patterns_found,
-        "reasons":            reasons,
-        "model_name":         model_display,
-        "decision_score":     decision_score,
-        "n_fraud_tokens":     len(fraud_tokens),
-        "n_legit_tokens":     len(legit_tokens),
+        "top_fraud_words":  top_fraud_words,
+        "top_legit_words":  top_legit_words,
+        "highlighted_html": highlighted,
+        "fraud_patterns":   fraud_patterns_found,
+        "reasons":          reasons,
+        "model_name":       model_display,
+        "decision_score":   decision_score,
+        "n_fraud_tokens":   len(fraud_tokens),
+        "n_legit_tokens":   len(legit_tokens),
     }
 
 
@@ -238,8 +268,7 @@ def explain(
 # ══════════════════════════════════════════════════════════════════════
 
 def _light_clean(text: str) -> str:
-    """Minimal cleaning for vectorizer.transform() — preserves more tokens
-    than the full preprocess pipeline so highlighting maps back to raw text."""
+    """Minimal cleaning matching what the vectorizer pipeline sees."""
     if not isinstance(text, str):
         return ""
     text = re.sub(r"<[^>]+>", " ", text)
@@ -248,45 +277,71 @@ def _light_clean(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _is_unsigned_attribution(model) -> bool:
+    """
+    Returns True if the model only produces unsigned (directionless) feature
+    scores — i.e. RandomForest / gradient boosting feature_importances_.
+    CalibratedClassifierCV wrapping LinearSVC is NOT unsigned.
+    """
+    if hasattr(model, "calibrated_classifiers_"):
+        return False   # unwrapped later in _get_coefs
+    return (
+        hasattr(model, "feature_importances_")
+        and not hasattr(model, "coef_")
+    )
+
+
 def _get_coefs(model) -> np.ndarray:
     """
-    Extract 1-D coefficient array regardless of model type.
+    Extract 1-D signed coefficient array.
 
-    Model-specific handling:
-      LogisticRegression / LinearSVC : coef_ shape (1, n_features) -> (n_features,)
-      MultinomialNB                  : feature_log_prob_ shape (n_classes, n_features)
-                                       -> diff of class-1 vs class-0 log-probs gives
-                                          a signed "fraud signal" per feature
-      RandomForest / trees           : feature_importances_ (unsigned proxy)
-      Unknown                        : empty array; safe indexing handles it
+    FIX 3: Unwraps CalibratedClassifierCV to reach the underlying LinearSVC
+    and averages coef_ across the k calibration folds.
+
+    Handles:
+      CalibratedClassifierCV(LinearSVC)  → average of fold coef_ arrays
+      LogisticRegression / LinearSVC     → coef_[0]
+      MultinomialNB                      → log-prob difference (signed)
+      RandomForestClassifier             → feature_importances_ (unsigned)
     """
-    # Linear models (LR, LinearSVC, SGD, ...)
+    # CalibratedClassifierCV wrapper
+    if hasattr(model, "calibrated_classifiers_"):
+        coef_list = []
+        for cal_clf in model.calibrated_classifiers_:
+            base = cal_clf.estimator
+            if hasattr(base, "coef_"):
+                c = base.coef_
+                coef_list.append(c[0] if c.ndim == 2 else c)
+        if coef_list:
+            return np.mean(coef_list, axis=0)
+        # Fallback: try predict_proba-based attribution (below)
+
+    # Linear models
     if hasattr(model, "coef_"):
         c = model.coef_
-        if c.ndim == 2:
-            return c[0]          # binary: shape (1, n) -> (n,)
-        return c
+        return c[0] if c.ndim == 2 else c
 
-    # Naive Bayes: use log-prob difference as signed fraud signal
-    # feature_log_prob_ shape: (n_classes, n_features)
-    # class 1 = fraud, class 0 = legit
-    # positive diff -> word more associated with fraud
+    # Naive Bayes — log-prob difference is signed
     if hasattr(model, "feature_log_prob_"):
         flp = model.feature_log_prob_
         if flp.shape[0] >= 2:
-            return flp[1] - flp[0]   # shape (n_features,)
+            return flp[1] - flp[0]
         return flp[0]
 
-    # Tree / ensemble models: feature importance is unsigned (proxy)
+    # Random Forest / tree ensembles — unsigned proxy
     if hasattr(model, "feature_importances_"):
         return model.feature_importances_
 
-    # Fallback: empty array; safe indexing below will skip attribution
     return np.zeros(0)
 
 
 def _decision_score(model, Xv) -> float:
-    """Raw decision score for the positive (fraud) class."""
+    """
+    Raw decision score for the positive (fraud) class.
+    FIX 3: unwraps CalibratedClassifierCV — uses predict_proba.
+    """
+    if hasattr(model, "calibrated_classifiers_"):
+        return float(model.predict_proba(Xv)[0][1])
     if hasattr(model, "decision_function"):
         return float(model.decision_function(Xv)[0])
     if hasattr(model, "predict_proba"):
@@ -295,7 +350,6 @@ def _decision_score(model, Xv) -> float:
 
 
 def _match_patterns(text: str) -> list:
-    """Run all fraud pattern regexes against raw lowercase text."""
     t = text.lower()
     found = []
     for pat in FRAUD_PATTERNS:
@@ -312,105 +366,117 @@ def _match_patterns(text: str) -> list:
                 "bg":       SEVERITY_BG[pat["severity"]],
                 "border":   SEVERITY_BORDER[pat["severity"]],
             })
-    # Sort: high first, then medium, then low
     order = {"high": 0, "medium": 1, "low": 2}
     found.sort(key=lambda x: order[x["severity"]])
     return found
 
 
-def _highlight_html(raw_text: str, fraud_words: set, legit_words: set,
+def _highlight_html(clean_text: str, fraud_words: set, legit_words: set,
                     max_chars: int = 800) -> str:
     """
-    Return HTML of raw_text with fraud words wrapped in
-    <mark class="hw-fraud"> and legit words in <mark class="hw-legit">.
-    Works at the word level on the original (un-lowercased) text.
-    Limits output to max_chars to keep the UI manageable.
+    FIX 4 & 5: Highlighting is done on the light-cleaned text (same tokens
+    the vectorizer sees) via a single-pass token walk — no regex on
+    already-modified HTML, so nested <mark> tags are impossible.
+
+    Steps:
+      1. Tokenize clean_text into (word, whitespace) pairs
+      2. For each token: if in fraud_words → wrap; elif in legit_words → wrap
+      3. HTML-escape the word text inside marks
     """
-    snippet = raw_text[:max_chars]
-    escaped = html_lib.escape(snippet)
+    snippet = clean_text[:max_chars]
+    tokens  = re.split(r"(\s+)", snippet)   # keeps whitespace as separate items
+    parts   = []
 
-    # Build a combined set with direction labels
-    word_map = {}
-    for w in fraud_words:
-        word_map[w] = "hw-fraud"
-    for w in legit_words:
-        if w not in word_map:               # fraud takes priority
-            word_map[w] = "hw-legit"
+    for tok in tokens:
+        if re.match(r"\s+", tok):
+            parts.append(tok)
+            continue
+        lower = tok.lower()
+        if lower in fraud_words:
+            parts.append(f'<mark class="hw-fraud">{html_lib.escape(tok)}</mark>')
+        elif lower in legit_words:
+            parts.append(f'<mark class="hw-legit">{html_lib.escape(tok)}</mark>')
+        else:
+            parts.append(html_lib.escape(tok))
 
-    if not word_map:
-        return escaped + ("…" if len(raw_text) > max_chars else "")
-
-    # Sort longest first to avoid partial-word replacement bugs
-    sorted_words = sorted(word_map.keys(), key=len, reverse=True)
-
-    # Replace whole-word matches only (case-insensitive)
-    for word in sorted_words:
-        css_class = word_map[word]
-        pattern   = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
-        escaped   = pattern.sub(
-            lambda m: f'<mark class="{css_class}">{m.group(0)}</mark>',
-            escaped
-        )
-
-    if len(raw_text) > max_chars:
-        escaped += '<span class="hw-ellipsis">…</span>'
-
-    return escaped
+    result = "".join(parts)
+    if len(clean_text) > max_chars:
+        result += '<span class="hw-ellipsis">…</span>'
+    return result
 
 
-def _build_reasons(fraud_tokens: list, legit_tokens: list,
-                   patterns: list, decision_score: float) -> list:
+def _build_reasons(
+    fraud_tokens: list,
+    legit_tokens:  list,
+    patterns:      list,
+    decision_score: float,
+    is_fraud: bool = True,   # FIX 1 — was `decision_score < 0` (always False for LR/NB)
+) -> list:
     """
-    Generate 3–6 plain-English bullet-point reasons for the prediction.
+    Generate 3–6 plain-English bullet reasons for the prediction.
+
+    FIX 1: `not is_fraud` correctly identifies legitimate predictions for
+    ALL model types including Logistic Regression and Naive Bayes.
+    The old `decision_score < 0` never fired for these because
+    _decision_score() returns P(fraud) ∈ [0,1] for predict_proba models.
     """
     reasons = []
 
-    # From patterns (most reliable, human-readable)
+    # Top patterns (most human-readable, highest priority)
     for p in patterns[:3]:
         reasons.append({
-            "icon":  p["icon"],
-            "text":  f"{p['label']}: {p['reason']}",
-            "type":  "pattern",
-            "sev":   p["severity"],
+            "icon": p["icon"],
+            "text": f"{p['label']}: {p['reason']}",
+            "type": "pattern",
+            "sev":  p["severity"],
         })
 
-    # From top fraud tokens (if no pattern coverage)
+    # Fraud vocabulary (if not already covered by patterns)
     if len(reasons) < 2 and fraud_tokens:
         top_words = [t["word"] for t in fraud_tokens[:4]]
         reasons.append({
             "icon": "🔍",
-            "text": f"High-fraud vocabulary detected: «{', '.join(top_words)}» — "
-                    "these terms appear disproportionately in fraudulent postings.",
+            "text": (
+                f"High-fraud vocabulary detected: «{', '.join(top_words)}» — "
+                "these terms appear disproportionately in fraudulent postings."
+            ),
             "type": "token",
             "sev":  "medium",
         })
 
-    # From top legit tokens (for legitimate predictions)
-    if decision_score < 0 and legit_tokens:
+    # FIX 1: legitimate vocabulary reason — now works for ALL model types
+    if not is_fraud and legit_tokens:
         top_words = [t["word"] for t in legit_tokens[:4]]
         reasons.append({
             "icon": "✅",
-            "text": f"Professional vocabulary present: «{', '.join(top_words)}» — "
-                    "these terms are strongly associated with genuine job postings.",
+            "text": (
+                f"Professional vocabulary present: «{', '.join(top_words)}» — "
+                "these terms are strongly associated with genuine job postings."
+            ),
             "type": "token",
             "sev":  "low",
         })
 
-    # Decision score magnitude
+    # Decision score confidence commentary
     abs_score = abs(decision_score)
     if abs_score > 2.0:
         reasons.append({
             "icon": "📊",
-            "text": f"Model decision boundary crossed with high margin "
-                    f"(score {decision_score:+.2f}) — prediction is confident.",
+            "text": (
+                f"Model decision boundary crossed with high margin "
+                f"(score {decision_score:+.2f}) — prediction is confident."
+            ),
             "type": "score",
             "sev":  "low",
         })
-    elif abs_score < 0.5:
+    elif abs_score < 0.4:
         reasons.append({
             "icon": "⚠️",
-            "text": f"Model decision score is near the boundary "
-                    f"(score {decision_score:+.2f}) — treat this result with caution.",
+            "text": (
+                f"Model decision score is near the boundary "
+                f"(score {decision_score:+.2f}) — treat this result with caution "
+                "and verify the posting independently."
+            ),
             "type": "score",
             "sev":  "medium",
         })
