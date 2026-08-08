@@ -3,15 +3,37 @@ services:
     name: jobguard
     runtime: python
     plan: free
-    region: singapore        # closest to India; change to oregon if you prefer
-    buildCommand: pip install -r requirements.txt && python nltk_setup.py
+    region: singapore
+    buildCommand: >
+      pip install -r requirements.txt &&
+      python nltk_setup.py &&
+      python download_bert.py
     startCommand: gunicorn app:app --workers 1 --timeout 120 --preload --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: FLASK_SECRET_KEY
-        generateValue: true   # Render auto-generates a secure random value
-      - key: ADMIN_TOKEN
-        generateValue: true
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: ADMIN_TOKEN
+        generateValue: true
+
+      # ── BERT (add manually in Render dashboard after training) ────────
+      # Leave blank to use sklearn fallback. App works either way.
+      #
+      # Step 1: Create free HuggingFace account at huggingface.co
+      # Step 2: Run in Codespaces:
+      #           export HF_MODEL_REPO=your-username/jobguard-bert
+      #           export HF_TOKEN=hf_xxxxx
+      #           python bert_finetune.py
+      #           python bert_to_onnx.py
+      # Step 3: Add these to Render dashboard → Environment:
+      # - key: HF_MODEL_REPO
+      #   value: your-username/jobguard-bert
+      # - key: HF_TOKEN
+      #   value: hf_xxxxx          (only if model repo is private)
+
+      # ── Persistent DB (Supabase) ───────────────────────────────────────
+      # - key: DATABASE_URL
+      #   value: postgresql://...your-supabase-url...
