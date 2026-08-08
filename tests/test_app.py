@@ -70,7 +70,8 @@ def test_health(client):
     assert r.status_code == 200
     assert "status" in d
     assert d["status"] == "ok"
-    assert "threshold" in d
+    assert "predictor" in d
+    assert "db_backend" in d
 
 
 def test_404(client):
@@ -171,50 +172,46 @@ def test_predict_route_rejects_empty(client):
 # ══════════════════════════════════════════════════════════════════════
 
 def test_ml_predict_result_shape():
-    """ml_predict must always return fraud_prob + legit_prob."""
-    _, model = flask_app._get_active_model()
-    if model is None:
-        pytest.skip("No model loaded — run train.py first")
+    """predictor.predict() must always return fraud_prob + legit_prob."""
+    pred = flask_app.predictor
+    if pred is None:
+        pytest.skip("No predictor loaded — run train.py first")
 
     legit_text = (
         "Software Engineer position at Infosys Bangalore. Responsibilities include "
         "backend API development, code reviews, and deployment. Requirements: 2 years "
         "Python experience, Django skills, BSc CS degree. Salary 8 LPA. Apply with resume."
     )
-    result = flask_app.ml_predict(legit_text)
+    result = pred.predict(legit_text)
 
-    assert "error" not in result, f"ml_predict returned error: {result}"
-    assert "fraud_prob" in result
-    assert "legit_prob" in result
-    assert "is_fraud"   in result
-    assert "confidence" in result
+    assert "error" not in result, f"predict() returned error: {result}"
+    assert "fraud_prob"  in result
+    assert "legit_prob"  in result
+    assert "is_fraud"    in result
+    assert "confidence"  in result
     assert "explanation" in result
+    assert "model_name"  in result
 
-    # Probabilities must sum to ~100%
     total = result["fraud_prob"] + result["legit_prob"]
-    assert abs(total - 100.0) < 1.0, f"fraud_prob + legit_prob = {total}, expected ~100"
+    assert abs(total - 100.0) < 1.0, f"fraud_prob + legit_prob = {total}"
 
-    # Confidence must match the dominant probability
     dominant = max(result["fraud_prob"], result["legit_prob"])
     assert abs(result["confidence"] - dominant) < 1.0
 
 
 def test_ml_predict_fraud_text():
-    """A canonical fraud posting must be flagged as fraudulent."""
-    _, model = flask_app._get_active_model()
-    if model is None:
-        pytest.skip("No model loaded — run train.py first")
+    """A canonical fraud posting must lean toward fraudulent."""
+    pred = flask_app.predictor
+    if pred is None:
+        pytest.skip("No predictor loaded — run train.py first")
 
     fraud_text = (
         "URGENT HIRING! Work from home data entry job. No experience needed, no degree "
-        "required. Earn ₹1,20,000 per month GUARANTEED. Pay registration fee ₹799 to join. "
+        "required. Earn guaranteed income per month. Pay registration fee to join. "
         "Submit Aadhaar card and bank account details. Network marketing opportunity. "
         "Requirements: just a smartphone. Apply immediately — only 5 seats left!"
     )
-    result = flask_app.ml_predict(fraud_text)
-    if "error" in result:
-        pytest.skip("No model loaded")
-    # The model should lean toward fraudulent for a canonical fraud text
+    result = pred.predict(fraud_text)
     assert result["fraud_prob"] > result["legit_prob"], (
         f"Canonical fraud text classified as Legitimate "
         f"(fraud_prob={result['fraud_prob']}, legit_prob={result['legit_prob']})"
@@ -222,23 +219,20 @@ def test_ml_predict_fraud_text():
 
 
 def test_explanation_no_nested_marks():
-    """highlighted_html must not contain nested <mark> tags."""
-    _, model = flask_app._get_active_model()
-    if model is None:
-        pytest.skip("No model loaded — run train.py first")
-    from utils.explainer import explain
-    import pickle
+    """highlighted_html must not contain nested <mark> tags (sklearn backend only)."""
+    from utils.model_router import SklearnPredictor
+    pred = flask_app.predictor
+    if pred is None or not isinstance(pred, SklearnPredictor):
+        pytest.skip("Nested marks test requires sklearn backend")
 
-    with open(flask_app.VEC_PATH, "rb") as f:
-        vec = pickle.load(f)
+    import re
+    from utils.explainer import explain
 
     html = explain(
         "work from home guaranteed income urgent hiring registration fee required apply now",
-        vec, model, is_fraud=True,
+        pred._vectorizer, pred._model, is_fraud=True,
     )["highlighted_html"]
 
-    # Check for nested marks — a <mark ...> immediately inside another <mark ...>
-    import re
     nested = re.findall(r'<mark[^>]*>[^<]*<mark', html)
     assert nested == [], f"Nested <mark> tags found: {nested}"
 
@@ -277,8 +271,8 @@ def test_api_models_list(client):
     assert "active_model" in d
 
 
-def test_api_predict_bad_model_name(client):
-    # Description must be 30+ words and pass the guard so we reach model lookup (404)
+def test_api_predict_valid_job(client):
+    # v8: model override param removed — API always uses active predictor
     r = client.post("/api/predict",
                     data=json.dumps({
                         "description": (
@@ -288,10 +282,14 @@ def test_api_predict_bad_model_name(client):
                             "2 years minimum. Competitive salary and benefits. "
                             "Apply with your resume at careers.infosys.com."
                         ),
-                        "model": "totally_made_up_model_xyz",
                     }),
                     content_type="application/json")
-    assert r.status_code == 404
+    assert r.status_code == 200
+    d = json.loads(r.data)
+    assert "prediction" in d
+    assert "fraud_prob" in d
+    assert "legit_prob" in d
+    assert abs(d["fraud_prob"] + d["legit_prob"] - 100.0) < 1.0
 
 
 # ══════════════════════════════════════════════════════════════════════
