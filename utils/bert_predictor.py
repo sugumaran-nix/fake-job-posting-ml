@@ -59,6 +59,15 @@ class BertPredictor:
                 f"ONNX model not found: {ONNX_PATH}\n"
                 "Run bert_finetune.py then bert_to_onnx.py first."
             )
+
+        # Split ONNX model — both files required
+        data_path = ONNX_PATH + ".data"
+        if not os.path.exists(data_path):
+            raise RuntimeError(
+                f"ONNX data file not found: {data_path}\n"
+                "The quantized model produces two files: .onnx and .onnx.data\n"
+                "Both must be present in the same directory."
+            )
         if not os.path.exists(TOKEN_DIR):
             raise RuntimeError(
                 f"Tokenizer not found: {TOKEN_DIR}\n"
@@ -110,6 +119,9 @@ class BertPredictor:
                 pass
 
         size_mb = os.path.getsize(ONNX_PATH) / 1e6
+        data_path = ONNX_PATH + ".data"
+        if os.path.exists(data_path):
+            size_mb += os.path.getsize(data_path) / 1e6
         logger.info("BertPredictor ready — model %.1fMB, threshold %.3f",
                     size_mb, self._threshold)
 
