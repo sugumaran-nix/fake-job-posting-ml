@@ -1,3 +1,7 @@
+# JobGuard v8 — Production Edition
+# Python 3.11.9  (see runtime.txt)
+# ──────────────────────────────────────────────────────────────────────
+
 # ── Core web ───────────────────────────────────────────────────────────
 flask==3.0.3
 gunicorn==22.0.0
@@ -20,8 +24,9 @@ pandas==2.2.3
 psycopg2-binary==2.9.10
 
 # ── BERT inference (Render) ───────────────────────────────────────────
-onnxruntime==1.20.1         # ONNX inference — ~12MB
-huggingface-hub==0.24.6     # download_bert.py downloads ONNX at startup
+onnxruntime==1.20.1         # ONNX inference
+huggingface-hub==0.24.6     # download_bert.py — fetches ONNX at startup
+transformers==4.44.2        # tokenizer for BERT inference
 
 # ── Plotting (train.py only) ───────────────────────────────────────────
 matplotlib==3.9.2
