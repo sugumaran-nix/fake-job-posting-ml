@@ -588,13 +588,19 @@ def api_models():
 @app.route("/health")
 def health():
     onnx_path   = os.path.join(BASE_DIR, "models", "bert_onnx_quantized.onnx")
+    data_path   = onnx_path + ".data"
     bert_active = os.path.exists(onnx_path)
+    bert_size   = 0
+    if bert_active:
+        bert_size += os.path.getsize(onnx_path) / 1e6
+    if os.path.exists(data_path):
+        bert_size += os.path.getsize(data_path) / 1e6
     return jsonify({
         "status":        "ok",
         "predictor":     type(predictor).__name__ if predictor else "None",
         "active_model":  _active_model_name(),
         "bert_onnx":     bert_active,
-        "bert_size_mb":  round(os.path.getsize(onnx_path)/1e6, 1) if bert_active else None,
+        "bert_size_mb":  round(bert_size, 1) if bert_active else None,
         "db_backend":    "postgresql" if DATABASE_URL else "sqlite",
         "timestamp":     datetime.datetime.now().isoformat(),
     })
