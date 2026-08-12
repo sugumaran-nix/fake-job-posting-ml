@@ -3,472 +3,313 @@
 
 {% block content %}
 
-<!-- Page header -->
-<div class="bg-gray-900/60 border-b border-gray-800 px-6 py-8">
-  <div class="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-4">
-    <div>
-      <h1 class="font-display font-bold text-2xl text-white tracking-tight">Analysis Complete</h1>
-      <p class="text-gray-400 text-sm mt-1">
-        {% if job.job_title %}<strong class="text-gray-200">{{ job.job_title }}</strong>{% if job.company %} · {{ job.company }}{% endif %}{% endif %}
-        {% if elapsed_ms %}
-        <span class="ml-2 inline-flex items-center gap-1 bg-gray-800 border border-gray-700
-                     rounded-full px-2.5 py-0.5 text-[11px] text-gray-400">
-          <i class="fa-solid fa-bolt text-blue-400 text-[9px]"></i> {{ elapsed_ms }}ms
-        </span>
-        {% endif %}
-      </p>
-    </div>
-    <a href="{{ url_for('classify') }}"
-       class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700
-              border border-gray-700 text-gray-300 text-sm font-medium rounded-xl transition-all">
-      <i class="fa-solid fa-arrow-left text-xs"></i> Analyse Another
-    </a>
-  </div>
-</div>
-
-<div class="px-6 py-10">
-<div class="max-w-3xl mx-auto space-y-4">
-
-  <!-- ══ VERDICT ════════════════════════════════════════════ -->
-  <div class="rounded-2xl p-5 border flex items-start gap-4
-    {% if result.is_fraud %}bg-red-900/20 border-red-500/30{% else %}bg-green-900/20 border-green-500/30{% endif %}">
-    <div class="w-11 h-11 rounded-full flex items-center justify-center text-lg shrink-0
-      {% if result.is_fraud %}bg-red-500/20 text-red-400{% else %}bg-green-500/20 text-green-400{% endif %}">
-      <i class="fa-solid {% if result.is_fraud %}fa-xmark{% else %}fa-check{% endif %}"></i>
-    </div>
-    <div>
-      <h2 class="font-display font-bold text-base tracking-tight
-        {% if result.is_fraud %}text-red-300{% else %}text-green-300{% endif %}">
-        {% if result.is_fraud %}FRAUDULENT JOB POSTING DETECTED{% else %}LEGITIMATE JOB POSTING{% endif %}
-      </h2>
-      <p class="text-gray-300 text-sm mt-1 leading-relaxed">
-        {% if result.is_fraud %}This posting shows strong fraud indicators.
-          <strong class="text-red-300">Do not</strong> pay fees or share personal documents.
-        {% else %}This posting appears genuine. Always verify independently before applying.{% endif %}
-      </p>
-      <span class="mt-2 inline-flex items-center gap-1.5 bg-gray-800/80 border border-gray-700
-                   rounded-full px-2.5 py-1 text-[11px] text-gray-400">
-        <i class="fa-solid fa-brain text-blue-400 text-[9px]"></i> {{ result.model_name }}
-      </span>
-    </div>
-  </div>
-
-  <!-- ══ CONFIDENCE BAR ══════════════════════════════════════ -->
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-5">
-    <div class="flex justify-between items-center mb-2.5">
-      <span class="text-sm text-gray-400">Model Confidence — {{ result.model_name }}</span>
-      <strong class="font-display font-bold text-xl tracking-tight
-        {% if result.is_fraud %}text-red-400{% else %}text-green-400{% endif %}">
-        {{ result.confidence }}%
-      </strong>
-    </div>
-    <div class="h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
-      <div class="conf-fill h-full rounded-full
-        {% if result.is_fraud %}bg-gradient-to-r from-red-700 to-red-500
-        {% else %}bg-gradient-to-r from-green-700 to-green-500{% endif %}"
-           style="width:0%" data-target="{{ result.confidence }}"></div>
-    </div>
-    <div class="flex justify-between text-[11px] text-gray-600">
-      <span>0% — Uncertain</span><span>50%</span><span>100% — Certain</span>
-    </div>
-  </div>
-
-  <!-- ══ METRIC TRIO ═════════════════════════════════════════
-       FIX: Cards 1 & 2 always show Fraud Probability and Legit Probability
-       respectively — no label/colour flip based on prediction direction.
-       result.fraud_prob and result.legit_prob are always P(fraud) and P(legit)
-       returned from ml_predict(), not swapped "confidence of predicted class".
-  ═══════════════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-3 gap-3">
-
-    <!-- Card 1: Always P(Fraud) — red ───────────────────────── -->
-    <div class="bg-gray-800/60 border rounded-2xl p-4 text-center
-      {% if result.is_fraud %}border-red-500/30 bg-red-900/10{% else %}border-gray-700{% endif %}">
-      <div class="font-display font-bold text-2xl tracking-tight mb-1 text-red-400">
-        {{ result.fraud_prob }}%
-      </div>
-      <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-        Fraud Probability
-      </div>
-    </div>
-
-    <!-- Card 2: Always P(Legit) — green ─────────────────────── -->
-    <div class="bg-gray-800/60 border rounded-2xl p-4 text-center
-      {% if not result.is_fraud %}border-green-500/30 bg-green-900/10{% else %}border-gray-700{% endif %}">
-      <div class="font-display font-bold text-2xl tracking-tight mb-1 text-green-400">
-        {{ result.legit_prob }}%
-      </div>
-      <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-        Legit Probability
-      </div>
-    </div>
-
-    <!-- Card 3: URL Fraud Score ─────────────────────────────── -->
-    <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 text-center">
-      <div class="font-display font-bold text-2xl tracking-tight mb-1
-        {% if analysis.url.risk_level == 'high' %}text-red-400
-        {% elif analysis.url.risk_level == 'medium' %}text-amber-400
-        {% else %}text-green-400{% endif %}">
-        {{ analysis.url.score }}/100
-      </div>
-      <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">URL Fraud Score</div>
-    </div>
-
-  </div>
-
-  {% set exp = result.explanation %}
-
-  <!-- ══ FRAUD PATTERNS ══════════════════════════════════════ -->
-  {% if exp.fraud_patterns %}
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
-    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
-      <div class="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-400 text-xs">
-        <i class="fa-solid fa-flag"></i>
-      </div>
-      <div class="flex-1">
-        <h3 class="font-display font-semibold text-white text-sm">Fraud Pattern Detection</h3>
-        <p class="text-gray-400 text-xs">{{ exp.fraud_patterns|length }} pattern{{ 's' if exp.fraud_patterns|length != 1 }} matched</p>
-      </div>
-      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider
-        {% if exp.fraud_patterns|length >= 3 %}bg-red-500/15 border border-red-500/25 text-red-400
-        {% elif exp.fraud_patterns|length == 2 %}bg-amber-500/15 border border-amber-500/25 text-amber-400
-        {% else %}bg-green-500/15 border border-green-500/25 text-green-400{% endif %}">
-        {{ exp.fraud_patterns|length }} pattern{{ 's' if exp.fraud_patterns|length != 1 }}
-      </span>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
-      {% for pat in exp.fraud_patterns %}
-      <div class="rounded-xl p-4 border
-        {% if pat.severity == 'critical' %}bg-red-900/15 border-red-500/25
-        {% elif pat.severity == 'high' %}bg-amber-900/15 border-amber-500/25
-        {% elif pat.severity == 'medium' %}bg-indigo-900/15 border-indigo-500/25
-        {% else %}bg-gray-800 border-gray-700{% endif %}">
-        <div class="flex items-center gap-2.5 mb-2">
-          <span class="text-lg">{{ pat.icon }}</span>
-          <div>
-            <p class="font-semibold text-white text-sm leading-none mb-1">{{ pat.label }}</p>
-            <span class="inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider
-              {% if pat.severity == 'critical' %}bg-red-500/15 text-red-400
-              {% elif pat.severity == 'high' %}bg-amber-500/15 text-amber-400
-              {% elif pat.severity == 'medium' %}bg-indigo-500/15 text-indigo-400
-              {% else %}bg-gray-700 text-gray-400{% endif %}">{{ pat.severity }}</span>
-          </div>
-        </div>
-        {% if pat.matched %}<p class="text-xs text-gray-400 mb-1.5">Match: <code class="text-red-400 bg-red-500/10">{{ pat.matched }}</code></p>{% endif %}
-        <p class="text-xs text-gray-400 leading-relaxed">{{ pat.reason }}</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- ══ WHY THIS PREDICTION ═════════════════════════════════ -->
-  {% if exp.reasons %}
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
-    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
-      <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
-        <i class="fa-solid fa-brain"></i>
+<!-- Verdict bar — full bleed, industrial differentiator -->
+<div class="{% if result.is_fraud %}bg-fraud/10 border-b-2 border-fraud{% else %}bg-legit/10 border-b-2 border-legit{% endif %}">
+  <div class="max-w-5xl mx-auto px-5 py-5 flex flex-wrap items-center gap-4 justify-between">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0
+                  {% if result.is_fraud %}bg-fraud/15 text-fraud{% else %}bg-legit/15 text-legit{% endif %}">
+        <i class="fa-solid {% if result.is_fraud %}fa-circle-xmark{% else %}fa-circle-check{% endif %} text-lg"></i>
       </div>
       <div>
-        <h3 class="font-display font-semibold text-white text-sm">Why This Prediction?</h3>
-        <p class="text-gray-400 text-xs">Key factors that drove the {{ result.model_name }} decision</p>
-      </div>
-    </div>
-    <div class="p-4 space-y-2">
-      {% for r in exp.reasons %}
-      <div class="flex items-start gap-3 rounded-xl px-4 py-3 border
-        {% if r.sev == 'critical' %}bg-red-900/10 border-red-500/20
-        {% elif r.sev == 'high'   %}bg-amber-900/10 border-amber-500/20
-        {% else %}bg-gray-800/50 border-gray-700{% endif %}">
-        <span class="text-base mt-0.5 shrink-0">{{ r.icon }}</span>
-        <p class="text-sm text-gray-300 leading-relaxed">{{ r.text }}</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- ══ TOKEN INFLUENCE ═════════════════════════════════════ -->
-  {% if exp.top_fraud_words or exp.top_legit_words %}
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
-    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
-      <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
-        <i class="fa-solid fa-chart-bar"></i>
-      </div>
-      <div>
-        <h3 class="font-display font-semibold text-white text-sm">Token Influence Analysis</h3>
-        <p class="text-gray-400 text-xs">TF-IDF × Coefficient — how each word shifted the model's decision</p>
-      </div>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-700 p-4 gap-6">
-      {% if exp.top_fraud_words %}
-      <div>
-        <p class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-          <i class="fa-solid fa-triangle-exclamation"></i> Fraud Signals
-          <span class="text-gray-500 normal-case font-normal tracking-normal ml-1">→ Fraudulent</span>
+        <p class="font-mono font-semibold text-sm {% if result.is_fraud %}text-fraud{% else %}text-legit{% endif %}">
+          {% if result.is_fraud %}FRAUDULENT POSTING DETECTED{% else %}LEGITIMATE POSTING{% endif %}
         </p>
-        {% for item in exp.top_fraud_words %}
-        <div class="flex items-center gap-2.5 mb-2">
-          <span class="font-mono text-[11px] text-red-300 w-28 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ item.word }}</span>
-          <div class="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-            <div class="bar-anim h-full bg-red-500 rounded-full" style="width:{{ item.pct }}%"></div>
-          </div>
-          <span class="text-[11px] text-gray-500 w-9 text-right shrink-0">{{ item.pct }}%</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-      {% if exp.top_legit_words %}
-      <div {% if exp.top_fraud_words %}class="sm:pl-6"{% endif %}>
-        <p class="text-xs font-bold text-green-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-          <i class="fa-solid fa-check"></i> Legitimacy Signals
-          <span class="text-gray-500 normal-case font-normal tracking-normal ml-1">→ Legitimate</span>
-        </p>
-        {% for item in exp.top_legit_words %}
-        <div class="flex items-center gap-2.5 mb-2">
-          <span class="font-mono text-[11px] text-green-300 w-28 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ item.word }}</span>
-          <div class="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-            <div class="bar-anim h-full bg-green-500 rounded-full" style="width:{{ item.pct }}%"></div>
-          </div>
-          <span class="text-[11px] text-gray-500 w-9 text-right shrink-0">{{ item.pct }}%</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- ══ HIGHLIGHTED TEXT ════════════════════════════════════ -->
-  {% if exp.highlighted_html %}
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
-    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
-      <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </div>
-      <div>
-        <h3 class="font-display font-semibold text-white text-sm">Highlighted Text Analysis</h3>
-        <p class="text-gray-400 text-xs">
-          <span class="text-red-400">■</span> Fraud signals &nbsp;
-          <span class="text-green-400">■</span> Legitimacy signals — first 800 characters
+        <p class="font-mono text-[11px] text-t3 mt-0.5">
+          {{ result.model_name }}
+          {% if elapsed_ms %}&nbsp;·&nbsp;{{ elapsed_ms }}ms{% endif %}
         </p>
       </div>
     </div>
-    <div class="p-5 text-sm text-gray-300 leading-8 font-sans">{{ exp.highlighted_html | safe }}</div>
-  </div>
-  {% endif %}
-
-  <!-- ══ DOMAIN ANALYSIS HEADER ══════════════════════════════ -->
-  <div class="flex items-center gap-3 pt-2">
-    <h2 class="font-display font-semibold text-white text-base flex items-center gap-2">
-      <i class="fa-solid fa-microscope text-blue-400"></i> Automated Domain Analysis
-    </h2>
-    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider
-      {% if analysis.overall_risk == 'high' %}bg-red-500/15 border border-red-500/25 text-red-400
-      {% elif analysis.overall_risk == 'medium' %}bg-amber-500/15 border border-amber-500/25 text-amber-400
-      {% else %}bg-green-500/15 border border-green-500/25 text-green-400{% endif %}">
-      {{ analysis.overall_risk|upper }} · {{ analysis.combined_score }}/100 · {{ analysis.total_red_flags }} flag{{ 's' if analysis.total_red_flags != 1 }}
-    </span>
-  </div>
-
-  <!-- URL Card -->
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
-    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
-      <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
-        <i class="fa-solid fa-globe"></i>
-      </div>
-      <div class="flex-1">
-        <h3 class="font-display font-semibold text-white text-sm">Company URL Analysis</h3>
-        <p class="text-gray-500 text-xs">{{ job.website or 'No URL provided' }}</p>
-      </div>
-      <span class="font-display font-bold text-sm px-3 py-1.5 rounded-lg
-        {% if analysis.url.risk_level == 'high' %}bg-red-500/15 text-red-400 border border-red-500/25
-        {% elif analysis.url.risk_level == 'medium' %}bg-amber-500/15 text-amber-400 border border-amber-500/25
-        {% else %}bg-green-500/15 text-green-400 border border-green-500/25{% endif %}">
-        {{ analysis.url.score }}/100
-      </span>
-    </div>
-    <div class="p-5">
-      <div class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold border mb-3
-        {% if analysis.url.risk_level == 'high' %}bg-red-900/25 text-red-300 border-red-500/25
-        {% elif analysis.url.risk_level == 'medium' %}bg-amber-900/25 text-amber-300 border-amber-500/25
-        {% else %}bg-green-900/25 text-green-300 border-green-500/25{% endif %}">
-        {% if analysis.url.risk_level == 'high' %}<i class="fa-solid fa-triangle-exclamation"></i> Fraudulent Domain
-        {% elif analysis.url.risk_level == 'medium' %}<i class="fa-solid fa-exclamation"></i> Suspicious Domain
-        {% else %}<i class="fa-solid fa-check"></i> Legitimate Domain{% endif %}
-      </div>
-      <p class="text-sm text-gray-300 leading-relaxed mb-3">{{ analysis.url.summary }}</p>
-      {% if analysis.url.domain %}
-      <p class="text-xs text-gray-500 mb-3"><i class="fa-solid fa-link text-blue-400"></i> Resolved domain: <strong class="text-gray-300">{{ analysis.url.domain }}</strong></p>
-      {% endif %}
-      {% if analysis.url.flags %}
-      <div class="space-y-2 mb-3">
-        {% for icon, title, detail in analysis.url.flags %}
-        <div class="flex items-start gap-3 bg-red-900/10 border border-red-500/20 rounded-xl px-3.5 py-3">
-          <span class="text-base shrink-0">{{ icon }}</span>
-          <div>
-            <p class="font-semibold text-red-300 text-xs mb-0.5">{{ title }}</p>
-            <p class="text-gray-400 text-xs leading-relaxed">{{ detail }}</p>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="flex items-center gap-2 bg-green-900/15 border border-green-500/20 rounded-xl px-3.5 py-2.5 text-green-300 text-xs mb-3">
-        <i class="fa-solid fa-check"></i> No suspicious URL patterns detected.
-      </div>
-      {% endif %}
-      {% if analysis.url.techniques %}
-      <div class="flex flex-wrap gap-1.5">
-        {% for t in analysis.url.techniques %}
-        <span class="bg-gray-900 border border-gray-700 rounded-full px-2.5 py-0.5 text-[11px] text-gray-400">{{ t }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('classify') }}"
+         class="font-mono text-xs text-t3 hover:text-t2 border border-border
+                hover:border-b2 px-3 py-1.5 rounded-md transition-colors btn-press">
+        <i class="fa-solid fa-arrow-left text-[10px] mr-1.5"></i>Analyse another
+      </a>
     </div>
   </div>
-
-  <!-- Company Name Card -->
-  <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden">
-    <div class="flex items-center gap-3 px-5 py-4 bg-gray-800 border-b border-gray-700">
-      <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs">
-        <i class="fa-solid fa-building"></i>
-      </div>
-      <div class="flex-1">
-        <h3 class="font-display font-semibold text-white text-sm">Company Name Analysis</h3>
-        <p class="text-gray-500 text-xs">{{ job.company or 'Not provided' }}</p>
-      </div>
-      <span class="font-display font-bold text-sm px-3 py-1.5 rounded-lg
-        {% if analysis.company.risk_level == 'high' %}bg-red-500/15 text-red-400 border border-red-500/25
-        {% elif analysis.company.risk_level == 'medium' %}bg-amber-500/15 text-amber-400 border border-amber-500/25
-        {% else %}bg-green-500/15 text-green-400 border border-green-500/25{% endif %}">
-        {{ analysis.company.score }}/100
-      </span>
-    </div>
-    <div class="p-5">
-      <p class="text-sm text-gray-300 leading-relaxed mb-3">{{ analysis.company.summary }}</p>
-      {% if analysis.company.is_known %}
-      <div class="flex items-center gap-2 bg-green-900/15 border border-green-500/20 rounded-xl px-3.5 py-2.5 text-green-300 text-xs mb-3">
-        <i class="fa-solid fa-check"></i> Verified known company in system database
-      </div>
-      {% endif %}
-      {% if analysis.company.flags %}
-      <div class="space-y-2 mb-3">
-        {% for icon, title, detail in analysis.company.flags %}
-        <div class="flex items-start gap-3 bg-red-900/10 border border-red-500/20 rounded-xl px-3.5 py-3">
-          <span class="text-base shrink-0">{{ icon }}</span>
-          <div>
-            <p class="font-semibold text-red-300 text-xs mb-0.5">{{ title }}</p>
-            <p class="text-gray-400 text-xs leading-relaxed">{{ detail }}</p>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="flex items-center gap-2 bg-green-900/15 border border-green-500/20 rounded-xl px-3.5 py-2.5 text-green-300 text-xs mb-3">
-        <i class="fa-solid fa-check"></i> No suspicious patterns in company name.
-      </div>
-      {% endif %}
-      <div class="flex flex-wrap gap-1.5">
-        {% for t in ['Known Company DB','Scam Keyword Scoring','Brand Impersonation','Vague Name Detection','Suffix Analysis'] %}
-        <span class="bg-gray-900 border border-gray-700 rounded-full px-2.5 py-0.5 text-[11px] text-gray-400">{{ t }}</span>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ ADVICE ══════════════════════════════════════════════ -->
-  <div class="rounded-2xl p-5 border
-    {% if result.is_fraud %}bg-red-900/15 border-red-500/25{% else %}bg-green-900/15 border-green-500/25{% endif %}">
-    <h4 class="font-display font-bold text-sm mb-4 flex items-center gap-2
-      {% if result.is_fraud %}text-red-300{% else %}text-green-300{% endif %}">
-      <i class="fa-solid {% if result.is_fraud %}fa-shield-halved{% else %}fa-briefcase{% endif %}"></i>
-      {% if result.is_fraud %}What You Should Do{% else %}Next Steps{% endif %}
-    </h4>
-    <ul class="space-y-2">
-      {% if result.is_fraud %}
-      {% for item in [
-        ('Do <strong>not</strong> pay any registration, training, or starter-kit fee.','fa-ban','text-red-400'),
-        ('Do <strong>not</strong> share Aadhaar, PAN card, or bank account details.','fa-ban','text-red-400'),
-        ('Do <strong>not</strong> click any links or download files from this posting.','fa-ban','text-red-400'),
-        ('Report the posting on the job portal immediately.','fa-flag','text-amber-400'),
-        ('File a complaint at <strong>cybercrime.gov.in</strong> if money was involved.','fa-circle-exclamation','text-amber-400'),
-      ] %}
-      <li class="flex items-start gap-2.5 text-sm text-gray-300">
-        <i class="fa-solid {{ item[1] }} {{ item[2] }} mt-0.5 text-xs shrink-0"></i>
-        <span>{{ item[0] | safe }}</span>
-      </li>
-      {% endfor %}
-      {% else %}
-      {% for item in [
-        'Research the company independently before submitting your application.',
-        'Verify the company on LinkedIn and their official website.',
-        'Never pay any fees — legitimate employers do not charge applicants.',
-        'Apply through the official company careers page where possible.',
-      ] %}
-      <li class="flex items-start gap-2.5 text-sm text-gray-300">
-        <i class="fa-solid fa-check text-green-400 mt-0.5 text-xs shrink-0"></i>{{ item }}
-      </li>
-      {% endfor %}
-      {% endif %}
-    </ul>
-  </div>
-
-  <!-- ══ SUBMITTED DETAILS ════════════════════════════════════ -->
-  <details class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden group">
-    <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer text-sm text-gray-400
-                    hover:text-gray-200 transition-colors select-none bg-gray-800">
-      <i class="fa-solid fa-chevron-right text-xs text-gray-500 group-open:rotate-90 transition-transform"></i>
-      <i class="fa-solid fa-file-lines text-blue-400 text-xs"></i> View Submitted Details
-    </summary>
-    <div class="p-5 border-t border-gray-700">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y divide-gray-700/60">
-        {% if job.job_title %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Job Title</p><p class="text-sm text-gray-200">{{ job.job_title }}</p></div>{% endif %}
-        {% if job.company   %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Company</p><p class="text-sm text-gray-200">{{ job.company }}</p></div>{% endif %}
-        {% if job.location  %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Location</p><p class="text-sm text-gray-200">{{ job.location }}</p></div>{% endif %}
-        {% if job.salary    %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Salary</p><p class="text-sm text-gray-200">{{ job.salary }}</p></div>{% endif %}
-        {% if job.website   %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Website</p><a href="{{ job.website }}" target="_blank" class="text-sm text-blue-400 hover:underline break-all">{{ job.website }}</a></div>{% endif %}
-        <div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Model</p><p class="text-sm text-gray-200">{{ result.model_name }}</p></div>
-        <div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Fraud Score</p><p class="text-sm {% if result.is_fraud %}text-red-400{% else %}text-green-400{% endif %}">{{ result.fraud_prob }}% P(fraud) · {{ result.legit_prob }}% P(legit)</p></div>
-        {% if elapsed_ms %}<div class="py-3"><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Inference Time</p><p class="text-sm text-gray-200">{{ elapsed_ms }}ms</p></div>{% endif %}
-      </div>
-      {% if job.description %}
-      <div class="mt-4 pt-4 border-t border-gray-700">
-        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Description</p>
-        <p class="text-sm text-gray-400 leading-relaxed">{{ job.description[:600] }}{% if job.description|length > 600 %}…{% endif %}</p>
-      </div>
-      {% endif %}
-    </div>
-  </details>
-
-  <!-- ══ ACTIONS ═════════════════════════════════════════════ -->
-  <div class="flex gap-3 flex-wrap pt-2">
-    <a href="{{ url_for('classify') }}"
-       class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500
-              text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-blue-500/20">
-      <i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse Another
-    </a>
-    <a href="{{ url_for('history') }}"
-       class="inline-flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700
-              text-gray-300 font-semibold text-sm rounded-xl border border-gray-700 transition-all">
-      <i class="fa-solid fa-clock-rotate-left text-xs"></i> View History
-    </a>
-  </div>
-
 </div>
+
+<div class="max-w-5xl mx-auto px-5 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- LEFT: main analysis (2/3) -->
+    <div class="lg:col-span-2 space-y-5">
+
+      <!-- Metric trio -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="card p-4 {% if result.is_fraud %}border-fraud/25{% endif %}">
+          <p class="font-mono font-bold text-2xl text-fraud">{{ result.fraud_prob }}%</p>
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mt-1">Fraud prob.</p>
+        </div>
+        <div class="card p-4 {% if not result.is_fraud %}border-legit/25{% endif %}">
+          <p class="font-mono font-bold text-2xl text-legit">{{ result.legit_prob }}%</p>
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mt-1">Legit prob.</p>
+        </div>
+        <div class="card p-4">
+          <p class="font-mono font-bold text-2xl
+            {% if analysis.url.risk_level == 'high' %}text-fraud
+            {% elif analysis.url.risk_level == 'medium' %}text-amber-400
+            {% else %}text-legit{% endif %}">
+            {{ analysis.url.score }}/100
+          </p>
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mt-1">URL score</p>
+        </div>
+      </div>
+
+      <!-- Confidence bar -->
+      <div class="card p-5">
+        <div class="flex justify-between items-center mb-3">
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest">Confidence</p>
+          <p class="font-mono font-semibold text-t1 text-sm">{{ result.confidence }}%</p>
+        </div>
+        <div class="h-1.5 bg-border rounded-full overflow-hidden">
+          <div class="conf-fill h-full rounded-full
+            {% if result.is_fraud %}bg-fraud{% else %}bg-legit{% endif %}"
+               style="width:0%" data-target="{{ result.confidence }}"></div>
+        </div>
+      </div>
+
+      <!-- Fraud patterns -->
+      {% set exp = result.explanation %}
+      {% if exp.fraud_patterns %}
+      <div class="card overflow-hidden">
+        <div class="card-header flex items-center justify-between">
+          <span>Fraud patterns</span>
+          <span class="text-fraud">{{ exp.fraud_patterns|length }} matched</span>
+        </div>
+        <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {% for pat in exp.fraud_patterns %}
+          <div class="rounded-lg p-4 border
+            {% if pat.severity == 'high' %}bg-fraud/5 border-fraud/20
+            {% elif pat.severity == 'medium' %}bg-amber-500/5 border-amber-500/20
+            {% else %}bg-surface-2 border-border{% endif %}">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-base">{{ pat.icon }}</span>
+              <p class="font-mono text-xs font-medium text-t1">{{ pat.label }}</p>
+            </div>
+            {% if pat.matched %}
+            <p class="font-mono text-[10px] text-t3 mb-1.5">
+              Match: <code>{{ pat.matched }}</code>
+            </p>
+            {% endif %}
+            <p class="font-mono text-[11px] text-t2 leading-relaxed">{{ pat.reason }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Reasons -->
+      {% if exp.reasons %}
+      <div class="card overflow-hidden">
+        <div class="card-header">Why this prediction</div>
+        <div class="p-5 space-y-2">
+          {% for r in exp.reasons %}
+          <div class="flex items-start gap-3 py-2 border-b border-border last:border-0">
+            <span class="text-sm shrink-0 mt-0.5">{{ r.icon }}</span>
+            <p class="font-mono text-[11px] text-t2 leading-relaxed">{{ r.text }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Token influence -->
+      {% if exp.top_fraud_words or exp.top_legit_words %}
+      <div class="card overflow-hidden">
+        <div class="card-header">Token influence</div>
+        <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {% if exp.top_fraud_words %}
+          <div>
+            <p class="font-mono text-[10px] text-fraud uppercase tracking-widest mb-3">
+              Fraud signals
+            </p>
+            {% for item in exp.top_fraud_words %}
+            <div class="flex items-center gap-2 mb-2">
+              <span class="font-mono text-[11px] text-fraud/80 w-24 truncate shrink-0">{{ item.word }}</span>
+              <div class="flex-1 h-1 bg-border rounded-full overflow-hidden">
+                <div class="bar-anim h-full bg-fraud/60 rounded-full" style="width:{{ item.pct }}%"></div>
+              </div>
+              <span class="font-mono text-[10px] text-t3 w-8 text-right shrink-0">{{ item.pct }}%</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if exp.top_legit_words %}
+          <div>
+            <p class="font-mono text-[10px] text-legit uppercase tracking-widest mb-3">
+              Legit signals
+            </p>
+            {% for item in exp.top_legit_words %}
+            <div class="flex items-center gap-2 mb-2">
+              <span class="font-mono text-[11px] text-legit/80 w-24 truncate shrink-0">{{ item.word }}</span>
+              <div class="flex-1 h-1 bg-border rounded-full overflow-hidden">
+                <div class="bar-anim h-full bg-legit/60 rounded-full" style="width:{{ item.pct }}%"></div>
+              </div>
+              <span class="font-mono text-[10px] text-t3 w-8 text-right shrink-0">{{ item.pct }}%</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Highlighted text -->
+      {% if exp.highlighted_html %}
+      <div class="card overflow-hidden">
+        <div class="card-header">
+          Text highlights &nbsp;
+          <span class="text-fraud text-[10px]">■</span> fraud signal &nbsp;
+          <span class="text-legit text-[10px]">■</span> legit signal
+        </div>
+        <div class="p-5 font-mono text-xs text-t2 leading-7">
+          {{ exp.highlighted_html | safe }}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT: sidebar (1/3) -->
+    <div class="space-y-5">
+
+      <!-- Verdict advice -->
+      <div class="card p-5
+        {% if result.is_fraud %}border-fraud/20{% else %}border-legit/20{% endif %}">
+        <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-4">
+          {% if result.is_fraud %}What to do{% else %}Next steps{% endif %}
+        </p>
+        <ul class="space-y-2">
+          {% if result.is_fraud %}
+            {% for item, icon in [
+                ('Do not pay any registration or joining fee.', 'fa-ban'),
+                ('Do not share Aadhaar, PAN, or bank details.', 'fa-ban'),
+                ('Do not click any links from this posting.', 'fa-ban'),
+                ('Report on the job portal immediately.', 'fa-flag'),
+                ('File complaint at cybercrime.gov.in.', 'fa-circle-exclamation'),
+            ] %}
+            <li class="flex items-start gap-2 font-mono text-[11px] text-t2">
+              <i class="fa-solid {{ icon }} text-fraud text-[9px] mt-0.5 shrink-0"></i>
+              {{ item }}
+            </li>
+            {% endfor %}
+          {% else %}
+            {% for item in [
+                'Research the company independently before applying.',
+                'Verify on LinkedIn and their official website.',
+                'Never pay fees — legitimate employers never charge.',
+                'Apply through the official careers page.',
+            ] %}
+            <li class="flex items-start gap-2 font-mono text-[11px] text-t2">
+              <i class="fa-solid fa-check text-legit text-[9px] mt-0.5 shrink-0"></i>
+              {{ item }}
+            </li>
+            {% endfor %}
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- URL analysis -->
+      <div class="card overflow-hidden">
+        <div class="card-header flex items-center justify-between">
+          <span>URL analysis</span>
+          <span class="font-mono text-[11px]
+            {% if analysis.url.risk_level == 'high' %}text-fraud
+            {% elif analysis.url.risk_level == 'medium' %}text-amber-400
+            {% else %}text-legit{% endif %}">
+            {{ analysis.url.score }}/100
+          </span>
+        </div>
+        <div class="p-4">
+          <p class="font-mono text-[10px] text-t3 mb-2 truncate">
+            {{ job.website or 'No URL provided' }}
+          </p>
+          <p class="font-mono text-[11px] text-t2 leading-relaxed mb-3">
+            {{ analysis.url.summary }}
+          </p>
+          {% if analysis.url.flags %}
+          <div class="space-y-2">
+            {% for icon, title, detail in analysis.url.flags %}
+            <div class="bg-fraud/5 border border-fraud/15 rounded-lg p-3">
+              <p class="font-mono text-[10px] text-fraud mb-1">{{ icon }} {{ title }}</p>
+              <p class="font-mono text-[10px] text-t3">{{ detail }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="font-mono text-[11px] text-legit">
+            <i class="fa-solid fa-check text-[9px] mr-1"></i>No suspicious URL patterns
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Company analysis -->
+      <div class="card overflow-hidden">
+        <div class="card-header flex items-center justify-between">
+          <span>Company analysis</span>
+          <span class="font-mono text-[11px]
+            {% if analysis.company.risk_level == 'high' %}text-fraud
+            {% elif analysis.company.risk_level == 'medium' %}text-amber-400
+            {% else %}text-legit{% endif %}">
+            {{ analysis.company.score }}/100
+          </span>
+        </div>
+        <div class="p-4">
+          <p class="font-mono text-[11px] text-t2 leading-relaxed">
+            {{ analysis.company.summary }}
+          </p>
+          {% if analysis.company.is_known %}
+          <p class="font-mono text-[11px] text-legit mt-2">
+            <i class="fa-solid fa-check text-[9px] mr-1"></i>Verified known company
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Submitted details (collapsible) -->
+      <details class="card overflow-hidden group">
+        <summary class="card-header flex items-center justify-between cursor-pointer hover:text-t2">
+          <span>Submitted details</span>
+          <i class="fa-solid fa-chevron-right text-[9px] group-open:rotate-90 transition-transform"></i>
+        </summary>
+        <div class="p-4 space-y-3">
+          {% for key, label in [('job_title','Title'),('company','Company'),('location','Location'),('salary','Salary')] %}
+          {% if job[key] %}
+          <div>
+            <p class="font-mono text-[9px] text-t3 uppercase tracking-widest mb-0.5">{{ label }}</p>
+            <p class="font-mono text-[11px] text-t1">{{ job[key] }}</p>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </details>
+
+    </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // Animate confidence bar
   document.querySelectorAll('.conf-fill[data-target]').forEach(el => {
     setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 200);
   });
-  document.querySelectorAll('.bar-anim').forEach(el => {
+  // Animate token bars (stagger)
+  document.querySelectorAll('.bar-anim').forEach((el, i) => {
     const w = el.style.width;
     el.style.width = '0';
-    setTimeout(() => { el.style.width = w; }, 400);
+    setTimeout(() => { el.style.width = w; }, 400 + i * 30);
+  });
+  // Stagger parent trigger
+  document.querySelectorAll('.stagger-parent').forEach(el => {
+    el.classList.add('animate');
   });
 });
 </script>

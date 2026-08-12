@@ -1,154 +1,94 @@
 {% extends "base.html" %}
-{% block title %}JobGuard — Detect Fake Job Postings Instantly{% endblock %}
-{% block meta_desc %}Paste any job posting and get an instant AI-powered fraud verdict. Free, fast, and accurate.{% endblock %}
-
+{% block title %}JobGuard — Detect Fake Job Postings{% endblock %}
 {% block content %}
 
-<!-- ═══ HERO ═════════════════════════════════════════════ -->
-<section class="relative overflow-hidden pt-32 pb-28 px-6 hero-glow">
-  <div class="hero-grid"></div>
-  <div class="relative z-10 max-w-3xl mx-auto text-center">
+<!-- Hero -->
+<section class="relative overflow-hidden">
+  <div class="hero-glow hero-grid"></div>
+  <div class="relative max-w-5xl mx-auto px-5 pt-24 pb-20">
 
-    <div class="inline-flex items-center gap-2 bg-blue-500/8 border border-blue-500/20
-                text-blue-400 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide mb-8">
-      <span class="w-1.5 h-1.5 rounded-full bg-blue-400 pulse-dot"></span>
-      AI-powered fraud detection · Free to use
+    <div class="inline-flex items-center gap-2 border border-border rounded-full
+                px-3 py-1 mb-8 bg-surface">
+      <span class="w-1.5 h-1.5 rounded-full bg-legit pulse-dot"></span>
+      <span class="font-mono text-[11px] text-t2">DistilBERT · Fine-tuned on 17,880 job postings</span>
     </div>
 
-    <h1 class="font-display font-bold text-[3.5rem] md:text-[4.25rem] leading-[1.07]
-               tracking-tight text-white mb-6">
-      Is that job posting<br><span class="grad-text">real or a scam?</span>
+    <h1 class="font-display font-extrabold text-4xl md:text-6xl tracking-tight leading-[1.05] mb-6">
+      Is that job posting <span class="grad-text">real or a scam?</span>
     </h1>
-
-    <p class="text-gray-400 text-lg leading-relaxed max-w-lg mx-auto mb-10">
-      Paste the job description and we'll tell you instantly. Our AI analyses the
-      text and the company's domain for fraud signals — before you waste time applying.
+    <p class="text-t2 text-base md:text-lg leading-relaxed max-w-xl mb-10 font-sans">
+      Paste the job description. Get a verdict in seconds —
+      powered by BERT, trained on real fraud patterns.
     </p>
 
-    <div class="flex items-center justify-center gap-3 flex-wrap">
+    <div class="flex items-center flex-wrap gap-3">
       <a href="{{ url_for('classify') }}"
-         class="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl
-                bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[0.92rem]
-                transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/35
-                hover:-translate-y-0.5">
-        <i class="fa-solid fa-magnifying-glass text-xs"></i> Check a Job Posting
+         class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-lg
+                bg-fraud hover:bg-fraud/90 text-white font-mono text-sm font-medium
+                btn-press shadow-lg shadow-fraud/20 transition-colors">
+        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        Analyse a Job Posting
       </a>
       <a href="{{ url_for('about') }}"
-         class="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl
-                border border-white/[.08] hover:border-white/[.15]
-                text-gray-300 hover:text-white font-semibold text-[0.92rem]
-                hover:bg-white/[.04] transition-all">
-        How it works
+         class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
+                border border-border text-t2 hover:text-t1 hover:border-b2
+                font-mono text-sm transition-colors">
+        How it works <i class="fa-solid fa-arrow-right text-[10px]"></i>
       </a>
     </div>
 
-    <!-- Trust badges -->
-    <div class="flex flex-wrap justify-center gap-x-8 gap-y-3 mt-12 text-xs text-gray-600">
-      <span class="flex items-center gap-2"><i class="fa-solid fa-bolt text-blue-500"></i> Results in under a second</span>
-      <span class="flex items-center gap-2"><i class="fa-solid fa-lock text-blue-500"></i> No account required</span>
-      <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved text-blue-500"></i> Free forever</span>
+    <!-- Stats -->
+    <div class="mt-16 grid grid-cols-3 gap-4 max-w-md">
+      {% for val, label in [
+          (stats.total|string, 'jobs analysed'),
+          (stats.fraud|string, 'fraud detected'),
+          ('4.8%',             'of jobs are fake'),
+      ] %}
+      <div class="card p-4">
+        <p class="font-mono font-semibold text-xl text-t1">{{ val }}</p>
+        <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mt-1">{{ label }}</p>
+      </div>
+      {% endfor %}
     </div>
 
   </div>
-
-  <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
 </section>
 
-<!-- ═══ STATS ════════════════════════════════════════════ -->
-<section class="py-16 px-6 border-y border-white/[.04] bg-white/[.015]">
-  <div class="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-    {% for n, label, col in [
-      (stats.total, 'Postings analysed',  'text-white'),
-      (stats.fraud, 'Frauds caught',      'text-red-400'),
-      (stats.legit, 'Legitimate verified','text-green-400'),
-      (98,          '% detection rate',   'text-blue-400'),
+<!-- How it works -->
+<section class="max-w-5xl mx-auto px-5 py-20 border-t border-border">
+  <h2 class="font-mono font-semibold text-xs text-t3 uppercase tracking-widest mb-10">
+    How it works
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-parent animate">
+    {% for step, desc in [
+        ('01 — Paste',    'Copy the full job posting — title, description, requirements, website.'),
+        ('02 — Analyse',  'BERT reads the posting and checks 8+ fraud pattern categories simultaneously.'),
+        ('03 — Verdict',  'Get fraud probability, evidence, and advice in under a second.'),
     ] %}
-    <div class="text-center">
-      <div class="font-display font-bold text-4xl {{ col }} mb-1 tracking-tight"
-           data-target="{{ n }}">0{% if n == 98 %}{% endif %}</div>
-      <div class="text-xs text-gray-600 font-medium">{{ label }}</div>
+    <div class="stagger-in">
+      <p class="font-mono font-medium text-sm text-t1 mb-2">{{ step }}</p>
+      <p class="font-mono text-xs text-t3 leading-relaxed">{{ desc }}</p>
     </div>
     {% endfor %}
   </div>
 </section>
 
-<!-- ═══ HOW IT WORKS ═════════════════════════════════════ -->
-<section class="py-24 px-6">
-  <div class="max-w-5xl mx-auto">
-    <div class="text-center mb-16">
-      <h2 class="font-display font-bold text-[2rem] text-white tracking-tight mb-3">How JobGuard works</h2>
-      <p class="text-gray-500 text-sm max-w-md mx-auto">Three layers of fraud detection running simultaneously in under a second</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-      {% for icon, title, desc in [
-        ('fa-file-lines',
-         'Paste the job description',
-         'Add the job title, company name, website, and description. The more detail you include, the more precise the result.'),
-        ('fa-brain',
-         'AI analyses the content',
-         'Our model scans the text for hundreds of fraud signals — vague requirements, unrealistic pay, pressure tactics, and more.'),
-        ('fa-shield-halved',
-         'Get an instant verdict',
-         'You receive a clear fraud/legitimate verdict with a confidence score, specific red flags found, and what to do next.'),
-      ] %}
-      <div class="relative bg-white/[.03] border border-white/[.07] rounded-2xl p-7
-                  hover:bg-white/[.05] hover:border-white/[.12] transition-all group">
-        <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/15
-                    flex items-center justify-center text-blue-400 text-base mb-5">
-          <i class="fa-solid {{ icon }}"></i>
-        </div>
-        <h3 class="font-display font-semibold text-white text-[0.95rem] mb-2">{{ title }}</h3>
-        <p class="text-gray-500 text-[0.84rem] leading-relaxed">{{ desc }}</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<!-- ═══ WHAT IT CATCHES ══════════════════════════════════ -->
-<section class="py-24 px-6 border-y border-white/[.04] bg-white/[.01]">
-  <div class="max-w-5xl mx-auto">
-    <div class="text-center mb-16">
-      <h2 class="font-display font-bold text-[2rem] text-white tracking-tight mb-3">What we detect</h2>
-      <p class="text-gray-500 text-sm">Common patterns found in fraudulent job postings</p>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {% for title, desc in [
-        ('Upfront fees',          'Any request to pay for training, registration, or a "starter kit" before you even start.'),
-        ('Suspicious domains',    'Company websites on free hosting, missing SSL, or domains that mimic real companies.'),
-        ('Vague requirements',    'No qualifications listed despite promising unusually high pay or "guaranteed income".'),
-        ('Unrealistic promises',  'Guaranteed salaries, easy money from home, no experience needed for high-paying roles.'),
-        ('Data harvesting',       'Requests for Aadhaar, PAN, or bank details early in the process before any offer.'),
-        ('Brand impersonation',   'Slightly misspelled company names or domains designed to look like trusted employers.'),
-      ] %}
-      <div class="bg-white/[.03] border border-white/[.06] rounded-xl p-5
-                  hover:border-red-500/20 transition-all group">
-        <div class="w-2 h-2 rounded-full bg-red-500/60 mb-4 group-hover:bg-red-400 transition-colors"></div>
-        <h4 class="font-display font-semibold text-white text-sm mb-2">{{ title }}</h4>
-        <p class="text-gray-500 text-xs leading-relaxed">{{ desc }}</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<!-- ═══ CTA ═══════════════════════════════════════════════ -->
-<section class="py-28 px-6">
-  <div class="max-w-2xl mx-auto text-center">
-    <h2 class="font-display font-bold text-[2rem] md:text-[2.5rem] text-white tracking-tight mb-4">
-      Don't apply blindly.<br>Verify first.
-    </h2>
-    <p class="text-gray-500 text-sm mb-10 max-w-sm mx-auto">
-      Takes 30 seconds. Could save you from losing money, data, or weeks of wasted effort.
-    </p>
-    <a href="{{ url_for('classify') }}"
-       class="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl
-              bg-blue-600 hover:bg-blue-500 text-white font-semibold
-              transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/35
-              hover:-translate-y-0.5 text-[0.92rem]">
-      <i class="fa-solid fa-magnifying-glass text-xs"></i> Check a Job Posting — Free
-    </a>
+<!-- Fraud signals -->
+<section class="max-w-5xl mx-auto px-5 pb-20">
+  <h2 class="font-mono font-semibold text-xs text-t3 uppercase tracking-widest mb-6">
+    What we detect
+  </h2>
+  <div class="flex flex-wrap gap-2">
+    {% for signal in [
+        'Registration fee requests', 'Guaranteed income promises',
+        'No-experience scams', 'Aadhaar/PAN requests',
+        'Fake WFH schemes', 'Urgent pressure tactics',
+        'Upfront payment traps', 'MLM disguised as jobs',
+        'Vague/generic postings', 'Suspicious domain names',
+    ] %}
+    <span class="font-mono text-[11px] px-3 py-1.5 rounded-full
+                 bg-surface border border-border text-t2">{{ signal }}</span>
+    {% endfor %}
   </div>
 </section>
 

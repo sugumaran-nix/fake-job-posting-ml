@@ -2,299 +2,306 @@
 {% block title %}Analyse a Job — JobGuard{% endblock %}
 
 {% block content %}
-<!-- ── Loading overlay (shown on form submit) ──────────────────────── -->
-<div id="loading-overlay" class="hidden fixed inset-0 z-[200] bg-[#05070d]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6">
-  <div class="flex flex-col items-center gap-4">
-    <div class="relative w-16 h-16">
-      <div class="absolute inset-0 rounded-full border-4 border-blue-500/20"></div>
-      <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
-      <div class="absolute inset-2 rounded-full bg-blue-500/10 flex items-center justify-center">
-        <i class="fa-solid fa-shield-halved text-blue-400 text-lg"></i>
-      </div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay"
+     class="hidden fixed inset-0 z-[200] bg-bg/95 backdrop-blur-sm
+            flex flex-col items-center justify-center gap-6">
+  <div class="relative w-14 h-14">
+    <div class="absolute inset-0 rounded-full border-2 border-border"></div>
+    <div class="absolute inset-0 rounded-full border-2 border-transparent
+                border-t-fraud animate-spin"></div>
+    <div class="absolute inset-2 flex items-center justify-center">
+      <i class="fa-solid fa-shield-halved text-fraud text-sm"></i>
     </div>
-    <div class="text-center">
-      <p class="font-display font-bold text-white text-lg" id="load-title">Analysing job posting…</p>
-      <p class="text-gray-400 text-sm mt-1" id="load-sub">Running AI detection + URL analysis</p>
-    </div>
-    <!-- Cold-start warning (appears after 5s on Render free tier) -->
-    <div id="cold-start-note" class="hidden mt-2 max-w-xs text-center bg-amber-900/30 border border-amber-500/25 rounded-xl px-4 py-3">
-      <p class="text-amber-300 text-xs font-medium flex items-center justify-center gap-1.5">
-        <i class="fa-solid fa-moon text-amber-400"></i> Server is waking up…
-      </p>
-      <p class="text-amber-400/70 text-xs mt-1">Render free tier sleeps after 15 min of inactivity. First request takes ~20–30s.</p>
-    </div>
+  </div>
+  <div class="text-center">
+    <p class="font-mono font-medium text-sm text-t1" id="load-title">Analysing…</p>
+    <p class="font-mono text-xs text-t3 mt-1" id="load-sub">Running BERT inference + URL analysis</p>
+  </div>
+  <div id="cold-start-note"
+       class="hidden font-mono text-[11px] text-amber-400 border border-amber-500/20
+              bg-amber-500/5 rounded-lg px-4 py-2.5 text-center max-w-xs">
+    <i class="fa-solid fa-moon text-[10px] mr-1.5"></i>
+    Server waking up — Render free tier sleeps after 15 min.
+    First request takes ~20s.
   </div>
 </div>
 
 <!-- Page header -->
-<div class="bg-gray-900/60 border-b border-gray-800 px-6 py-10">
-  <div class="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-4">
+<div class="max-w-5xl mx-auto px-5 pt-10 pb-8 border-b border-border">
+  <div class="flex items-center justify-between flex-wrap gap-4">
     <div>
-      <h1 class="font-display font-bold text-2xl text-white tracking-tight">Analyse a Job Posting</h1>
-      <p class="text-gray-400 text-sm mt-1">AI analyses the text and company domain simultaneously — results in under a second.</p>
+      <h1 class="font-display font-bold text-2xl tracking-tight text-t1">Analyse a job posting</h1>
+      <p class="font-mono text-xs text-t3 mt-1">Paste the description — get a fraud verdict in seconds</p>
     </div>
     {% if active_model %}
-    <span class="inline-flex items-center gap-2 bg-gray-800 border border-gray-700
-                 rounded-full px-3.5 py-1.5 text-xs text-gray-300 font-medium">
-      <i class="fa-solid fa-brain text-blue-400"></i> {{ active_model }}
+    <span class="font-mono text-[11px] text-t3 border border-border rounded-full px-3 py-1 bg-surface">
+      <i class="fa-solid fa-brain text-t3 text-[9px] mr-1.5"></i>{{ active_model }}
     </span>
     {% endif %}
   </div>
 </div>
 
-<div class="px-6 py-10">
-  <div class="max-w-3xl mx-auto">
+<div class="max-w-5xl mx-auto px-5 py-10">
+  <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    {% with msgs = get_flashed_messages(with_categories=true) %}
-    {% for cat, msg in msgs %}
-    <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium mb-4
-      {% if cat == 'error' %}bg-red-900/40 border border-red-500/30 text-red-300
-      {% else %}bg-amber-900/40 border border-amber-500/30 text-amber-300{% endif %}">
-      <i class="fa-solid fa-triangle-exclamation"></i> {{ msg }}
-    </div>
-    {% endfor %}
-    {% endwith %}
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-    <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform">
+      <!-- LEFT: Job details + description (3/5) -->
+      <div class="lg:col-span-3 space-y-6">
 
-      <!-- ── Basic Info ───────────────────────────────────────── -->
-      <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden mb-4">
-        <div class="flex items-center gap-3 px-6 py-4 bg-gray-800 border-b border-gray-700">
-          <div class="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20
-                      flex items-center justify-center text-blue-400 text-xs">
-            <i class="fa-solid fa-file-lines"></i>
-          </div>
-          <h3 class="font-display font-semibold text-white text-sm">Basic Information</h3>
-        </div>
-        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {% for name, label, ph in [
-            ('job_title','Job Title','e.g. Software Developer, Data Analyst'),
-            ('location', 'Location', 'e.g. Chennai, Remote, Pan India'),
-            ('company',  'Company Name','Hiring company name'),
-            ('salary',   'Salary Range','e.g. ₹4,00,000 – ₹6,00,000 per annum'),
-          ] %}
-          <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
-              {{ label }}
-              {% if name == 'salary' %}<span class="text-gray-500 normal-case font-normal"> (optional)</span>{% endif %}
-            </label>
-            <input type="text" name="{{ name }}" placeholder="{{ ph }}"
-                   value="{{ (form or {}).get(name, '') }}"
-                   class="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-600 rounded-xl text-gray-100
-                          text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                          focus:border-blue-500 transition-all">
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- ── Website URL ─────────────────────────────────────── -->
-      <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden mb-4">
-        <div class="flex items-center gap-3 px-6 py-4 bg-gray-800 border-b border-gray-700">
-          <div class="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20
-                      flex items-center justify-center text-blue-400 text-xs">
-            <i class="fa-solid fa-globe"></i>
-          </div>
-          <h3 class="font-display font-semibold text-white text-sm">Company Website URL</h3>
-          <span class="ml-auto inline-flex items-center bg-blue-500/10 border border-blue-500/20
-                       text-blue-400 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase">
-            Auto-scored
-          </span>
-        </div>
-        <div class="p-6">
-          <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
-            Website <span class="text-gray-500 normal-case font-normal">(optional — strongly recommended)</span>
-          </label>
-          <input type="url" name="website" placeholder="https://www.company.com/careers"
-                 value="{{ (form or {}).get('website', '') }}"
-                 class="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-600 rounded-xl text-gray-100
-                        text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                        focus:border-blue-500 transition-all mb-3">
-          <div class="flex flex-wrap gap-2 mt-3">
-            {% for t in ['HTTPS/SSL','URL Entropy','TLD Risk','Typosquatting','Free Hosting','Digit Density','Subdomain Depth','Keyword Score'] %}
-            <span class="inline-flex items-center gap-1.5 bg-gray-900 border border-gray-700
-                         rounded-full px-2.5 py-1 text-[11px] text-gray-400">
-              <i class="fa-solid fa-check text-blue-400 text-[9px]"></i>{{ t }}
-            </span>
+        <!-- Basic fields -->
+        <div>
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">Job details</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {% for name, ph in [
+                ('job_title',   'Job title'),
+                ('company',     'Company name'),
+                ('location',    'Location or Remote'),
+                ('salary',      'Salary range (optional)'),
+            ] %}
+            <div>
+              <input type="text" id="f_{{ name }}" name="{{ name }}"
+                     placeholder="{{ ph }}"
+                     value="{{ (form or {}).get(name, '') }}"
+                     class="field">
+            </div>
             {% endfor %}
           </div>
-          <p class="mt-3 text-xs text-gray-500 flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-info text-blue-400"></i>
-            10 fraud checks run automatically — no manual steps required
+        </div>
+
+        <!-- Website -->
+        <div>
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">Company website</p>
+          <input type="url" id="f_website" name="website"
+                 placeholder="https://company.com/careers"
+                 value="{{ (form or {}).get('website', '') }}"
+                 class="field">
+          <p class="font-mono text-[10px] text-t3 mt-2">
+            Optional — enables 10-signal domain fraud scan
           </p>
         </div>
-      </div>
 
-      <!-- ── Job Content ─────────────────────────────────────── -->
-      <div class="bg-gray-800/60 border border-gray-700 rounded-2xl overflow-hidden mb-4">
-        <div class="flex items-center gap-3 px-6 py-4 bg-gray-800 border-b border-gray-700">
-          <div class="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20
-                      flex items-center justify-center text-blue-400 text-xs">
-            <i class="fa-solid fa-file-signature"></i>
-          </div>
-          <h3 class="font-display font-semibold text-white text-sm">Job Content</h3>
-          <span class="ml-auto inline-flex items-center bg-red-500/10 border border-red-500/20
-                       text-red-400 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase">
-            Required
-          </span>
-        </div>
-        <div class="p-6 space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
-              Job Description <span class="text-red-400">*</span>
-            </label>
-            <textarea id="desc" name="description" rows="8" required
-                      placeholder="Paste the full job description here — include responsibilities, requirements, and compensation for the most accurate result…"
-                      class="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-600 rounded-xl text-gray-100
-                             text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                             focus:border-blue-500 transition-all resize-y leading-relaxed">{{ (form or {}).get('description', '') }}</textarea>
-            <div id="char-counter" class="flex items-center gap-3 mt-2">
-              <div class="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
-                <div id="char-fill" class="h-full bg-gray-600 rounded-full transition-all duration-300" style="width:0%"></div>
-              </div>
-              <span id="char-label" class="text-xs text-gray-500 whitespace-nowrap">0 chars — aim for 150+</span>
-            </div>
-            <!-- Guard hint -->
-            <p class="text-xs text-gray-600 mt-1.5 flex items-start gap-1.5">
-              <i class="fa-solid fa-circle-info text-gray-600 mt-0.5 shrink-0"></i>
-              Include role title, responsibilities, requirements, and apply instructions for best accuracy.
-              Random text will be rejected before analysis.
+        <!-- Description -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <p class="font-mono text-[10px] text-t3 uppercase tracking-widest">
+              Job description <span class="text-fraud">*</span>
             </p>
+            <span id="char-label" class="font-mono text-[10px] text-t3">0 chars</span>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
-              Requirements / Skills <span class="text-gray-500 normal-case font-normal">(optional)</span>
-            </label>
-            <textarea name="requirements" rows="4"
-                      placeholder="Required qualifications, experience, technical skills…"
-                      class="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-600 rounded-xl text-gray-100
-                             text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                             focus:border-blue-500 transition-all resize-y leading-relaxed">{{ (form or {}).get('requirements', '') }}</textarea>
+          <textarea id="f_description" name="description" rows="10" required
+                    placeholder="Paste the full job description here — include responsibilities, requirements, and compensation for the most accurate result…"
+                    class="field resize-y leading-relaxed">{{ (form or {}).get('description', '') }}</textarea>
+          <!-- Progress bar -->
+          <div class="mt-2 h-0.5 bg-border rounded-full overflow-hidden">
+            <div id="char-fill" class="h-full bg-t3 rounded-full transition-all duration-300" style="width:0%"></div>
+          </div>
+          <p class="font-mono text-[10px] text-t3 mt-1.5">
+            Include role, responsibilities, requirements and apply info for best results
+          </p>
+        </div>
+
+        <!-- Requirements -->
+        <div>
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">
+            Requirements / skills <span class="text-t3 font-normal normal-case tracking-normal">(optional)</span>
+          </p>
+          <textarea id="f_requirements" name="requirements" rows="4"
+                    placeholder="Required qualifications, experience, technical skills…"
+                    class="field resize-y leading-relaxed">{{ (form or {}).get('requirements', '') }}</textarea>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Samples + Submit (2/5) -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Sample jobs -->
+        <div class="card p-5">
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-4">Try a sample</p>
+          <div class="space-y-2">
+            <button type="button" onclick="loadSample('fraud')"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-lg
+                           bg-fraud/5 border border-fraud/20 hover:border-fraud/40
+                           text-left transition-colors btn-press group">
+              <i class="fa-solid fa-triangle-exclamation text-fraud text-xs shrink-0"></i>
+              <div>
+                <p class="font-mono text-xs text-fraud">Fraudulent posting</p>
+                <p class="font-mono text-[10px] text-t3">WFH data entry, fee required</p>
+              </div>
+            </button>
+            <button type="button" onclick="loadSample('legit')"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-lg
+                           bg-legit/5 border border-legit/20 hover:border-legit/40
+                           text-left transition-colors btn-press group">
+              <i class="fa-solid fa-check text-legit text-xs shrink-0"></i>
+              <div>
+                <p class="font-mono text-xs text-legit">Legitimate posting</p>
+                <p class="font-mono text-[10px] text-t3">Zoho Python Developer</p>
+              </div>
+            </button>
           </div>
         </div>
-      </div>
 
-      <!-- ── Sample buttons ──────────────────────────────────── -->
-      <div class="flex items-center flex-wrap gap-2 mb-5">
-        <span class="text-xs text-gray-500 font-medium mr-1"><i class="fa-solid fa-flask"></i> Try a sample:</span>
-        <button type="button" onclick="loadSample('fraud')"
-                class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-red-500/10 border border-red-500/25
-                       text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-all">
-          <i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Fraudulent Sample
-        </button>
-        <button type="button" onclick="loadSample('legit')"
-                class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-green-500/10 border border-green-500/25
-                       text-green-400 rounded-lg text-xs font-medium hover:bg-green-500/20 transition-all">
-          <i class="fa-solid fa-check text-[10px]"></i> Legitimate Sample
-        </button>
-      </div>
+        <!-- Submit -->
+        <div class="card p-5 space-y-3">
+          <button type="submit" id="sbtn"
+                  class="w-full flex items-center justify-center gap-2.5 px-5 py-3
+                         rounded-lg bg-fraud hover:bg-fraud/90 text-white
+                         font-mono text-sm font-medium btn-press
+                         shadow-lg shadow-fraud/20 transition-colors">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            Analyse this posting
+          </button>
+          <button type="reset" onclick="resetForm()"
+                  class="w-full flex items-center justify-center gap-2 px-5 py-2.5
+                         rounded-lg border border-border text-t3 hover:text-t2
+                         hover:border-b2 font-mono text-xs transition-colors">
+            <i class="fa-solid fa-rotate text-[10px]"></i> Clear
+          </button>
+        </div>
 
-      <!-- ── Submit ──────────────────────────────────────────── -->
-      <div class="flex gap-3 flex-wrap">
-        <button type="submit" id="sbtn"
-                class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2.5 px-8 py-3.5
-                       bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl
-                       transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35">
-          <i class="fa-solid fa-magnifying-glass"></i> Analyse This Job Posting
-        </button>
-        <button type="reset" onclick="resetCounter()"
-                class="inline-flex items-center gap-2 px-5 py-3.5 bg-gray-800 hover:bg-gray-700
-                       text-gray-300 font-semibold text-sm rounded-xl border border-gray-700 transition-all">
-          <i class="fa-solid fa-rotate"></i> Clear
-        </button>
-      </div>
+        <!-- What we check -->
+        <div class="card p-5">
+          <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-4">What we check</p>
+          <ul class="space-y-2">
+            {% for item in [
+                ('fa-brain',          'BERT fraud classification'),
+                ('fa-globe',          'Domain & URL analysis'),
+                ('fa-building',       'Company name scoring'),
+                ('fa-flag',           '8 fraud pattern categories'),
+            ] %}
+            <li class="flex items-center gap-2.5 font-mono text-[11px] text-t2">
+              <i class="fa-solid {{ item[0] }} text-t3 text-[10px] w-3 text-center shrink-0"></i>
+              {{ item[1] }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
 
-    </form>
-  </div>
+      </div>
+    </div>
+  </form>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// ── Sample data ──────────────────────────────────────────────────────
 const SAMPLES = {
   fraud: {
-    job_title: 'Work From Home — Easy Data Entry',
-    company:   'QuickEarn Digital Pvt Ltd',
-    location:  'Remote, Anywhere in India',
-    salary:    '₹50,000 – ₹1,20,000 / month guaranteed',
-    website:   'http://quickearnnow.in.free.hosting.com',
-    description: 'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed — no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. This legitimate opportunity requires candidates to apply immediately. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
+    job_title:    'Work From Home — Easy Data Entry',
+    company:      'QuickEarn Digital Pvt Ltd',
+    location:     'Remote, Anywhere in India',
+    salary:       '₹50,000 – ₹1,20,000 per month guaranteed',
+    website:      'http://quickearnnow.in.free.hosting.com',
+    description:  'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed — no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
     requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive your joining kit.'
   },
   legit: {
-    job_title: 'Junior Backend Developer (Python)',
-    company:   'Zoho Corporation',
-    location:  'Chennai, Tamil Nadu',
-    salary:    '₹4,00,000 – ₹7,00,000 per annum',
-    website:   'https://careers.zohocorp.com',
-    description: 'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office. Apply by sending your resume to careers@zohocorp.com.',
-    requirements: 'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0–2 years experience or strong internship background. Qualification: Degree from recognized university.'
+    job_title:    'Junior Backend Developer (Python)',
+    company:      'Zoho Corporation',
+    location:     'Chennai, Tamil Nadu',
+    salary:       '₹4,00,000 – ₹7,00,000 per annum',
+    website:      'https://careers.zohocorp.com',
+    description:  'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office. Apply by sending your resume to careers@zohocorp.com.',
+    requirements: 'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0–2 years experience or strong internship background.'
   }
 };
 
-function loadSample(t) {
-  const s = SAMPLES[t];
-  Object.keys(s).forEach(k => {
-    const el = document.querySelector(`[name="${k}"]`);
-    if (el) el.value = s[k] || '';
-  });
+// ── FIXED: explicit per-field setter — no forEach that can skip desc ─
+function loadSample(type) {
+  const s = SAMPLES[type];
+  if (!s) return;
+
+  // Text inputs — set by ID to be explicit
+  const setInput = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  };
+
+  setInput('f_job_title',    s.job_title);
+  setInput('f_company',      s.company);
+  setInput('f_location',     s.location);
+  setInput('f_salary',       s.salary);
+  setInput('f_website',      s.website);
+  setInput('f_requirements', s.requirements);
+
+  // Description — set explicitly and dispatch input event for counter
+  const desc = document.getElementById('f_description');
+  if (desc) {
+    desc.value = s.description;
+    desc.dispatchEvent(new Event('input', { bubbles: true }));
+    setTimeout(() => desc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  }
+
   updateCounter();
-  document.getElementById('desc').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+// ── Char counter ────────────────────────────────────────────────────
 function updateCounter() {
-  const desc  = document.getElementById('desc');
+  const desc  = document.getElementById('f_description');
   const fill  = document.getElementById('char-fill');
   const label = document.getElementById('char-label');
-  if (!desc || !fill || !label) return;
+  if (!desc) return;
+
   const len = desc.value.length;
-  const pct = Math.min(len / 5, 100);
-  fill.style.width = pct + '%';
-  if (len >= 150) {
-    fill.className = 'h-full bg-blue-500 rounded-full transition-all duration-300';
-    label.innerHTML = len + ' chars — <span class="text-green-400">good length</span>';
-  } else if (len > 50) {
-    fill.className = 'h-full bg-amber-500 rounded-full transition-all duration-300';
-    label.textContent = len + ' chars — aim for 150+';
-  } else {
-    fill.className = 'h-full bg-gray-600 rounded-full transition-all duration-300';
-    label.textContent = len + ' chars — aim for 150+';
+  const pct = Math.min(len / 500 * 100, 100);
+
+  if (fill) {
+    fill.style.width = pct + '%';
+    fill.className = 'h-full rounded-full transition-all duration-300 ' +
+      (len >= 150 ? 'bg-legit' : len > 50 ? 'bg-amber-500' : 'bg-t3');
+  }
+
+  if (label) {
+    label.textContent = len < 150
+      ? `${len} chars — aim for 150+`
+      : `${len} chars`;
   }
 }
 
-function resetCounter() { setTimeout(updateCounter, 10); }
+function resetForm() {
+  setTimeout(updateCounter, 10);
+}
 
-document.getElementById('desc').addEventListener('input', updateCounter);
+document.getElementById('f_description')?.addEventListener('input', updateCounter);
 updateCounter();
 
-// ── Loading overlay + cold-start detection ─────────────────────────
-let _coldTimer = null;
+// ── Loading overlay ──────────────────────────────────────────────────
+let coldTimer = null;
 
-document.getElementById('cform').addEventListener('submit', function() {
-  const overlay = document.getElementById('loading-overlay');
-  overlay.classList.remove('hidden');
+document.getElementById('cform').addEventListener('submit', () => {
+  document.getElementById('loading-overlay').classList.remove('hidden');
 
-  // Cold-start warning after 5 seconds
-  _coldTimer = setTimeout(function() {
-    document.getElementById('cold-start-note').classList.remove('hidden');
-    document.getElementById('load-title').textContent = 'Still working…';
-    document.getElementById('load-sub').textContent = 'Complex analysis in progress';
+  coldTimer = setTimeout(() => {
+    const note = document.getElementById('cold-start-note');
+    if (note) note.classList.remove('hidden');
+    const title = document.getElementById('load-title');
+    if (title) title.textContent = 'Still running…';
   }, 5000);
 
-  const b = document.getElementById('sbtn');
-  b.disabled = true;
-  b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analysing…';
+  const btn = document.getElementById('sbtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Analysing…';
 });
 
-// Clean up on back-navigation (browser caches page)
-window.addEventListener('pageshow', function(e) {
-  if (e.persisted) {
-    document.getElementById('loading-overlay').classList.add('hidden');
-    if (_coldTimer) clearTimeout(_coldTimer);
-    const b = document.getElementById('sbtn');
-    b.disabled = false;
-    b.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Analyse This Job Posting';
-  }
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;
+  document.getElementById('loading-overlay').classList.add('hidden');
+  if (coldTimer) clearTimeout(coldTimer);
+  const btn = document.getElementById('sbtn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse this posting';
+});
+
+// ── Hamburger ────────────────────────────────────────────────────────
+document.getElementById('hamburger')?.addEventListener('click', () => {
+  document.getElementById('mob-menu').classList.toggle('hidden');
 });
 </script>
 {% endblock %}

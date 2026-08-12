@@ -1,69 +1,202 @@
-/* JobGuard — Custom CSS (animations + font import only)
-   Tailwind + Flowbite handle layout/components */
+/*
+ * JobGuard v8 — Design System
+ * Anchor: Industrial (impeccable.style)
+ * Surface: warm-black · Typography: mono labels + sans body
+ * Signal: red (fraud) · green (legit) · amber (warning)
+ * Differentiator: full-bleed verdict wash on result page
+ */
 
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Geist+Mono:wght@400;500&display=swap');
+/* ── Fonts ──────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap');
 
-body { background-color: #05070d; }
+/* ── Design tokens ──────────────────────────────────────── */
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #141414;
+  --surface-2: #1c1c1c;
+  --border:    #262626;
+  --border-2:  #323232;
+  --text-1:    #f0f0f0;
+  --text-2:    #909090;
+  --text-3:    #565656;
+  --fraud:     #f43f5e;
+  --legit:     #10b981;
+  --amber:     #f59e0b;
+  --mono:      'IBM Plex Mono', 'JetBrains Mono', monospace;
 
-/* Gradient text */
+  /* Emil Kowalski easing curves */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Typography ─────────────────────────────────────────── */
+.font-mono  { font-family: var(--mono); }
+
+/* Hero gradient text */
 .grad-text {
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 60%, #60a5fa 100%);
+  background: linear-gradient(135deg, #f43f5e 0%, #f59e0b 50%, #10b981 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmer 5s linear infinite;
+  animation: shimmer 6s linear infinite;
 }
 @keyframes shimmer { to { background-position: 200% center; } }
 
-/* Hero ambient glow */
+/* ── Button press (Emil Kowalski) ───────────────────────── */
+.btn-press {
+  transition: transform 160ms var(--ease-out),
+              box-shadow 160ms var(--ease-out),
+              background 160ms var(--ease-out);
+}
+.btn-press:active { transform: scale(0.97); }
+
+/* ── Stagger entrance ───────────────────────────────────── */
+.stagger-in {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 320ms var(--ease-out) forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger-in:nth-child(1)  { animation-delay: 0ms; }
+.stagger-in:nth-child(2)  { animation-delay: 50ms; }
+.stagger-in:nth-child(3)  { animation-delay: 100ms; }
+.stagger-in:nth-child(4)  { animation-delay: 150ms; }
+.stagger-in:nth-child(5)  { animation-delay: 200ms; }
+.stagger-in:nth-child(6)  { animation-delay: 250ms; }
+
+/* Trigger stagger only when parent has .animate class */
+.stagger-parent .stagger-in { animation-play-state: paused; }
+.stagger-parent.animate .stagger-in { animation-play-state: running; }
+
+/* ── Hero grid / glow ───────────────────────────────────── */
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 80%);
+}
 .hero-glow::before {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(99,102,241,.15) 0%, transparent 65%),
-    radial-gradient(ellipse 40% 40% at 85% 80%,  rgba(59,130,246,.07) 0%, transparent 60%);
-}
-.hero-grid {
-  position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 80%);
+    radial-gradient(ellipse 60% 50% at 50% -10%, rgba(244,63,94,.10) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 90% 80%,  rgba(16,185,129,.06) 0%, transparent 60%);
 }
 
-/* Pulse */
+/* ── Pulse dot ──────────────────────────────────────────── */
 @keyframes pulse-dot {
-  0%,100%{ opacity:1; transform:scale(1); }
-  50%    { opacity:.3; transform:scale(.65); }
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:.3; transform:scale(.6); }
 }
-.pulse-dot { animation: pulse-dot 2.2s ease-in-out infinite; }
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
 
-/* Transitions */
-.conf-fill { transition: width 1.5s cubic-bezier(.4,0,.2,1); }
-.bar-anim  { transition: width 1s  cubic-bezier(.4,0,.2,1); }
+/* ── Form inputs ────────────────────────────────────────── */
+.field {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-1);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  transition: border-color 180ms var(--ease-out),
+              box-shadow  180ms var(--ease-out);
+  outline: none;
+}
+.field::placeholder { color: var(--text-3); }
+.field:focus {
+  border-color: var(--border-2);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.04);
+}
 
-/* Highlight tokens */
-.hl-fraud { color:#fca5a5; background:rgba(239,68,68,.12); border-radius:3px; padding:1px 3px; }
-.hl-legit { color:#86efac; background:rgba(34,197,94,.10);  border-radius:3px; padding:1px 3px; }
+/* ── Cards / surfaces ───────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.card-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
 
-/* Code chip */
+/* ── Confidence bar ─────────────────────────────────────── */
+.conf-fill { transition: width 1.4s var(--ease-out); }
+.bar-anim  { transition: width .9s  var(--ease-out); }
+
+/* ── Token highlights ───────────────────────────────────── */
+mark.hw-fraud {
+  color: #fda4af;
+  background: rgba(244,63,94,.12);
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+mark.hw-legit {
+  color: #6ee7b7;
+  background: rgba(16,185,129,.10);
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+
+/* ── Verdict page wash ──────────────────────────────────── */
+/* Differentiator: full-bleed colour wash on result verdict */
+.verdict-fraud { border-left: 3px solid var(--fraud); }
+.verdict-legit { border-left: 3px solid var(--legit); }
+
+/* ── Code chip ──────────────────────────────────────────── */
 code {
-  font-family: 'Geist Mono', 'JetBrains Mono', monospace;
-  font-size:.83em; background:#1a1f2e;
-  border:1px solid #2d3748; padding:1px 6px; border-radius:4px; color:#93c5fd;
+  font-family: var(--mono);
+  font-size: .82em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #fda4af;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar       { width:5px; }
-::-webkit-scrollbar-track { background:#05070d; }
-::-webkit-scrollbar-thumb { background:#2d3748; border-radius:3px; }
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
 
-/* Details marker */
-details > summary { list-style:none; }
-details > summary::-webkit-details-marker { display:none; }
+/* ── Details marker ─────────────────────────────────────── */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
 
-/* Flash */
-.flash-msg { animation: slide-in .3s ease; }
-@keyframes slide-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+/* ── Flash messages ─────────────────────────────────────── */
+.flash-msg {
+  animation: slideIn 260ms var(--ease-out);
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
