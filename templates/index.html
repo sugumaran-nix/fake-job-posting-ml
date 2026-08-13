@@ -7,46 +7,38 @@
   <div class="hero-glow hero-grid"></div>
   <div class="relative max-w-5xl mx-auto px-5 pt-24 pb-20">
 
-    <div class="inline-flex items-center gap-2 border border-border rounded-full
-                px-3 py-1 mb-8 bg-surface">
+    <div class="inline-flex items-center gap-2 border border-border rounded-full px-3 py-1 mb-8 bg-surface">
       <span class="w-1.5 h-1.5 rounded-full bg-legit pulse-dot"></span>
-      <span class="font-mono text-[11px] text-t2">DistilBERT · Fine-tuned on 17,880 job postings</span>
+      <span class="font-mono text-[11px] text-t2">BERT fine-tuned on 17,880 job postings</span>
     </div>
 
-    <h1 class="font-display font-extrabold text-4xl md:text-6xl tracking-tight leading-[1.05] mb-6">
-      Is that job posting <span class="grad-text">real or a scam?</span>
+    <h1 class="font-disp font-extrabold text-4xl md:text-6xl tracking-tight leading-[1.05] mb-5">
+      Is that job posting<br><span class="grad-text">real or a scam?</span>
     </h1>
-    <p class="text-t2 text-base md:text-lg leading-relaxed max-w-xl mb-10 font-sans">
-      Paste the job description. Get a verdict in seconds —
-      powered by BERT, trained on real fraud patterns.
+    <p class="text-t2 text-base md:text-lg leading-relaxed max-w-xl mb-10">
+      Paste the description. Get a fraud verdict in seconds — powered by BERT, trained on real fraud patterns.
     </p>
 
     <div class="flex items-center flex-wrap gap-3">
-      <a href="{{ url_for('classify') }}"
-         class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-lg
-                bg-fraud hover:bg-fraud/90 text-white font-mono text-sm font-medium
-                btn-press shadow-lg shadow-fraud/20 transition-colors">
+      <a href="{{ url_for('classify') }}" class="btn-primary text-sm font-medium shadow-lg shadow-fraud/20">
         <i class="fa-solid fa-magnifying-glass text-xs"></i>
         Analyse a Job Posting
       </a>
-      <a href="{{ url_for('about') }}"
-         class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
-                border border-border text-t2 hover:text-t1 hover:border-b2
-                font-mono text-sm transition-colors">
+      <a href="{{ url_for('about') }}" class="btn-ghost text-sm">
         How it works <i class="fa-solid fa-arrow-right text-[10px]"></i>
       </a>
     </div>
 
     <!-- Stats -->
-    <div class="mt-16 grid grid-cols-3 gap-4 max-w-md">
+    <div class="mt-16 grid grid-cols-3 gap-3 max-w-xs">
       {% for val, label in [
           (stats.total|string, 'jobs analysed'),
-          (stats.fraud|string, 'fraud detected'),
-          ('4.8%',             'of jobs are fake'),
+          (stats.fraud|string, 'fraud flagged'),
+          ('4.8%',             'fraud rate'),
       ] %}
-      <div class="card p-4">
-        <p class="font-mono font-semibold text-xl text-t1">{{ val }}</p>
-        <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mt-1">{{ label }}</p>
+      <div class="metric-card">
+        <p class="metric-value text-t1">{{ val }}</p>
+        <p class="metric-label">{{ label }}</p>
       </div>
       {% endfor %}
     </div>
@@ -56,40 +48,43 @@
 
 <!-- How it works -->
 <section class="max-w-5xl mx-auto px-5 py-20 border-t border-border">
-  <h2 class="font-mono font-semibold text-xs text-t3 uppercase tracking-widest mb-10">
-    How it works
-  </h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-parent animate">
+  <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-10">How it works</p>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-parent">
     {% for step, desc in [
-        ('01 — Paste',    'Copy the full job posting — title, description, requirements, website.'),
-        ('02 — Analyse',  'BERT reads the posting and checks 8+ fraud pattern categories simultaneously.'),
-        ('03 — Verdict',  'Get fraud probability, evidence, and advice in under a second.'),
+        ('01 — Paste',   'Copy the full job posting — title, description, requirements, company website.'),
+        ('02 — Analyse', 'BERT reads the posting and checks 8+ fraud pattern categories simultaneously.'),
+        ('03 — Verdict', 'Get fraud probability, flagged signals, and clear next-step advice instantly.'),
     ] %}
     <div class="stagger-in">
-      <p class="font-mono font-medium text-sm text-t1 mb-2">{{ step }}</p>
+      <p class="font-disp font-bold text-sm text-t1 mb-2">{{ step }}</p>
       <p class="font-mono text-xs text-t3 leading-relaxed">{{ desc }}</p>
     </div>
     {% endfor %}
   </div>
 </section>
 
-<!-- Fraud signals -->
+<!-- What we detect -->
 <section class="max-w-5xl mx-auto px-5 pb-20">
-  <h2 class="font-mono font-semibold text-xs text-t3 uppercase tracking-widest mb-6">
-    What we detect
-  </h2>
+  <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-5">What we detect</p>
   <div class="flex flex-wrap gap-2">
     {% for signal in [
         'Registration fee requests', 'Guaranteed income promises',
-        'No-experience scams', 'Aadhaar/PAN requests',
+        'No-experience scams', 'Aadhaar / PAN requests',
         'Fake WFH schemes', 'Urgent pressure tactics',
         'Upfront payment traps', 'MLM disguised as jobs',
-        'Vague/generic postings', 'Suspicious domain names',
+        'Vague / generic postings', 'Suspicious domain names',
     ] %}
-    <span class="font-mono text-[11px] px-3 py-1.5 rounded-full
-                 bg-surface border border-border text-t2">{{ signal }}</span>
+    <span class="pill pill-neutral">{{ signal }}</span>
     {% endfor %}
   </div>
 </section>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.stagger-parent').forEach(el => el.classList.add('animate'));
+});
+</script>
 {% endblock %}

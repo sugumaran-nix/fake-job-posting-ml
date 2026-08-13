@@ -132,6 +132,7 @@ else:
     logger.error("No predictor loaded. Run train.py or bert_finetune.py.")
 
 
+
 def _active_model_name() -> str:
     if predictor:
         return getattr(predictor, '_model_name',
@@ -338,6 +339,15 @@ def init_db():
             _exec(col)
         except Exception:
             pass
+
+# ── DB init at module level — runs when gunicorn imports app.py.
+# init_db() is idempotent (CREATE TABLE IF NOT EXISTS) so safe to call
+# on every deploy and on every gunicorn worker fork.
+try:
+    init_db()
+    logger.info("Database initialized.")
+except Exception as _db_err:
+    logger.error("DB init failed: %s", _db_err)
 
 
 def save_pred(fd, result, url_risk="low", url_score=0):

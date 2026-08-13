@@ -1,71 +1,44 @@
 /* JobGuard — main.js */
+'use strict';
 
-/* ── Navbar scroll shadow ──────────────────────── */
-(function () {
-  const nav = document.getElementById('navbar');
-  if (!nav) return;
-  const fn = () => {
-    if (window.scrollY > 24) {
-      nav.style.boxShadow = '0 1px 0 rgba(59,130,246,.15), 0 4px 24px rgba(0,0,0,.5)';
-    } else {
-      nav.style.boxShadow = '';
-    }
-  };
-  fn();
-  window.addEventListener('scroll', fn, { passive: true });
-})();
-
-/* ── Hamburger ─────────────────────────────────── */
-(function () {
-  const btn  = document.getElementById('hamburger');
-  const menu = document.getElementById('mob-menu');
-  if (!btn || !menu) return;
-  btn.addEventListener('click', () => {
-    menu.classList.toggle('hidden');
-  });
-})();
-
-/* ── Counter animation (home stats) ───────────── */
-(function () {
-  const els = document.querySelectorAll('[data-target]');
-  if (!els.length) return;
-  const animate = el => {
-    const target = parseInt(el.dataset.target, 10);
-    if (isNaN(target)) return;
-    const duration = 1200, step = 16;
-    const inc = target / (duration / step);
-    let cur = 0;
-    const t = setInterval(() => {
-      cur = Math.min(cur + inc, target);
-      el.textContent = Math.floor(cur).toLocaleString();
-      if (cur >= target) clearInterval(t);
-    }, step);
-  };
-  if ('IntersectionObserver' in window) {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) { animate(e.target); obs.unobserve(e.target); } });
-    }, { threshold: 0.4 });
-    els.forEach(el => obs.observe(el));
-  } else {
-    els.forEach(animate);
+// ── Nav hamburger ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const ham    = document.getElementById('hamburger');
+  const menu   = document.getElementById('mob-menu');
+  if (ham && menu) {
+    ham.addEventListener('click', () => menu.classList.toggle('hidden'));
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!ham.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
   }
-})();
 
-/* ── Confidence bar (result page) ─────────────── */
-(function () {
+  // ── Stagger parent trigger ───────────────────────────────────
+  document.querySelectorAll('.stagger-parent').forEach(el =>
+    el.classList.add('animate')
+  );
+
+  // ── Animate conf-fill on page load ──────────────────────────
   document.querySelectorAll('.conf-fill[data-target]').forEach(el => {
-    el.style.width = '0%';
-    setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 250);
+    setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 180);
   });
-})();
 
-/* ── Flash auto-dismiss ────────────────────────── */
-(function () {
-  document.querySelectorAll('.flash-msg').forEach(f => {
-    setTimeout(() => {
-      f.style.transition = 'opacity .5s';
-      f.style.opacity = '0';
-      setTimeout(() => f.remove(), 500);
-    }, 5000);
+  // ── Stagger bar fills ────────────────────────────────────────
+  document.querySelectorAll('.bar-fill').forEach((el, i) => {
+    const target = el.style.width;
+    el.style.width = '0%';
+    setTimeout(() => { el.style.width = target; }, 350 + i * 25);
   });
-})();
+
+  // ── Flash auto-dismiss ───────────────────────────────────────
+  document.querySelectorAll('.flash-msg').forEach(el => {
+    setTimeout(() => {
+      el.style.transition = 'opacity 400ms ease, transform 400ms ease';
+      el.style.opacity    = '0';
+      el.style.transform  = 'translateY(-6px)';
+      setTimeout(() => el.remove(), 420);
+    }, 4500);
+  });
+});

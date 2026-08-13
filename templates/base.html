@@ -17,22 +17,27 @@
       theme: {
         extend: {
           fontFamily: {
-            sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
-            display: ['"Bricolage Grotesque"', 'sans-serif'],
-            mono:    ['"IBM Plex Mono"', '"JetBrains Mono"', 'monospace'],
+            sans:  ['"DM Sans"', 'system-ui', 'sans-serif'],
+            disp:  ['"Bricolage Grotesque"', 'sans-serif'],
+            mono:  ['"IBM Plex Mono"', '"JetBrains Mono"', 'monospace'],
           },
           colors: {
             bg:      '#0a0a0a',
             surface: '#141414',
-            's2':    '#1c1c1c',
-            border:  '#262626',
-            'b2':    '#323232',
+            s2:      '#1c1c1c',
+            s3:      '#242424',
+            border:  '#222222',
+            b2:      '#303030',
+            b3:      '#3a3a3a',
             t1:      '#f0f0f0',
-            t2:      '#909090',
-            t3:      '#565656',
+            t2:      '#8a8a8a',
+            t3:      '#4a4a4a',
+            t4:      '#303030',
             fraud:   '#f43f5e',
             legit:   '#10b981',
-          }
+            amber:   '#f59e0b',
+          },
+          borderRadius: { xl2: '14px' },
         }
       }
     }
@@ -44,14 +49,13 @@
 
 <body class="bg-bg text-t1 font-sans antialiased min-h-screen flex flex-col">
 
-<!-- ═══ NAVBAR ══════════════════════════════════════════════ -->
+<!-- NAV -->
 <nav class="fixed top-0 inset-x-0 z-50 bg-bg/90 backdrop-blur-xl border-b border-border">
   <div class="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
 
-    <a href="{{ url_for('home') }}" class="flex items-center gap-2 group">
-      <div class="w-7 h-7 rounded-md bg-fraud/10 border border-fraud/20
-                  flex items-center justify-center">
-        <i class="fa-solid fa-shield-halved text-fraud text-xs"></i>
+    <a href="{{ url_for('home') }}" class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-fraud/10 border border-fraud/20 flex items-center justify-center">
+        <i class="fa-solid fa-shield-halved text-fraud text-[11px]"></i>
       </div>
       <span class="font-mono font-semibold text-t1 text-sm tracking-tight">
         Job<span class="text-fraud">Guard</span>
@@ -62,7 +66,7 @@
       {% for label, ep in [('Home','home'),('Analyse','classify'),('History','history'),('About','about')] %}
       <li>
         <a href="{{ url_for(ep) }}"
-           class="px-3 py-1.5 rounded-md font-mono text-xs transition-colors duration-150
+           class="px-3 py-1.5 rounded-lg font-sans text-sm transition-colors duration-150
            {% if request.endpoint == ep or (ep=='classify' and request.endpoint=='predict_route') %}
              text-t1 bg-surface border border-border
            {% else %}
@@ -73,39 +77,33 @@
     </ul>
 
     <div class="flex items-center gap-2">
-      <a href="{{ url_for('classify') }}"
-         class="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md
-                bg-fraud hover:bg-fraud/90 text-white font-mono text-xs font-medium
-                btn-press shadow-sm">
+      <a href="{{ url_for('classify') }}" class="btn-primary hidden md:inline-flex text-xs">
         <i class="fa-solid fa-magnifying-glass text-[10px]"></i> Analyse
       </a>
       <button id="hamburger" type="button" aria-label="Menu"
-              class="md:hidden p-2 rounded-md text-t3 hover:text-t2
-                     border border-border hover:border-b2 transition-colors">
+              class="md:hidden p-2 rounded-lg text-t3 hover:text-t2 border border-border hover:border-b2 transition-colors">
         <i class="fa-solid fa-bars text-xs"></i>
       </button>
     </div>
 
   </div>
-  <!-- Mobile menu -->
   <div id="mob-menu" class="hidden md:hidden bg-surface border-t border-border px-5 pb-4 pt-2">
     {% for label, ep in [('Home','home'),('Analyse a Job','classify'),('History','history'),('About','about')] %}
     <a href="{{ url_for(ep) }}"
-       class="flex py-2.5 font-mono text-xs text-t2 border-b border-border hover:text-t1
-              transition-colors last:border-0">{{ label }}</a>
+       class="flex py-2.5 text-sm text-t2 border-b border-border hover:text-t1 transition-colors last:border-0">{{ label }}</a>
     {% endfor %}
   </div>
 </nav>
 
-<!-- ═══ FLASH ════════════════════════════════════════════════ -->
+<!-- FLASH -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="max-w-5xl mx-auto px-5 mt-18 space-y-2 pt-16">
+<div class="max-w-5xl mx-auto px-5 mt-20 space-y-2">
   {% for cat, msg in messages %}
-  <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-lg text-sm border
+  <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-xl text-sm border
     {% if cat == 'error' %}bg-fraud/5 border-fraud/20 text-fraud
     {% elif cat == 'success' %}bg-legit/5 border-legit/20 text-legit
-    {% else %}bg-amber-500/5 border-amber-500/20 text-amber-400{% endif %}">
+    {% else %}bg-amber/5 border-amber/20 text-amber{% endif %}">
     <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %} shrink-0 text-xs"></i>
     <span class="font-mono text-xs">{{ msg }}</span>
   </div>
@@ -116,12 +114,12 @@
 
 <main class="flex-1 pt-14">{% block content %}{% endblock %}</main>
 
-<!-- ═══ FOOTER ════════════════════════════════════════════════ -->
+<!-- FOOTER -->
 <footer class="mt-20 border-t border-border">
   <div class="max-w-5xl mx-auto px-5 py-10 flex flex-col md:flex-row justify-between gap-8">
     <div>
       <div class="flex items-center gap-2 mb-3">
-        <div class="w-6 h-6 rounded-md bg-fraud/10 border border-fraud/20 flex items-center justify-center">
+        <div class="w-6 h-6 rounded-lg bg-fraud/10 border border-fraud/20 flex items-center justify-center">
           <i class="fa-solid fa-shield-halved text-fraud text-[10px]"></i>
         </div>
         <span class="font-mono font-semibold text-t1 text-xs">Job<span class="text-fraud">Guard</span></span>
@@ -131,9 +129,9 @@
       </p>
     </div>
     <div>
-      <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">Product</p>
+      <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">Links</p>
       <ul class="space-y-2">
-        {% for label, ep in [('Analyse a Job','classify'),('View History','history'),('About','about')] %}
+        {% for label, ep in [('Analyse a Job','classify'),('View History','history'),('Model Evaluation','models_page'),('About','about')] %}
         <li><a href="{{ url_for(ep) }}" class="font-mono text-xs text-t3 hover:text-t2 transition-colors">{{ label }}</a></li>
         {% endfor %}
       </ul>

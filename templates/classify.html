@@ -7,24 +7,22 @@
 <div id="loading-overlay"
      class="hidden fixed inset-0 z-[200] bg-bg/95 backdrop-blur-sm
             flex flex-col items-center justify-center gap-6">
-  <div class="relative w-14 h-14">
+  <div class="relative w-12 h-12">
     <div class="absolute inset-0 rounded-full border-2 border-border"></div>
-    <div class="absolute inset-0 rounded-full border-2 border-transparent
-                border-t-fraud animate-spin"></div>
+    <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-fraud animate-spin"></div>
     <div class="absolute inset-2 flex items-center justify-center">
-      <i class="fa-solid fa-shield-halved text-fraud text-sm"></i>
+      <i class="fa-solid fa-shield-halved text-fraud text-xs"></i>
     </div>
   </div>
   <div class="text-center">
-    <p class="font-mono font-medium text-sm text-t1" id="load-title">Analysing…</p>
+    <p class="font-disp font-bold text-sm text-t1" id="load-title">Analysing...</p>
     <p class="font-mono text-xs text-t3 mt-1" id="load-sub">Running BERT inference + URL analysis</p>
   </div>
   <div id="cold-start-note"
-       class="hidden font-mono text-[11px] text-amber-400 border border-amber-500/20
-              bg-amber-500/5 rounded-lg px-4 py-2.5 text-center max-w-xs">
+       class="hidden font-mono text-[11px] text-amber border border-amber/20
+              bg-amber/5 rounded-xl px-4 py-2.5 text-center max-w-xs">
     <i class="fa-solid fa-moon text-[10px] mr-1.5"></i>
-    Server waking up — Render free tier sleeps after 15 min.
-    First request takes ~20s.
+    Server waking up — Render free tier sleeps after 15 min. First request takes ~20s.
   </div>
 </div>
 
@@ -32,12 +30,12 @@
 <div class="max-w-5xl mx-auto px-5 pt-10 pb-8 border-b border-border">
   <div class="flex items-center justify-between flex-wrap gap-4">
     <div>
-      <h1 class="font-display font-bold text-2xl tracking-tight text-t1">Analyse a job posting</h1>
+      <h1 class="font-disp font-bold text-2xl tracking-tight text-t1">Analyse a job posting</h1>
       <p class="font-mono text-xs text-t3 mt-1">Paste the description — get a fraud verdict in seconds</p>
     </div>
     {% if active_model %}
-    <span class="font-mono text-[11px] text-t3 border border-border rounded-full px-3 py-1 bg-surface">
-      <i class="fa-solid fa-brain text-t3 text-[9px] mr-1.5"></i>{{ active_model }}
+    <span class="pill pill-neutral">
+      <i class="fa-solid fa-brain text-[9px]"></i>{{ active_model }}
     </span>
     {% endif %}
   </div>
@@ -49,25 +47,23 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-      <!-- LEFT: Job details + description (3/5) -->
+      <!-- LEFT: fields + description (3/5) -->
       <div class="lg:col-span-3 space-y-6">
 
         <!-- Basic fields -->
         <div>
           <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">Job details</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {% for name, ph in [
-                ('job_title',   'Job title'),
-                ('company',     'Company name'),
-                ('location',    'Location or Remote'),
-                ('salary',      'Salary range (optional)'),
+            {% for fname, ph in [
+                ('job_title',  'Job title'),
+                ('company',    'Company name'),
+                ('location',   'Location or Remote'),
+                ('salary',     'Salary range (optional)'),
             ] %}
-            <div>
-              <input type="text" id="f_{{ name }}" name="{{ name }}"
-                     placeholder="{{ ph }}"
-                     value="{{ (form or {}).get(name, '') }}"
-                     class="field">
-            </div>
+            <input type="text" id="f_{{ fname }}" name="{{ fname }}"
+                   placeholder="{{ ph }}"
+                   value="{{ (form or {}).get(fname, '') }}"
+                   class="field">
             {% endfor %}
           </div>
         </div>
@@ -79,9 +75,7 @@
                  placeholder="https://company.com/careers"
                  value="{{ (form or {}).get('website', '') }}"
                  class="field">
-          <p class="font-mono text-[10px] text-t3 mt-2">
-            Optional — enables 10-signal domain fraud scan
-          </p>
+          <p class="font-mono text-[10px] text-t3 mt-2">Optional — enables 10-signal domain fraud scan</p>
         </div>
 
         <!-- Description -->
@@ -93,11 +87,10 @@
             <span id="char-label" class="font-mono text-[10px] text-t3">0 chars</span>
           </div>
           <textarea id="f_description" name="description" rows="10" required
-                    placeholder="Paste the full job description here — include responsibilities, requirements, and compensation for the most accurate result…"
-                    class="field resize-y leading-relaxed">{{ (form or {}).get('description', '') }}</textarea>
-          <!-- Progress bar -->
-          <div class="mt-2 h-0.5 bg-border rounded-full overflow-hidden">
-            <div id="char-fill" class="h-full bg-t3 rounded-full transition-all duration-300" style="width:0%"></div>
+                    placeholder="Paste the full job description here — include responsibilities, requirements, and compensation for the most accurate result..."
+                    class="field leading-relaxed">{{ (form or {}).get('description', '') }}</textarea>
+          <div class="mt-2 conf-track">
+            <div id="char-fill" class="conf-fill bg-t3" style="width:0%"></div>
           </div>
           <p class="font-mono text-[10px] text-t3 mt-1.5">
             Include role, responsibilities, requirements and apply info for best results
@@ -110,37 +103,37 @@
             Requirements / skills <span class="text-t3 font-normal normal-case tracking-normal">(optional)</span>
           </p>
           <textarea id="f_requirements" name="requirements" rows="4"
-                    placeholder="Required qualifications, experience, technical skills…"
-                    class="field resize-y leading-relaxed">{{ (form or {}).get('requirements', '') }}</textarea>
+                    placeholder="Required qualifications, experience, technical skills..."
+                    class="field leading-relaxed">{{ (form or {}).get('requirements', '') }}</textarea>
         </div>
 
       </div>
 
-      <!-- RIGHT: Samples + Submit (2/5) -->
-      <div class="lg:col-span-2 space-y-6">
+      <!-- RIGHT: samples + submit (2/5) -->
+      <div class="lg:col-span-2 space-y-4">
 
         <!-- Sample jobs -->
         <div class="card p-5">
           <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-4">Try a sample</p>
           <div class="space-y-2">
             <button type="button" onclick="loadSample('fraud')"
-                    class="w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                           bg-fraud/5 border border-fraud/20 hover:border-fraud/40
-                           text-left transition-colors btn-press group">
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                           bg-fraud/5 border border-fraud/20 hover:border-fraud/35
+                           text-left transition-colors btn-press">
               <i class="fa-solid fa-triangle-exclamation text-fraud text-xs shrink-0"></i>
               <div>
-                <p class="font-mono text-xs text-fraud">Fraudulent posting</p>
+                <p class="font-mono text-xs text-fraud font-medium">Fraudulent posting</p>
                 <p class="font-mono text-[10px] text-t3">WFH data entry, fee required</p>
               </div>
             </button>
             <button type="button" onclick="loadSample('legit')"
-                    class="w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                           bg-legit/5 border border-legit/20 hover:border-legit/40
-                           text-left transition-colors btn-press group">
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                           bg-legit/5 border border-legit/20 hover:border-legit/35
+                           text-left transition-colors btn-press">
               <i class="fa-solid fa-check text-legit text-xs shrink-0"></i>
               <div>
-                <p class="font-mono text-xs text-legit">Legitimate posting</p>
-                <p class="font-mono text-[10px] text-t3">Zoho Python Developer</p>
+                <p class="font-mono text-xs text-legit font-medium">Legitimate posting</p>
+                <p class="font-mono text-[10px] text-t3">Zoho Python Developer role</p>
               </div>
             </button>
           </div>
@@ -148,18 +141,11 @@
 
         <!-- Submit -->
         <div class="card p-5 space-y-3">
-          <button type="submit" id="sbtn"
-                  class="w-full flex items-center justify-center gap-2.5 px-5 py-3
-                         rounded-lg bg-fraud hover:bg-fraud/90 text-white
-                         font-mono text-sm font-medium btn-press
-                         shadow-lg shadow-fraud/20 transition-colors">
+          <button type="submit" id="sbtn" class="btn-primary w-full justify-center text-sm font-medium">
             <i class="fa-solid fa-magnifying-glass text-xs"></i>
             Analyse this posting
           </button>
-          <button type="reset" onclick="resetForm()"
-                  class="w-full flex items-center justify-center gap-2 px-5 py-2.5
-                         rounded-lg border border-border text-t3 hover:text-t2
-                         hover:border-b2 font-mono text-xs transition-colors">
+          <button type="reset" onclick="resetForm()" class="btn-ghost w-full justify-center text-xs">
             <i class="fa-solid fa-rotate text-[10px]"></i> Clear
           </button>
         </div>
@@ -167,16 +153,16 @@
         <!-- What we check -->
         <div class="card p-5">
           <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-4">What we check</p>
-          <ul class="space-y-2">
-            {% for item in [
-                ('fa-brain',          'BERT fraud classification'),
-                ('fa-globe',          'Domain & URL analysis'),
-                ('fa-building',       'Company name scoring'),
-                ('fa-flag',           '8 fraud pattern categories'),
+          <ul class="space-y-2.5">
+            {% for icon, item in [
+                ('fa-brain',    'BERT fraud classification'),
+                ('fa-globe',    'Domain and URL analysis'),
+                ('fa-building', 'Company name scoring'),
+                ('fa-flag',     '8 fraud pattern categories'),
             ] %}
             <li class="flex items-center gap-2.5 font-mono text-[11px] text-t2">
-              <i class="fa-solid {{ item[0] }} text-t3 text-[10px] w-3 text-center shrink-0"></i>
-              {{ item[1] }}
+              <i class="fa-solid {{ icon }} text-t3 text-[10px] w-3 text-center shrink-0"></i>
+              {{ item }}
             </li>
             {% endfor %}
           </ul>
@@ -191,103 +177,82 @@
 
 {% block scripts %}
 <script>
-// ── Sample data ──────────────────────────────────────────────────────
 const SAMPLES = {
   fraud: {
     job_title:    'Work From Home — Easy Data Entry',
     company:      'QuickEarn Digital Pvt Ltd',
     location:     'Remote, Anywhere in India',
-    salary:       '₹50,000 – ₹1,20,000 per month guaranteed',
+    salary:       '50,000 to 1,20,000 per month guaranteed',
     website:      'http://quickearnnow.in.free.hosting.com',
-    description:  'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed — no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
-    requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive your joining kit.'
+    description:  'URGENT HIRING! Earn 50,000 to 1,20,000 per month working from home. No experience needed — no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of 799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
+    requirements: 'No degree needed. Registration fee of 799 compulsory to receive your joining kit.'
   },
   legit: {
     job_title:    'Junior Backend Developer (Python)',
     company:      'Zoho Corporation',
     location:     'Chennai, Tamil Nadu',
-    salary:       '₹4,00,000 – ₹7,00,000 per annum',
+    salary:       '4,00,000 to 7,00,000 per annum',
     website:      'https://careers.zohocorp.com',
     description:  'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office. Apply by sending your resume to careers@zohocorp.com.',
-    requirements: 'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0–2 years experience or strong internship background.'
+    requirements: 'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0-2 years experience or strong internship background.'
   }
 };
 
-// ── FIXED: explicit per-field setter — no forEach that can skip desc ─
 function loadSample(type) {
   const s = SAMPLES[type];
   if (!s) return;
-
-  // Text inputs — set by ID to be explicit
   const setInput = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
   };
-
   setInput('f_job_title',    s.job_title);
   setInput('f_company',      s.company);
   setInput('f_location',     s.location);
   setInput('f_salary',       s.salary);
   setInput('f_website',      s.website);
   setInput('f_requirements', s.requirements);
-
-  // Description — set explicitly and dispatch input event for counter
   const desc = document.getElementById('f_description');
   if (desc) {
     desc.value = s.description;
     desc.dispatchEvent(new Event('input', { bubbles: true }));
     setTimeout(() => desc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
   }
-
   updateCounter();
 }
 
-// ── Char counter ────────────────────────────────────────────────────
 function updateCounter() {
   const desc  = document.getElementById('f_description');
   const fill  = document.getElementById('char-fill');
   const label = document.getElementById('char-label');
   if (!desc) return;
-
   const len = desc.value.length;
   const pct = Math.min(len / 500 * 100, 100);
-
   if (fill) {
     fill.style.width = pct + '%';
-    fill.className = 'h-full rounded-full transition-all duration-300 ' +
-      (len >= 150 ? 'bg-legit' : len > 50 ? 'bg-amber-500' : 'bg-t3');
+    fill.className = 'conf-fill ' + (len >= 150 ? 'bg-legit' : len > 50 ? 'bg-amber' : 'bg-t3');
   }
-
   if (label) {
-    label.textContent = len < 150
-      ? `${len} chars — aim for 150+`
-      : `${len} chars`;
+    label.textContent = len < 150 ? `${len} chars — aim for 150+` : `${len} chars`;
   }
 }
 
-function resetForm() {
-  setTimeout(updateCounter, 10);
-}
+function resetForm() { setTimeout(updateCounter, 10); }
 
 document.getElementById('f_description')?.addEventListener('input', updateCounter);
 updateCounter();
 
-// ── Loading overlay ──────────────────────────────────────────────────
 let coldTimer = null;
-
 document.getElementById('cform').addEventListener('submit', () => {
   document.getElementById('loading-overlay').classList.remove('hidden');
-
   coldTimer = setTimeout(() => {
     const note = document.getElementById('cold-start-note');
     if (note) note.classList.remove('hidden');
     const title = document.getElementById('load-title');
-    if (title) title.textContent = 'Still running…';
+    if (title) title.textContent = 'Still running...';
   }, 5000);
-
   const btn = document.getElementById('sbtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Analysing…';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Analysing...';
 });
 
 window.addEventListener('pageshow', (e) => {
@@ -299,7 +264,6 @@ window.addEventListener('pageshow', (e) => {
   btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse this posting';
 });
 
-// ── Hamburger ────────────────────────────────────────────────────────
 document.getElementById('hamburger')?.addEventListener('click', () => {
   document.getElementById('mob-menu').classList.toggle('hidden');
 });
