@@ -2,108 +2,100 @@
 {% block title %}History — JobGuard{% endblock %}
 
 {% block content %}
+<div class="max-w-[960px] mx-auto px-5">
 
-<div class="max-w-5xl mx-auto px-5 pt-10 pb-8 border-b border-border">
-  <div class="flex items-center justify-between flex-wrap gap-4">
+  <!-- Header -->
+  <div class="pt-8 pb-6 border-b border-border flex items-center justify-between gap-4 flex-wrap">
     <div>
-      <h1 class="font-disp font-bold text-2xl tracking-tight text-t1">Analysis history</h1>
-      <p class="font-mono text-xs text-t3 mt-1">
-        {{ history|length }} job posting{{ 's' if history|length != 1 else '' }} analysed
+      <h1 class="text-xl font-bold tracking-tight text-t1">Analysis history</h1>
+      <p class="font-data text-[11px] text-t3 mt-1">
+        {{ history|length }} posting{{ 's' if history|length != 1 else '' }} analysed this session
       </p>
     </div>
     {% if history %}
-    <!-- BUG FIX: clear_history is POST-only — use a form, not <a href> -->
     <form method="POST" action="{{ url_for('clear_history') }}"
           onsubmit="return confirm('Clear all history?')">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn-ghost text-xs">
-        <i class="fa-solid fa-trash text-[10px]"></i> Clear history
+      <button type="submit" class="btn btn-ghost btn-sm">
+        <i class="fa-solid fa-trash text-[9px]"></i>Clear history
       </button>
     </form>
     {% endif %}
   </div>
-</div>
 
-<div class="max-w-5xl mx-auto px-5 py-10">
+  <div class="py-8 space-y-4">
 
-  {% if not history %}
-  <!-- Empty state -->
-  <div class="flex flex-col items-center justify-center py-24 text-center">
-    <div class="w-12 h-12 rounded-xl bg-surface border border-border flex items-center justify-center mb-5">
-      <i class="fa-solid fa-clock-rotate-left text-t3 text-sm"></i>
+    {% if not history %}
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+      <div class="w-10 h-10 rounded-[var(--r-lg)] bg-s2 border border-b2 flex items-center justify-center mb-4">
+        <i class="fa-solid fa-clock-rotate-left text-t3 text-sm"></i>
+      </div>
+      <p class="text-sm font-semibold text-t1 mb-1">No analyses yet</p>
+      <p class="font-data text-[11px] text-t3 mb-5">Analyse your first posting to see it here</p>
+      <a href="{{ url_for('classify') }}" class="btn btn-primary text-xs">
+        <i class="fa-solid fa-magnifying-glass text-[10px]"></i>Analyse a posting
+      </a>
     </div>
-    <p class="font-disp font-bold text-sm text-t1 mb-2">No analyses yet</p>
-    <p class="font-mono text-xs text-t3 mb-6">Analyse your first job posting to see it here</p>
-    <a href="{{ url_for('classify') }}" class="btn-primary text-sm">
-      <i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse a job posting
-    </a>
-  </div>
 
-  {% else %}
+    {% else %}
 
-  <!-- Summary stats -->
-  <div class="grid grid-cols-3 gap-3 mb-8">
-    {# BUG FIX: DB stores prediction="Fraudulent" string, not is_fraud boolean #}
+    <!-- Stats -->
     {% set fraud_count = history|selectattr('prediction','eq','Fraudulent')|list|length %}
     {% set legit_count = history|length - fraud_count %}
-    {% for val, label, color in [
+    <div class="grid grid-cols-3 gap-3">
+      {% for val, lbl, color in [
         (history|length|string, 'total analysed', 't1'),
-        (fraud_count|string,    'fraud flagged',  'fraud'),
-        (legit_count|string,    'legit detected', 'legit'),
-    ] %}
-    <div class="metric-card">
-      <p class="metric-value text-{{ color }}">{{ val }}</p>
-      <p class="metric-label">{{ label }}</p>
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- Records table -->
-  <div class="card overflow-hidden">
-    <div class="card-header">
-      <span>Results</span>
-      <span class="font-mono text-[10px] text-t3">{{ history|length }} entries</span>
+        (fraud_count|string,    'fraud flagged',  'fraud-t'),
+        (legit_count|string,    'legit detected', 'legit-t'),
+      ] %}
+      <div class="metric">
+        <div class="metric-val text-{{ color }}">{{ val }}</div>
+        <div class="metric-lbl">{{ lbl }}</div>
+      </div>
+      {% endfor %}
     </div>
 
-    <!-- Desktop table -->
-    <div class="hidden md:block overflow-x-auto">
-      <table class="w-full">
+    <!-- Table — desktop -->
+    <div class="card hidden md:block overflow-x-auto">
+      <table class="tbl">
         <thead>
-          <tr class="border-b border-border">
-            {% for col in ['Job title','Company','Model','Fraud prob.','URL score','Verdict'] %}
-            <th class="px-5 py-3 text-left font-mono text-[9px] text-t3 uppercase tracking-widest whitespace-nowrap">
-              {{ col }}
-            </th>
+          <tr>
+            {% for h in ['Job title','Company','Model','Fraud prob.','URL risk','Verdict'] %}
+            <th>{{ h }}</th>
             {% endfor %}
           </tr>
         </thead>
-        <tbody class="divide-y divide-border">
-          {# BUG FIX: use `history` (correct variable name), r.prediction string, r.model_used #}
+        <tbody>
           {% for r in history %}
           {% set is_fraud = r.prediction == 'Fraudulent' %}
-          {% set fp = (r.fraud_prob * 100)|round(1) if r.fraud_prob is not none else '—' %}
-          <tr class="hover:bg-surface/50 transition-colors">
-            <td class="px-5 py-3.5 font-mono text-xs text-t1 max-w-[160px] truncate">
-              {{ r.job_title or '—' }}
+          {% set fp = (r.fraud_prob * 100)|round(1) if r.fraud_prob is not none else none %}
+          <tr>
+            <td class="td-primary max-w-[180px] truncate">{{ r.job_title or '—' }}</td>
+            <td class="max-w-[140px] truncate">{{ r.company or '—' }}</td>
+            <td>
+              <span class="font-data text-[10px] text-t3">{{ r.model_used or '—' }}</span>
             </td>
-            <td class="px-5 py-3.5 font-mono text-xs text-t2 max-w-[120px] truncate">
-              {{ r.company or '—' }}
+            <td class="td-num
+              {% if fp is not none %}
+                {% if fp >= 70 %}text-fraud-t{% elif fp >= 40 %}text-warn-t{% else %}text-legit-t{% endif %}
+              {% else %}text-t3{% endif %}">
+              {% if fp is not none %}{{ fp }}%{% else %}—{% endif %}
             </td>
-            <td class="px-5 py-3.5 font-mono text-[10px] text-t3">
-              {{ r.model_used or '—' }}
+            <td>
+              {% if r.url_risk == 'high' %}
+                <span class="font-data text-[10px] text-fraud-t">High</span>
+              {% elif r.url_risk == 'medium' %}
+                <span class="font-data text-[10px] text-warn-t">Medium</span>
+              {% elif r.url_risk == 'low' %}
+                <span class="font-data text-[10px] text-legit-t">Clean</span>
+              {% else %}
+                <span class="font-data text-[10px] text-t4">—</span>
+              {% endif %}
             </td>
-            <td class="px-5 py-3.5 font-mono text-xs font-medium tabular-nums
-              {% if r.fraud_prob and r.fraud_prob >= 0.7 %}text-fraud
-              {% elif r.fraud_prob and r.fraud_prob >= 0.4 %}text-amber
-              {% else %}text-legit{% endif %}">
-              {% if r.fraud_prob is not none %}{{ (r.fraud_prob * 100)|round(1) }}%{% else %}—{% endif %}
-            </td>
-            <td class="px-5 py-3.5 font-mono text-xs text-t2 tabular-nums">
-              {{ r.url_score|round(0)|int if r.url_score is not none else '—' }}
-            </td>
-            <td class="px-5 py-3.5">
+            <td>
               <span class="pill {% if is_fraud %}pill-fraud{% else %}pill-legit{% endif %}">
-                <span class="w-1 h-1 rounded-full {% if is_fraud %}bg-fraud{% else %}bg-legit{% endif %}"></span>
+                <span class="dot {% if is_fraud %}dot-fraud{% else %}dot-legit{% endif %}"></span>
                 {{ 'Fraud' if is_fraud else 'Legit' }}
               </span>
             </td>
@@ -113,36 +105,35 @@
       </table>
     </div>
 
-    <!-- Mobile cards -->
-    <div class="md:hidden divide-y divide-border">
+    <!-- Cards — mobile -->
+    <div class="card md:hidden divide-y divide-border">
       {% for r in history %}
       {% set is_fraud = r.prediction == 'Fraudulent' %}
-      <div class="p-4 space-y-2">
+      {% set fp = (r.fraud_prob * 100)|round(1) if r.fraud_prob is not none else none %}
+      <div class="p-4 space-y-1.5">
         <div class="flex items-center justify-between gap-3">
-          <p class="font-mono text-xs text-t1 truncate font-medium">
-            {{ r.job_title or 'Untitled' }}
-          </p>
+          <p class="text-xs font-medium text-t1 truncate">{{ r.job_title or 'Untitled' }}</p>
           <span class="pill {% if is_fraud %}pill-fraud{% else %}pill-legit{% endif %} shrink-0">
             {{ 'Fraud' if is_fraud else 'Legit' }}
           </span>
         </div>
-        <div class="flex items-center gap-4 font-mono text-[10px] text-t3">
+        <div class="flex items-center gap-3 font-data text-[10px] text-t3 flex-wrap">
           <span>{{ r.company or '—' }}</span>
-          {% if r.fraud_prob is not none %}
-          <span class="{% if r.fraud_prob >= 0.7 %}text-fraud{% elif r.fraud_prob >= 0.4 %}text-amber{% else %}text-legit{% endif %}">
-            {{ (r.fraud_prob * 100)|round(1) }}% fraud
+          {% if fp is not none %}
+          <span class="{% if fp >= 70 %}text-fraud-t{% elif fp >= 40 %}text-warn-t{% else %}text-legit-t{% endif %}">
+            {{ fp }}% fraud prob.
           </span>
           {% endif %}
-          <span>{{ r.submitted_at[:10] if r.submitted_at else '' }}</span>
+          {% if r.submitted_at %}
+          <span>{{ r.submitted_at[:10] }}</span>
+          {% endif %}
         </div>
-        <p class="font-mono text-[10px] text-t3">{{ r.model_used or '—' }}</p>
+        <p class="font-data text-[10px] text-t4">{{ r.model_used or '—' }}</p>
       </div>
       {% endfor %}
     </div>
 
+    {% endif %}
   </div>
-  {% endif %}
-
 </div>
-
 {% endblock %}

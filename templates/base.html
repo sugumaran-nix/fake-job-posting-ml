@@ -3,41 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}JobGuard — AI Job Fraud Detection{% endblock %}</title>
-  <meta name="description" content="{% block meta_desc %}Detect fraudulent job postings instantly. AI-powered analysis — free.{% endblock %}">
-  <meta name="theme-color" content="#0a0a0a">
-  <meta property="og:type"        content="website">
-  <meta property="og:site_name"   content="JobGuard">
-  <meta property="og:title"       content="{% block og_title %}JobGuard — AI Job Fraud Detection{% endblock %}">
-  <meta property="og:description" content="Detect fake job postings instantly with AI-powered analysis.">
-
+  <title>{% block title %}JobGuard{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}Detect fake job postings instantly. AI-powered fraud analysis, free.{% endblock %}">
+  <meta name="theme-color" content="#0d0d0f">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><path d='M16 7a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9zm0 2a7 7 0 1 0 0 14A7 7 0 0 0 16 9zm0 2 1.5 4.5H22l-3.6 2.6 1.4 4.4-3.8-2.8-3.8 2.8 1.4-4.4L10 15.5h4.5z' fill='white'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans:  ['"DM Sans"', 'system-ui', 'sans-serif'],
-            disp:  ['"Bricolage Grotesque"', 'sans-serif'],
-            mono:  ['"IBM Plex Mono"', '"JetBrains Mono"', 'monospace'],
+            ui:   ['Inter', 'system-ui', 'sans-serif'],
+            data: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
           },
           colors: {
-            bg:      '#0a0a0a',
-            surface: '#141414',
-            s2:      '#1c1c1c',
-            s3:      '#242424',
-            border:  '#222222',
-            b2:      '#303030',
-            b3:      '#3a3a3a',
-            t1:      '#f0f0f0',
-            t2:      '#8a8a8a',
-            t3:      '#4a4a4a',
-            t4:      '#303030',
+            bg:      '#0d0d0f',
+            surface: '#161618',
+            s2:      '#1c1c1f',
+            s3:      '#222226',
+            border:  '#252529',
+            b2:      '#2e2e34',
+            b3:      '#3a3a42',
+            t1:      '#f2f2f5',
+            t2:      '#8b8b96',
+            t3:      '#55555e',
+            t4:      '#35353d',
+            accent:  '#6366f1',
+            'accent-h': '#818cf8',
             fraud:   '#f43f5e',
+            'fraud-t': '#fb7185',
             legit:   '#10b981',
-            amber:   '#f59e0b',
+            'legit-t': '#34d399',
+            warn:    '#f59e0b',
+            'warn-t': '#fbbf24',
           },
-          borderRadius: { xl2: '14px' },
+          borderRadius: {
+            DEFAULT: '10px',
+            sm: '6px', md: '10px', lg: '14px', xl: '18px',
+          },
         }
       }
     }
@@ -47,99 +50,120 @@
   {% block head %}{% endblock %}
 </head>
 
-<body class="bg-bg text-t1 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-bg text-t1 font-ui min-h-[100dvh] flex flex-col">
 
 <!-- NAV -->
-<nav class="fixed top-0 inset-x-0 z-50 bg-bg/90 backdrop-blur-xl border-b border-border">
-  <div class="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
+<header class="sticky top-0 z-50 bg-bg/90 backdrop-blur-xl border-b border-border">
+  <nav class="max-w-[960px] mx-auto px-5 h-12 flex items-center justify-between gap-4">
 
-    <a href="{{ url_for('home') }}" class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg bg-fraud/10 border border-fraud/20 flex items-center justify-center">
-        <i class="fa-solid fa-shield-halved text-fraud text-[11px]"></i>
+    <!-- Logo -->
+    <a href="{{ url_for('home') }}" class="flex items-center gap-2 shrink-0">
+      <div class="w-6 h-6 rounded-[6px] bg-accent flex items-center justify-center">
+        <i class="fa-solid fa-shield-halved text-t1 text-[10px]"></i>
       </div>
-      <span class="font-mono font-semibold text-t1 text-sm tracking-tight">
-        Job<span class="text-fraud">Guard</span>
-      </span>
+      <span class="text-t1 font-semibold text-sm tracking-tight">Job<span class="text-accent">Guard</span></span>
     </a>
 
-    <ul class="hidden md:flex items-center gap-0.5">
+    <!-- Nav links — desktop -->
+    <ul class="hidden md:flex items-center gap-1">
       {% for label, ep in [('Home','home'),('Analyse','classify'),('History','history'),('About','about')] %}
       <li>
         <a href="{{ url_for(ep) }}"
-           class="px-3 py-1.5 rounded-lg font-sans text-sm transition-colors duration-150
-           {% if request.endpoint == ep or (ep=='classify' and request.endpoint=='predict_route') %}
-             text-t1 bg-surface border border-border
+           class="px-3 py-1.5 rounded-[var(--r-sm)] text-xs font-medium transition-colors duration-150
+           {% if request.endpoint == ep or (ep == 'classify' and request.endpoint == 'predict_route') %}
+             text-t1 bg-s2 border border-b2
            {% else %}
-             text-t3 hover:text-t2 hover:bg-surface/50
-           {% endif %}">{{ label }}</a>
+             text-t3 hover:text-t2 hover:bg-s2
+           {% endif %}">
+          {{ label }}
+        </a>
       </li>
       {% endfor %}
     </ul>
 
     <div class="flex items-center gap-2">
-      <a href="{{ url_for('classify') }}" class="btn-primary hidden md:inline-flex text-xs">
-        <i class="fa-solid fa-magnifying-glass text-[10px]"></i> Analyse
+      <a href="{{ url_for('classify') }}"
+         class="btn btn-primary text-xs hidden md:inline-flex h-8 px-3">
+        <i class="fa-solid fa-magnifying-glass text-[10px]"></i>Analyse
       </a>
-      <button id="hamburger" type="button" aria-label="Menu"
-              class="md:hidden p-2 rounded-lg text-t3 hover:text-t2 border border-border hover:border-b2 transition-colors">
+      <button id="hamburger" type="button"
+              class="md:hidden w-8 h-8 flex items-center justify-center rounded-[var(--r-sm)] border border-b2 text-t3 hover:text-t2 hover:border-b3 transition-colors">
         <i class="fa-solid fa-bars text-xs"></i>
       </button>
     </div>
 
+  </nav>
+
+  <!-- Mobile menu -->
+  <div id="mob-menu" class="hidden md:hidden border-t border-border bg-surface">
+    <div class="max-w-[960px] mx-auto px-5 py-2 flex flex-col gap-0.5">
+      {% for label, ep in [('Home','home'),('Analyse','classify'),('History','history'),('About','about')] %}
+      <a href="{{ url_for(ep) }}"
+         class="flex items-center py-2.5 text-sm border-b border-border last:border-0
+         {% if request.endpoint == ep %}text-t1{% else %}text-t2{% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
   </div>
-  <div id="mob-menu" class="hidden md:hidden bg-surface border-t border-border px-5 pb-4 pt-2">
-    {% for label, ep in [('Home','home'),('Analyse a Job','classify'),('History','history'),('About','about')] %}
-    <a href="{{ url_for(ep) }}"
-       class="flex py-2.5 text-sm text-t2 border-b border-border hover:text-t1 transition-colors last:border-0">{{ label }}</a>
-    {% endfor %}
-  </div>
-</nav>
+</header>
 
 <!-- FLASH -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="max-w-5xl mx-auto px-5 mt-20 space-y-2">
+<div class="max-w-[960px] mx-auto px-5 pt-4 space-y-2">
   {% for cat, msg in messages %}
-  <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-xl text-sm border
-    {% if cat == 'error' %}bg-fraud/5 border-fraud/20 text-fraud
-    {% elif cat == 'success' %}bg-legit/5 border-legit/20 text-legit
-    {% else %}bg-amber/5 border-amber/20 text-amber{% endif %}">
-    <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %} shrink-0 text-xs"></i>
-    <span class="font-mono text-xs">{{ msg }}</span>
+  <div class="flash flex items-center gap-3 px-4 py-2.5 rounded-[var(--r-md)] text-xs border
+    {% if cat == 'error' %}bg-[var(--fraud-dim)] border-[var(--fraud-ring)] text-[var(--fraud-text)]
+    {% elif cat == 'success' %}bg-[var(--legit-dim)] border-[var(--legit-ring)] text-[var(--legit-text)]
+    {% else %}bg-[var(--warn-dim)] border-[var(--warn-ring)] text-[var(--warn-text)]{% endif %}">
+    <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %} shrink-0 text-[10px]"></i>
+    <span class="font-data text-[11px]">{{ msg }}</span>
+    <button onclick="this.parentElement.remove()" class="ml-auto text-current opacity-50 hover:opacity-100 transition-opacity">
+      <i class="fa-solid fa-xmark text-[10px]"></i>
+    </button>
   </div>
   {% endfor %}
 </div>
 {% endif %}
 {% endwith %}
 
-<main class="flex-1 pt-14">{% block content %}{% endblock %}</main>
+<main class="flex-1">{% block content %}{% endblock %}</main>
 
 <!-- FOOTER -->
-<footer class="mt-20 border-t border-border">
-  <div class="max-w-5xl mx-auto px-5 py-10 flex flex-col md:flex-row justify-between gap-8">
+<footer class="border-t border-border mt-20">
+  <div class="max-w-[960px] mx-auto px-5 py-8 flex flex-col sm:flex-row justify-between gap-6">
     <div>
-      <div class="flex items-center gap-2 mb-3">
-        <div class="w-6 h-6 rounded-lg bg-fraud/10 border border-fraud/20 flex items-center justify-center">
-          <i class="fa-solid fa-shield-halved text-fraud text-[10px]"></i>
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-5 h-5 rounded-[5px] bg-accent flex items-center justify-center">
+          <i class="fa-solid fa-shield-halved text-t1 text-[9px]"></i>
         </div>
-        <span class="font-mono font-semibold text-t1 text-xs">Job<span class="text-fraud">Guard</span></span>
+        <span class="text-xs font-semibold text-t1">Job<span class="text-accent">Guard</span></span>
       </div>
-      <p class="font-mono text-[11px] text-t3 leading-relaxed max-w-48">
-        AI fraud detection for job seekers.
-      </p>
+      <p class="font-data text-[10px] text-t3 leading-relaxed max-w-[180px]">AI fraud detection for job seekers.</p>
     </div>
-    <div>
-      <p class="font-mono text-[10px] text-t3 uppercase tracking-widest mb-3">Links</p>
-      <ul class="space-y-2">
-        {% for label, ep in [('Analyse a Job','classify'),('View History','history'),('Model Evaluation','models_page'),('About','about')] %}
-        <li><a href="{{ url_for(ep) }}" class="font-mono text-xs text-t3 hover:text-t2 transition-colors">{{ label }}</a></li>
-        {% endfor %}
-      </ul>
+    <div class="flex gap-10">
+      <div>
+        <p class="label mb-3">Tool</p>
+        <ul class="space-y-2">
+          {% for label, ep in [('Analyse a Job','classify'),('History','history'),('About','about')] %}
+          <li><a href="{{ url_for(ep) }}" class="text-[11px] text-t3 hover:text-t2 transition-colors">{{ label }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <p class="label mb-3">Info</p>
+        <ul class="space-y-2">
+          <li><a href="{{ url_for('models_page') }}" class="text-[11px] text-t3 hover:text-t2 transition-colors">Model Evaluation</a></li>
+        </ul>
+      </div>
     </div>
   </div>
-  <div class="border-t border-border max-w-5xl mx-auto px-5 py-4 flex justify-between items-center">
-    <span class="font-mono text-[10px] text-t3">&copy; 2026 JobGuard</span>
-    <span class="font-mono text-[10px] text-t3">Built for job seekers.</span>
+  <div class="border-t border-border">
+    <div class="max-w-[960px] mx-auto px-5 py-3 flex justify-between items-center">
+      <span class="font-data text-[10px] text-t4">&copy; 2026 JobGuard</span>
+      <span class="font-data text-[10px] text-t4">Free. No login.</span>
+    </div>
   </div>
 </footer>
 

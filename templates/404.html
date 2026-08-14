@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% block title %}404 — Not Found · JobGuard{% endblock %}
 {% block content %}
-<div class="min-h-[70vh] flex items-center justify-center px-6 text-center">
+<div class="min-h-[60vh] flex items-center justify-center px-5 text-center">
   <div>
-    <div class="font-disp font-extrabold text-[8rem] leading-none text-border mb-4 tracking-tight select-none">404</div>
-    <h1 class="font-disp font-bold text-2xl text-t1 mb-3">Page not found</h1>
-    <p class="font-mono text-xs text-t3 mb-8 max-w-xs mx-auto">
+    <p class="font-data text-[80px] font-medium text-b3 leading-none mb-4 tracking-tight select-none">404</p>
+    <h1 class="text-base font-semibold text-t1 mb-2">Page not found</h1>
+    <p class="font-data text-[11px] text-t3 mb-6 max-w-[240px] mx-auto leading-relaxed">
       The page you're looking for doesn't exist or has been moved.
     </p>
-    <div class="flex justify-center gap-3 flex-wrap">
-      <a href="{{ url_for('home') }}" class="btn-primary text-sm">
-        <i class="fa-solid fa-house text-xs"></i> Go Home
+    <div class="flex justify-center gap-2 flex-wrap">
+      <a href="{{ url_for('home') }}" class="btn btn-primary text-xs">
+        <i class="fa-solid fa-house text-[10px]"></i>Home
       </a>
-      <a href="{{ url_for('classify') }}" class="btn-ghost text-sm">
-        <i class="fa-solid fa-magnifying-glass text-xs"></i> Analyse a Job
+      <a href="{{ url_for('classify') }}" class="btn btn-secondary text-xs">
+        <i class="fa-solid fa-magnifying-glass text-[10px]"></i>Analyse a posting
       </a>
     </div>
   </div>
