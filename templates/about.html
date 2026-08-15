@@ -1,146 +1,171 @@
 {% extends "base.html" %}
 {% block title %}About — JobGuard{% endblock %}
+{% block meta_desc %}How JobGuard works — the BERT model, fraud patterns detected, dataset, and the team behind it.{% endblock %}
 
 {% block content %}
-<div class="max-w-[960px] mx-auto px-5">
+<div class="container-narrow" style="padding-top:40px;padding-bottom:80px;">
 
-  <div class="pt-8 pb-6 border-b border-border">
-    <h1 class="text-xl font-bold tracking-tight text-t1">About JobGuard</h1>
-    <p class="text-xs text-t3 mt-1">How it works, what it detects, and why it was built</p>
+  <!-- Header -->
+  <div style="padding-bottom:28px;border-bottom:1px solid var(--border);margin-bottom:48px;">
+    <h1 style="font-size:clamp(22px,4vw,28px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);margin-bottom:8px;">
+      About JobGuard
+    </h1>
+    <p style="font-size:16px;color:var(--t3);line-height:1.6;">
+      How it works, what it detects, and why it was built.
+    </p>
   </div>
 
-  <div class="py-8 grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-8">
-
-    <!-- Left: main content -->
-    <div class="space-y-10">
-
-      <section>
-        <p class="label mb-4">The problem</p>
-        <div class="space-y-3 text-sm text-t2 leading-relaxed">
-          <p>India loses billions to fake job scams every year. Fraudulent postings target fresh graduates, rural applicants, and anyone desperate for work — offering guaranteed income, WFH roles, and government jobs that don't exist.</p>
-          <p>They ask for registration fees, Aadhaar numbers, and bank details. Most victims never recover their money. JobGuard gives every job seeker a fast, free fraud check before they apply — or pay.</p>
-        </div>
-      </section>
-
-      <section>
-        <p class="label mb-4">The model</p>
-        <div class="grid grid-cols-3 gap-3 mb-5">
-          {% for val, lbl in [
-            ((metadata.best_model or 'Linear SVM'), 'Active model'),
-            ((metadata.dataset_rows or 17880)|string, 'Training samples'),
-            (((metadata.accuracy * 100)|round(1)|string + '%') if metadata.accuracy else '98.8%', 'Test accuracy'),
-          ] %}
-          <div class="metric">
-            <div class="metric-val text-t1 text-lg">{{ val }}</div>
-            <div class="metric-lbl">{{ lbl }}</div>
-          </div>
-          {% endfor %}
-        </div>
-        <div class="space-y-3 text-sm text-t2 leading-relaxed">
-          <p>A BERT-base transformer fine-tuned on the EMSCAD dataset — 17,880 real job postings labelled as fraudulent or legitimate. The model reads the full job description as a sequence, capturing long-range context that bag-of-words classifiers miss entirely.</p>
-          <p>On top of BERT, a rule-based layer checks 8 fraud pattern categories, scores the company URL across 10 signals, and flags known suspicious terms. Every prediction includes per-token influence so you understand exactly why the model decided what it did.</p>
-        </div>
-      </section>
-
-      <section>
-        <p class="label mb-4">Fraud patterns detected</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {% for icon, title, desc in [
-            ('💸', 'Fee demands',           'Any request for registration, training, or joining fees before employment.'),
-            ('🏦', 'Financial data fishing', 'Asks for bank account details, Aadhaar card, or PAN numbers upfront.'),
-            ('✅', 'False guarantees',       'Promised guaranteed income, assured placement, or 100% job offers.'),
-            ('🏠', 'Fake WFH schemes',       'Data entry and typing jobs that require registration fees to start.'),
-            ('⚡', 'Urgency tactics',         'Artificial pressure — "Apply in 24 hours", "Only 5 slots left".'),
-            ('🔗', 'Suspicious URLs',         'Free hosting domains, lookalike domains, or missing HTTPS.'),
-            ('🏢', 'Fake company names',      'Names designed to mimic government agencies or known corporations.'),
-            ('📢', 'MLM disguised',           'Network marketing or referral-income schemes framed as employment.'),
-          ] %}
-          <div class="flex items-start gap-3 p-3.5 rounded-[var(--r-md)] bg-s2 border border-b2">
-            <span class="text-base shrink-0">{{ icon }}</span>
-            <div>
-              <p class="text-xs font-medium text-t1 mb-1">{{ title }}</p>
-              <p class="font-data text-[10px] text-t3 leading-relaxed">{{ desc }}</p>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section>
-        <p class="label mb-3">Limitations</p>
-        <div class="space-y-2">
-          {% for limit in [
-            'A legitimate score does not guarantee a job is real — always verify independently.',
-            'New or niche fraud patterns not in training data may be missed.',
-            'BERT context window is 512 tokens — very long postings are truncated.',
-            'URL analysis is static — live phishing sites are not detected.',
-          ] %}
-          <div class="flex items-start gap-2.5 text-[11px] text-t2">
-            <i class="fa-solid fa-triangle-exclamation text-warn-t text-[9px] mt-0.5 shrink-0"></i>
-            {{ limit }}
-          </div>
-          {% endfor %}
-        </div>
-      </section>
-
+  <!-- Why this exists -->
+  <section aria-labelledby="why-heading" style="margin-bottom:52px;">
+    <h2 id="why-heading" class="label" style="display:block;margin-bottom:14px;">Why this exists</h2>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:var(--shadow-sm);">
+      <div style="font-size:15px;color:var(--t2);line-height:1.75;display:flex;flex-direction:column;gap:14px;">
+        <p>
+          Fake job scams cost Indian job seekers thousands of crores every year. Fraudulent postings target fresh graduates, rural applicants, and anyone desperate for income — offering guaranteed salaries, WFH roles, and government placements that don't exist.
+        </p>
+        <p>
+          They ask for registration fees, Aadhaar numbers, and bank details upfront. Most victims never recover their money. JobGuard gives every job seeker a fast, free fraud check — before they apply, or pay.
+        </p>
+      </div>
     </div>
+  </section>
 
-    <!-- Right: sidebar -->
-    <div class="space-y-3">
+  <!-- Model stats -->
+  <section aria-labelledby="model-heading" style="margin-bottom:52px;">
+    <h2 id="model-heading" class="label" style="display:block;margin-bottom:14px;">The model</h2>
+    <div class="grid-3" style="margin-bottom:24px;">
+      {% for val, lbl in [
+        ((metadata.best_model or 'Linear SVM'),                                               'Active model'),
+        ((metadata.dataset_rows or '17,880')|string,                                          'Training samples'),
+        (((metadata.accuracy * 100)|round(1)|string + '%') if metadata.accuracy else '98.8%', 'Test accuracy'),
+      ] %}
+      <div class="metric" style="text-align:center;">
+        <div class="metric-val">{{ val }}</div>
+        <div class="metric-lbl">{{ lbl }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="font-size:15px;color:var(--t2);line-height:1.75;display:flex;flex-direction:column;gap:14px;">
+      <p>
+        JobGuard uses an ensemble of classical ML classifiers (Logistic Regression, Linear SVM, Naive Bayes, Random Forest) trained on the EMSCAD dataset — 17,880 real job postings labelled as fraudulent or legitimate. The best-performing model by fraud-class F1 is selected automatically.
+      </p>
+      <p>
+        On top of the classifier, a rule-based layer checks 8 fraud pattern categories and scores the company URL across 10 signals. Every prediction includes the top contributing tokens so you understand exactly why the model flagged the posting.
+      </p>
+    </div>
+  </section>
 
-      <div class="card p-4">
-        <p class="label mb-4">Dataset</p>
-        <div class="space-y-3">
+  <!-- Fraud patterns -->
+  <section aria-labelledby="patterns-heading" style="margin-bottom:52px;">
+    <h2 id="patterns-heading" class="label" style="display:block;margin-bottom:14px;">Fraud patterns detected</h2>
+    <div class="grid-2">
+      {% for icon, title, desc in [
+        ('💸', 'Fee demands',            'Any request for registration, training, or joining fees before employment starts.'),
+        ('🏦', 'Financial data fishing', 'Upfront requests for bank account details, Aadhaar card, or PAN card numbers.'),
+        ('✅', 'False guarantees',        'Promised guaranteed income, assured placement, or "100% job" offers.'),
+        ('🏠', 'Fake WFH schemes',        'Data-entry and typing jobs that require a fee to receive a "starter kit".'),
+        ('⚡', 'Urgency tactics',          'Artificial pressure — "Apply in 24 hours", "Only 5 seats left", "Offer expires today".'),
+        ('🔗', 'Suspicious URLs',          'Free hosting domains, lookalike brand names, or missing HTTPS certificates.'),
+        ('🏢', 'Fake company names',       'Names designed to mimic government agencies, banks, or well-known corporations.'),
+        ('📢', 'MLM disguised as work',    'Network marketing or referral-income schemes presented as salaried employment.'),
+      ] %}
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);">
+        <span aria-hidden="true" style="font-size:20px;flex-shrink:0;line-height:1;margin-top:1px;">{{ icon }}</span>
+        <div>
+          <p style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px;">{{ title }}</p>
+          <p style="font-size:13px;color:var(--t3);line-height:1.5;">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Limitations -->
+  <section aria-labelledby="limits-heading" style="margin-bottom:52px;">
+    <h2 id="limits-heading" class="label" style="display:block;margin-bottom:14px;">Limitations</h2>
+    <div role="note" style="background:var(--warn-dim);border:1px solid var(--warn-ring);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+      {% for limit in [
+        'A legitimate score does not guarantee the job is real — always verify independently.',
+        'New or highly localised fraud patterns not in training data may be missed.',
+        'Very long job descriptions may be truncated (classifier feature limit).',
+        'URL analysis is static — live phishing sites are not detected in real time.',
+      ] %}
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true" style="color:var(--warn-text);font-size:12px;margin-top:3px;flex-shrink:0;"></i>
+        <span style="font-size:14px;color:var(--t2);line-height:1.5;">{{ limit }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Dataset + Stack -->
+  <section aria-labelledby="data-heading" style="margin-bottom:52px;">
+    <h2 id="data-heading" class="label" style="display:block;margin-bottom:14px;">Data &amp; stack</h2>
+    <div class="grid-ds grid-2">
+
+      <div class="card" style="padding:22px;">
+        <h3 style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:16px;">Dataset</h3>
+        <dl style="display:flex;flex-direction:column;gap:12px;">
           {% for lbl, val in [
-            ('Source',      'EMSCAD'),
+            ('Source',      'EMSCAD (University of Houston)'),
             ('Total',       '17,880 postings'),
             ('Fraudulent',  '866 (4.8%)'),
             ('Legitimate',  '17,014 (95.2%)'),
             ('Split',       '80% train / 20% test'),
           ] %}
-          <div class="flex flex-col gap-0.5">
-            <p class="label">{{ lbl }}</p>
-            <p class="text-xs text-t1">{{ val }}</p>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <dt style="font-size:13px;color:var(--t3);">{{ lbl }}</dt>
+            <dd style="font-size:13px;font-weight:500;color:var(--t1);text-align:right;">{{ val }}</dd>
           </div>
           {% endfor %}
-        </div>
+        </dl>
       </div>
 
-      <div class="card p-4">
-        <p class="label mb-4">Stack</p>
-        <div class="space-y-2">
+      <div class="card" style="padding:22px;">
+        <h3 style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:16px;">Stack</h3>
+        <dl style="display:flex;flex-direction:column;gap:12px;">
           {% for layer, tech in [
-            ('Model',     'BERT-base-uncased'),
-            ('Framework', 'PyTorch + Transformers'),
-            ('Backend',   'Flask'),
-            ('Deploy',    'Render'),
-            ('Frontend',  'Jinja2 + Tailwind CSS'),
+            ('Classifiers', 'SVM, LR, Naive Bayes, RF'),
+            ('Features',    'TF-IDF, n-grams (1–3)'),
+            ('Backend',     'Flask + Python 3.11'),
+            ('Deploy',      'Render (free tier)'),
+            ('Frontend',    'Jinja2 + custom CSS'),
           ] %}
-          <div class="flex items-center justify-between">
-            <span class="font-data text-[10px] text-t3">{{ layer }}</span>
-            <span class="font-data text-[10px] text-t1">{{ tech }}</span>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <dt style="font-size:13px;color:var(--t3);">{{ layer }}</dt>
+            <dd style="font-size:13px;font-weight:500;color:var(--t1);text-align:right;">{{ tech }}</dd>
           </div>
           {% endfor %}
-        </div>
-      </div>
-
-      <div class="card p-4">
-        <p class="label mb-3">Built by</p>
-        <p class="text-xs font-semibold text-t1 mb-0.5">Sugumaran</p>
-        <p class="font-data text-[10px] text-t3 mb-4">MCA · Full-Stack & AI/ML · Coimbatore</p>
-        <div class="flex gap-2">
-          <a href="https://sugumaran-portfolio.vercel.app" target="_blank" rel="noopener"
-             class="btn btn-ghost btn-sm text-[10px]">
-            <i class="fa-solid fa-globe text-[9px]"></i>Portfolio
-          </a>
-          <a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener"
-             class="btn btn-ghost btn-sm text-[10px]">
-            <i class="fa-brands fa-github text-[9px]"></i>Source
-          </a>
-        </div>
+        </dl>
       </div>
 
     </div>
-  </div>
+  </section>
+
+  <!-- Built by -->
+  <section aria-labelledby="built-heading">
+    <h2 id="built-heading" class="label" style="display:block;margin-bottom:14px;">Built by</h2>
+    <div class="card" style="padding:22px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+      <div>
+        <p style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:4px;">Sugumaran</p>
+        <p style="font-size:14px;color:var(--t3);">Full-stack &amp; AI/ML engineer · Coimbatore, India</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="https://sugumaran-portfolio.vercel.app" target="_blank" rel="noopener noreferrer"
+           class="btn btn-secondary btn-sm" aria-label="Sugumaran's portfolio (opens in new tab)">
+          <i class="fa-solid fa-globe" aria-hidden="true" style="font-size:11px;"></i> Portfolio
+        </a>
+        <a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener noreferrer"
+           class="btn btn-secondary btn-sm" aria-label="Source code on GitHub (opens in new tab)">
+          <i class="fa-brands fa-github" aria-hidden="true" style="font-size:12px;"></i> GitHub
+        </a>
+        <a href="https://linkedin.com/in/sugumaran-nix" target="_blank" rel="noopener noreferrer"
+           class="btn btn-secondary btn-sm" aria-label="Sugumaran on LinkedIn (opens in new tab)">
+          <i class="fa-brands fa-linkedin" aria-hidden="true" style="font-size:12px;"></i> LinkedIn
+        </a>
+      </div>
+    </div>
+  </section>
+
 </div>
 {% endblock %}

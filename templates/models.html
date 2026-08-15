@@ -2,129 +2,135 @@
 {% block title %}Model Evaluation — JobGuard{% endblock %}
 
 {% block content %}
-<div class="max-w-[960px] mx-auto px-5">
+<div class="container" style="padding-top:40px;padding-bottom:80px;">
 
-  <div class="pt-8 pb-6 border-b border-border flex items-center justify-between gap-4 flex-wrap">
+  <!-- Header -->
+  <div style="padding-bottom:24px;border-bottom:1px solid var(--border);margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
     <div>
-      <h1 class="text-xl font-bold tracking-tight text-t1">Model evaluation</h1>
-      <p class="text-xs text-t3 mt-1">Four classifiers on EMSCAD, selected by fraud-class F1</p>
+      <h1 style="font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--t1);">Model evaluation</h1>
+      <p style="font-size:14px;color:var(--t3);margin-top:4px;">Four classifiers trained on EMSCAD, selected by fraud-class F1.</p>
     </div>
     {% if active_model %}
-    <span class="pill pill-accent">
-      <i class="fa-solid fa-crown text-[9px]"></i>{{ active_model }}
+    <span class="pill pill-accent" style="margin-top:4px;">
+      <i class="fa-solid fa-crown" style="font-size:9px;"></i> {{ active_model }}
     </span>
     {% endif %}
   </div>
 
-  <div class="py-8 space-y-6">
+  {% if metrics %}
 
-    {% if metrics %}
-
-    <!-- Comparison table -->
-    <div class="card overflow-x-auto">
-      <div class="card-head">
-        <span class="label">Classifier comparison</span>
-      </div>
-      <table class="tbl">
-        <thead>
-          <tr>
-            {% for h in ['Model','Accuracy','Precision','Recall','F1 (fraud)','ROC-AUC','Status'] %}
-            <th>{{ h }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for m in metrics %}
-          {% set is_active = m.name == active_model %}
-          <tr class="{% if is_active %}bg-s2{% endif %}">
-            <td class="td-primary">
-              <div class="flex items-center gap-2">
-                {% if is_active %}<i class="fa-solid fa-crown text-warn-t text-[9px]"></i>{% endif %}
-                {{ m.name }}
-              </div>
-            </td>
-            <td class="td-num text-t1">{{ "%.1f"|format(m.accuracy * 100) }}%</td>
-            <td class="td-num {% if m.precision_fraud >= 0.9 %}text-legit-t{% elif m.precision_fraud >= 0.7 %}text-warn-t{% else %}text-fraud-t{% endif %}">
-              {{ "%.1f"|format(m.precision_fraud * 100) }}%
-            </td>
-            <td class="td-num {% if m.recall_fraud >= 0.9 %}text-legit-t{% elif m.recall_fraud >= 0.7 %}text-warn-t{% else %}text-fraud-t{% endif %}">
-              {{ "%.1f"|format(m.recall_fraud * 100) }}%
-            </td>
-            <td>
-              <div class="flex items-center gap-2">
-                <span class="font-data text-xs font-medium tabular-nums {% if is_active %}text-legit-t{% else %}text-t1{% endif %}">
-                  {{ "%.1f"|format(m.f1_fraud * 100) }}%
-                </span>
-                {% if is_active %}<span class="pill pill-legit">Active</span>{% endif %}
-              </div>
-            </td>
-            <td class="td-num text-t2">
-              {% if m.roc_auc %}{{ "%.4f"|format(m.roc_auc) }}{% else %}—{% endif %}
-            </td>
-            <td>
-              <span class="pill {% if is_active %}pill-legit{% else %}pill-neutral{% endif %}">
-                {% if is_active %}Selected{% else %}Evaluated{% endif %}
-              </span>
-            </td>
-          </tr>
+  <!-- Comparison table -->
+  <div class="card" style="margin-bottom:24px;overflow-x:auto;">
+    <div class="card-head">
+      <span class="label">Classifier comparison</span>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          {% for h in ['Model','Accuracy','Precision','Recall','F1 (fraud)','ROC-AUC','Status'] %}
+          <th>{{ h }}</th>
           {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Model switcher -->
-    {% if registry %}
-    <div class="card">
-      <div class="card-head">
-        <span class="label">Switch active model</span>
-        <span class="font-data text-[10px] text-t3">Hot-swap — single worker</span>
-      </div>
-      <div class="p-4">
-        <form method="POST" action="{{ url_for('select_model') }}" class="flex gap-3 flex-wrap items-center">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <select name="model_name" class="field flex-1 min-w-[200px] max-w-xs">
-            {% for name in registry %}
-            <option value="{{ name }}" {% if name == active_model %}selected{% endif %}>{{ name }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn btn-secondary">
-            <i class="fa-solid fa-shuffle text-[10px]"></i>Switch
-          </button>
-        </form>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Methodology -->
-    <div>
-      <p class="label mb-4">Evaluation methodology</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {% for num, title, desc in [
-          ('01', 'Dataset',    'EMSCAD — 17,880 real postings, 866 fraudulent (4.8%). Class imbalance handled with SMOTE on training split only.'),
-          ('02', 'Features',   'Title, company, description and requirements concatenated. TF-IDF into 10,000 weighted n-gram features.'),
-          ('03', 'Evaluation', 'Stratified 80/20 split. 5-fold cross-validation on training data. Full classification report per model.'),
-          ('04', 'Selection',  'Highest fraud-class F1 wins. Missing a fraud (false negative) is the costlier error.'),
-        ] %}
-        <div class="card p-4">
-          <p class="font-data text-[10px] text-t4 mb-2">{{ num }}</p>
-          <p class="text-xs font-semibold text-t1 mb-2">{{ title }}</p>
-          <p class="font-data text-[10px] text-t3 leading-relaxed">{{ desc }}</p>
-        </div>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in metrics %}
+        {% set is_active = m.name == active_model %}
+        <tr style="{% if is_active %}background:var(--accent-dim);{% endif %}">
+          <td class="td-primary">
+            <div style="display:flex;align-items:center;gap:8px;">
+              {% if is_active %}
+              <i class="fa-solid fa-crown" style="color:var(--warn-text);font-size:10px;"></i>
+              {% endif %}
+              {{ m.name }}
+            </div>
+          </td>
+          <td class="td-num" style="color:var(--t1);">{{ "%.1f"|format(m.accuracy * 100) }}%</td>
+          <td class="td-num" style="
+            {% if m.precision_fraud >= 0.9 %}color:var(--legit-text);
+            {% elif m.precision_fraud >= 0.7 %}color:var(--warn-text);
+            {% else %}color:var(--fraud-text);{% endif %}">
+            {{ "%.1f"|format(m.precision_fraud * 100) }}%
+          </td>
+          <td class="td-num" style="
+            {% if m.recall_fraud >= 0.9 %}color:var(--legit-text);
+            {% elif m.recall_fraud >= 0.7 %}color:var(--warn-text);
+            {% else %}color:var(--fraud-text);{% endif %}">
+            {{ "%.1f"|format(m.recall_fraud * 100) }}%
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="td-num" style="font-weight:600;{% if is_active %}color:var(--legit-text);{% else %}color:var(--t1);{% endif %}">
+                {{ "%.1f"|format(m.f1_fraud * 100) }}%
+              </span>
+              {% if is_active %}<span class="pill pill-legit">Active</span>{% endif %}
+            </div>
+          </td>
+          <td class="td-num" style="color:var(--t2);">
+            {% if m.roc_auc %}{{ "%.4f"|format(m.roc_auc) }}{% else %}—{% endif %}
+          </td>
+          <td>
+            <span class="pill {% if is_active %}pill-legit{% else %}pill-neutral{% endif %}">
+              {% if is_active %}Selected{% else %}Evaluated{% endif %}
+            </span>
+          </td>
+        </tr>
         {% endfor %}
-      </div>
-    </div>
-
-    {% else %}
-    <!-- No metrics -->
-    <div class="card p-16 text-center">
-      <div class="w-10 h-10 rounded-[var(--r-lg)] bg-s2 border border-b2 flex items-center justify-center mx-auto mb-4">
-        <i class="fa-solid fa-vials text-t3 text-sm"></i>
-      </div>
-      <p class="text-sm font-semibold text-t1 mb-1.5">No metrics available</p>
-      <p class="font-data text-[11px] text-t3">Run <code>python train.py</code> to train models and generate evaluation data.</p>
-    </div>
-    {% endif %}
-
+      </tbody>
+    </table>
   </div>
+
+  <!-- Model switcher -->
+  {% if registry %}
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-head">
+      <span class="label">Switch active model</span>
+      <span style="font-size:11px;color:var(--t3);">Hot-swap · single worker</span>
+    </div>
+    <div style="padding:16px;">
+      <form method="POST" action="{{ url_for('select_model') }}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="model_name" class="field" style="flex:1;min-width:200px;max-width:320px;">
+          {% for name in registry %}
+          <option value="{{ name }}" {% if name == active_model %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary">
+          <i class="fa-solid fa-shuffle" style="font-size:11px;"></i> Switch model
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Methodology -->
+  <div>
+    <span class="label" style="display:block;margin-bottom:16px;">Evaluation methodology</span>
+    <div style="display:grid;gap:14px;" class="grid-4">
+      {% for num, title, desc in [
+        ('01', 'Dataset',    'EMSCAD — 17,880 real postings, 866 fraudulent (4.8%). Class imbalance handled with SMOTE on training split only.'),
+        ('02', 'Features',   'Title, company, description, and requirements concatenated. TF-IDF into 10,000 weighted n-gram features.'),
+        ('03', 'Evaluation', 'Stratified 80/20 split. 5-fold cross-validation on training data. Full classification report per model.'),
+        ('04', 'Selection',  'Highest fraud-class F1 wins. Missing a fraud (false negative) is the costlier error.'),
+      ] %}
+      <div class="card" style="padding:20px;">
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:8px;font-variant-numeric:tabular-nums;">{{ num }}</p>
+        <p style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:8px;">{{ title }}</p>
+        <p style="font-size:13px;color:var(--t3);line-height:1.6;">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% else %}
+  <!-- No metrics -->
+  <div class="card" style="padding:64px 24px;text-align:center;">
+    <div style="width:48px;height:48px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <i class="fa-solid fa-vials" style="color:var(--t3);font-size:20px;"></i>
+    </div>
+    <p style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px;">No metrics available</p>
+    <p style="font-size:14px;color:var(--t3);">Run <code>python train.py</code> to train models and generate evaluation data.</p>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

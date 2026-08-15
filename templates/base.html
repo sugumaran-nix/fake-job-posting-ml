@@ -1,126 +1,120 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>{% block title %}JobGuard{% endblock %}</title>
-  <meta name="description" content="{% block meta_desc %}Detect fake job postings instantly. AI-powered fraud analysis, free.{% endblock %}">
-  <meta name="theme-color" content="#0d0d0f">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><path d='M16 7a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9zm0 2a7 7 0 1 0 0 14A7 7 0 0 0 16 9zm0 2 1.5 4.5H22l-3.6 2.6 1.4 4.4-3.8-2.8-3.8 2.8 1.4-4.4L10 15.5h4.5z' fill='white'/></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="{% block meta_desc %}Detect fake job postings with AI. Free, instant fraud analysis — no account needed.{% endblock %}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{% block og_title %}JobGuard — Spot Fake Job Postings{% endblock %}">
+  <meta property="og:description" content="Paste any job description. Our AI detects fraud patterns instantly — free, no account needed.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="JobGuard">
+
+  <!-- Theme color: light + dark -->
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Theme: apply before paint to avoid flash -->
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            ui:   ['Inter', 'system-ui', 'sans-serif'],
-            data: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
-          },
-          colors: {
-            bg:      '#0d0d0f',
-            surface: '#161618',
-            s2:      '#1c1c1f',
-            s3:      '#222226',
-            border:  '#252529',
-            b2:      '#2e2e34',
-            b3:      '#3a3a42',
-            t1:      '#f2f2f5',
-            t2:      '#8b8b96',
-            t3:      '#55555e',
-            t4:      '#35353d',
-            accent:  '#6366f1',
-            'accent-h': '#818cf8',
-            fraud:   '#f43f5e',
-            'fraud-t': '#fb7185',
-            legit:   '#10b981',
-            'legit-t': '#34d399',
-            warn:    '#f59e0b',
-            'warn-t': '#fbbf24',
-          },
-          borderRadius: {
-            DEFAULT: '10px',
-            sm: '6px', md: '10px', lg: '14px', xl: '18px',
-          },
-        }
-      }
-    }
+    (function(){
+      var t = localStorage.getItem('jg-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
   </script>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230071E3'/><path d='M16 7a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9zm0 2a7 7 0 1 0 0 14A7 7 0 0 0 16 9zm0 2 1.5 4.5H22l-3.6 2.6 1.4 4.4-3.8-2.8-3.8 2.8 1.4-4.4L10 15.5h4.5z' fill='white'/></svg>">
+
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head %}{% endblock %}
 </head>
 
-<body class="bg-bg text-t1 font-ui min-h-[100dvh] flex flex-col">
+<body>
+
+<!-- Skip navigation — hidden until focused (keyboard accessibility) -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
 <!-- NAV -->
-<header class="sticky top-0 z-50 bg-bg/90 backdrop-blur-xl border-b border-border">
-  <nav class="max-w-[960px] mx-auto px-5 h-12 flex items-center justify-between gap-4">
-
-    <!-- Logo -->
-    <a href="{{ url_for('home') }}" class="flex items-center gap-2 shrink-0">
-      <div class="w-6 h-6 rounded-[6px] bg-accent flex items-center justify-center">
-        <i class="fa-solid fa-shield-halved text-t1 text-[10px]"></i>
+<header class="nav">
+  <nav class="nav-inner" aria-label="Main navigation">
+    <a href="{{ url_for('home') }}" class="nav-logo" aria-label="JobGuard home">
+      <div class="nav-logo-icon" aria-hidden="true">
+        <i class="fa-solid fa-shield-halved"></i>
       </div>
-      <span class="text-t1 font-semibold text-sm tracking-tight">Job<span class="text-accent">Guard</span></span>
+      <span class="nav-logo-text">Job<span>Guard</span></span>
     </a>
 
-    <!-- Nav links — desktop -->
-    <ul class="hidden md:flex items-center gap-1">
-      {% for label, ep in [('Home','home'),('Analyse','classify'),('History','history'),('About','about')] %}
+    <ul class="nav-links" role="list">
+      {% for label, ep in [('Home','home'),('Check a Job','classify'),('History','history'),('About','about')] %}
       <li>
         <a href="{{ url_for(ep) }}"
-           class="px-3 py-1.5 rounded-[var(--r-sm)] text-xs font-medium transition-colors duration-150
-           {% if request.endpoint == ep or (ep == 'classify' and request.endpoint == 'predict_route') %}
-             text-t1 bg-s2 border border-b2
-           {% else %}
-             text-t3 hover:text-t2 hover:bg-s2
-           {% endif %}">
+           class="nav-link {% if request.endpoint == ep or (ep == 'classify' and request.endpoint == 'predict_route') %}active{% endif %}"
+           {% if request.endpoint == ep %}aria-current="page"{% endif %}>
           {{ label }}
         </a>
       </li>
       {% endfor %}
     </ul>
 
-    <div class="flex items-center gap-2">
+    <div class="nav-actions">
+      <button class="theme-toggle" id="theme-toggle"
+              aria-label="Switch to dark mode"
+              aria-pressed="false"
+              type="button">
+        <i class="fa-solid fa-sun icon-sun" aria-hidden="true"></i>
+        <i class="fa-solid fa-moon icon-moon" aria-hidden="true"></i>
+      </button>
+
       <a href="{{ url_for('classify') }}"
-         class="btn btn-primary text-xs hidden md:inline-flex h-8 px-3">
-        <i class="fa-solid fa-magnifying-glass text-[10px]"></i>Analyse
+         class="btn btn-primary nav-cta-desktop"
+         style="font-size:13px;min-height:34px;padding:7px 14px;border-radius:9px;">
+        Check a Job
       </a>
-      <button id="hamburger" type="button"
-              class="md:hidden w-8 h-8 flex items-center justify-center rounded-[var(--r-sm)] border border-b2 text-t3 hover:text-t2 hover:border-b3 transition-colors">
-        <i class="fa-solid fa-bars text-xs"></i>
+
+      <button id="hamburger" type="button" class="nav-hamburger"
+              aria-label="Open menu"
+              aria-expanded="false"
+              aria-controls="mob-menu">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
       </button>
     </div>
-
   </nav>
 
   <!-- Mobile menu -->
-  <div id="mob-menu" class="hidden md:hidden border-t border-border bg-surface">
-    <div class="max-w-[960px] mx-auto px-5 py-2 flex flex-col gap-0.5">
-      {% for label, ep in [('Home','home'),('Analyse','classify'),('History','history'),('About','about')] %}
+  <nav id="mob-menu" class="nav-mobile" aria-label="Mobile navigation" hidden>
+    <div class="nav-mobile-inner">
+      {% for label, ep in [('Home','home'),('Check a Job','classify'),('History','history'),('About','about')] %}
       <a href="{{ url_for(ep) }}"
-         class="flex items-center py-2.5 text-sm border-b border-border last:border-0
-         {% if request.endpoint == ep %}text-t1{% else %}text-t2{% endif %}">
+         class="{% if request.endpoint == ep %}active{% endif %}"
+         {% if request.endpoint == ep %}aria-current="page"{% endif %}>
         {{ label }}
       </a>
       {% endfor %}
     </div>
-  </div>
+  </nav>
 </header>
 
-<!-- FLASH -->
+<!-- FLASH MESSAGES -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="max-w-[960px] mx-auto px-5 pt-4 space-y-2">
+<div role="alert" aria-live="polite" style="max-width:1080px;margin-inline:auto;padding:16px 24px 0;display:flex;flex-direction:column;gap:8px;">
   {% for cat, msg in messages %}
-  <div class="flash flex items-center gap-3 px-4 py-2.5 rounded-[var(--r-md)] text-xs border
-    {% if cat == 'error' %}bg-[var(--fraud-dim)] border-[var(--fraud-ring)] text-[var(--fraud-text)]
-    {% elif cat == 'success' %}bg-[var(--legit-dim)] border-[var(--legit-ring)] text-[var(--legit-text)]
-    {% else %}bg-[var(--warn-dim)] border-[var(--warn-ring)] text-[var(--warn-text)]{% endif %}">
-    <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %} shrink-0 text-[10px]"></i>
-    <span class="font-data text-[11px]">{{ msg }}</span>
-    <button onclick="this.parentElement.remove()" class="ml-auto text-current opacity-50 hover:opacity-100 transition-opacity">
-      <i class="fa-solid fa-xmark text-[10px]"></i>
+  <div class="flash" role="status" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;font-size:14px;border:1px solid;
+    {% if cat == 'error' %}background:var(--fraud-dim);border-color:var(--fraud-ring);color:var(--fraud-text);
+    {% elif cat == 'success' %}background:var(--legit-dim);border-color:var(--legit-ring);color:var(--legit-text);
+    {% else %}background:var(--warn-dim);border-color:var(--warn-ring);color:var(--warn-text);{% endif %}">
+    <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"
+       aria-hidden="true" style="flex-shrink:0;"></i>
+    <span>{{ msg }}</span>
+    <button type="button"
+            onclick="this.closest('[role=status]').remove()"
+            aria-label="Dismiss message"
+            style="margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:0.6;font-size:14px;padding:4px;">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </div>
   {% endfor %}
@@ -128,42 +122,41 @@
 {% endif %}
 {% endwith %}
 
-<main class="flex-1">{% block content %}{% endblock %}</main>
+<main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
 
 <!-- FOOTER -->
-<footer class="border-t border-border mt-20">
-  <div class="max-w-[960px] mx-auto px-5 py-8 flex flex-col sm:flex-row justify-between gap-6">
-    <div>
-      <div class="flex items-center gap-2 mb-2">
-        <div class="w-5 h-5 rounded-[5px] bg-accent flex items-center justify-center">
-          <i class="fa-solid fa-shield-halved text-t1 text-[9px]"></i>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="{{ url_for('home') }}" class="nav-logo" style="margin-bottom:0;" aria-label="JobGuard home">
+        <div class="nav-logo-icon" aria-hidden="true" style="width:24px;height:24px;font-size:11px;">
+          <i class="fa-solid fa-shield-halved"></i>
         </div>
-        <span class="text-xs font-semibold text-t1">Job<span class="text-accent">Guard</span></span>
-      </div>
-      <p class="font-data text-[10px] text-t3 leading-relaxed max-w-[180px]">AI fraud detection for job seekers.</p>
+        <span class="nav-logo-text" style="font-size:14px;">Job<span>Guard</span></span>
+      </a>
+      <p>AI-powered fraud detection for job seekers. Free, no account needed.</p>
     </div>
-    <div class="flex gap-10">
-      <div>
-        <p class="label mb-3">Tool</p>
-        <ul class="space-y-2">
-          {% for label, ep in [('Analyse a Job','classify'),('History','history'),('About','about')] %}
-          <li><a href="{{ url_for(ep) }}" class="text-[11px] text-t3 hover:text-t2 transition-colors">{{ label }}</a></li>
-          {% endfor %}
-        </ul>
-      </div>
-      <div>
-        <p class="label mb-3">Info</p>
-        <ul class="space-y-2">
-          <li><a href="{{ url_for('models_page') }}" class="text-[11px] text-t3 hover:text-t2 transition-colors">Model Evaluation</a></li>
-        </ul>
-      </div>
-    </div>
+    <nav class="footer-col" aria-label="Tool links">
+      <h4 id="footer-tool">Tool</h4>
+      <ul role="list" aria-labelledby="footer-tool">
+        <li><a href="{{ url_for('classify') }}">Check a Job</a></li>
+        <li><a href="{{ url_for('history') }}">History</a></li>
+        <li><a href="{{ url_for('models_page') }}">Model Evaluation</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-col" aria-label="Info links">
+      <h4 id="footer-info">Info</h4>
+      <ul role="list" aria-labelledby="footer-info">
+        <li><a href="{{ url_for('about') }}">About</a></li>
+        <li><a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener noreferrer">
+          Source Code <span style="font-size:10px;" aria-label="opens in new tab">↗</span>
+        </a></li>
+      </ul>
+    </nav>
   </div>
-  <div class="border-t border-border">
-    <div class="max-w-[960px] mx-auto px-5 py-3 flex justify-between items-center">
-      <span class="font-data text-[10px] text-t4">&copy; 2026 JobGuard</span>
-      <span class="font-data text-[10px] text-t4">Free. No login.</span>
-    </div>
+  <div class="footer-bottom">
+    <span>© 2026 JobGuard</span>
+    <span>Free · No account required</span>
   </div>
 </footer>
 

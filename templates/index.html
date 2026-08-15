@@ -1,85 +1,128 @@
 {% extends "base.html" %}
-{% block title %}JobGuard — Detect Fake Job Postings{% endblock %}
+{% block title %}JobGuard — Spot Fake Job Postings Instantly{% endblock %}
 
 {% block content %}
-<div class="max-w-[960px] mx-auto px-5">
 
-  <!-- Hero -->
-  <section class="pt-16 pb-14 border-b border-border">
-    <div class="max-w-[560px]">
-      <h1 class="text-[32px] sm:text-[40px] font-bold tracking-[-0.03em] leading-[1.1] text-t1 mb-4">
-        Is that job posting<br>real or a scam?
-      </h1>
-      <p class="text-sm text-t2 leading-relaxed mb-8 max-w-[420px]">
-        Paste the description. Get a fraud verdict in seconds, powered by AI trained on 17,880 real job postings.
-      </p>
-      <div class="flex items-center gap-3 flex-wrap">
-        <a href="{{ url_for('classify') }}" class="btn btn-primary">
-          <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
-          Analyse a posting
-        </a>
-        <a href="{{ url_for('about') }}" class="btn btn-secondary">
-          How it works
-        </a>
-      </div>
+<!-- HERO -->
+<section style="padding:72px 0 64px;text-align:center;">
+  <div class="container-narrow">
+
+    <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:99px;background:var(--accent-dim);border:1px solid var(--accent-ring);margin-bottom:24px;">
+      <i class="fa-solid fa-shield-halved" style="color:var(--accent);font-size:11px;"></i>
+      <span style="font-size:12px;font-weight:500;color:var(--accent);">AI Fraud Detection · Free · No sign-up</span>
     </div>
-  </section>
 
-  <!-- Stats row -->
-  <section class="py-10 border-b border-border">
-    <div class="grid grid-cols-3 gap-3 max-w-[380px]">
-      {% for val, lbl in [
-        (stats.total|string, 'jobs analysed'),
-        (stats.fraud|string, 'fraud flagged'),
-        ('4.8%', 'fraud rate'),
+    <h1 class="hero-title" style="font-size:clamp(32px,6vw,56px);font-weight:700;letter-spacing:-0.03em;line-height:1.08;color:var(--t1);margin-bottom:18px;">
+      Spot fake job postings<br>before they cost you
+    </h1>
+
+    <p style="font-size:clamp(15px,2.5vw,18px);color:var(--t3);line-height:1.6;max-width:480px;margin:0 auto 32px;">
+      Paste any job description. Our AI flags fraud patterns, checks the company domain, and explains exactly why — in under a second.
+    </p>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg btn-mobile-full" style="max-width:280px;">
+        <i class="fa-solid fa-magnifying-glass" style="font-size:14px;"></i>
+        Check a job posting
+      </a>
+      <a href="{{ url_for('about') }}" class="btn btn-secondary btn-lg btn-mobile-full" style="max-width:280px;">
+        How it works
+      </a>
+    </div>
+
+    <p style="font-size:12px;color:var(--t4);">
+      Trained on 17,880 real job postings &nbsp;·&nbsp; Deployed on Hugging Face
+    </p>
+  </div>
+</section>
+
+<!-- STATS -->
+<section style="padding:0 0 64px;">
+  <div class="container">
+    <div class="grid-3 stagger">
+      {% for val, lbl, icon in [
+        (stats.total|string, 'Jobs analysed',   'fa-chart-bar'),
+        (stats.fraud|string, 'Fraud cases found','fa-triangle-exclamation'),
+        ('4.8%',             'Avg. fraud rate',  'fa-percent'),
       ] %}
-      <div class="metric">
-        <div class="metric-val text-t1">{{ val }}</div>
+      <div class="metric" style="text-align:center;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+          <i class="fa-solid {{ icon }}" style="color:var(--accent);font-size:14px;"></i>
+        </div>
+        <div class="metric-val">{{ val }}</div>
         <div class="metric-lbl">{{ lbl }}</div>
       </div>
       {% endfor %}
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- How it works -->
-  <section class="py-10 border-b border-border">
-    <p class="label mb-6">How it works</p>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 stagger">
-      {% for title, desc in [
-        ('Paste the posting', 'Copy the full job description, title, company, and requirements.'),
-        ('AI analyses it',    'BERT reads the full posting and checks 8 fraud pattern categories.'),
-        ('Get the verdict',   'Fraud probability, flagged signals, and what to do next, instantly.'),
+<!-- HOW IT WORKS -->
+<section style="padding:64px 0;background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:40px;">
+      <span class="label" style="display:block;margin-bottom:10px;">How it works</span>
+      <h2 style="font-size:clamp(22px,4vw,28px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);">Three steps to a fraud verdict</h2>
+    </div>
+    <div class="grid-3 stagger">
+      {% for step, title, desc, icon in [
+        ('1', 'Paste the job posting',    'Copy the full description — title, company, responsibilities, and salary range.', 'fa-paste'),
+        ('2', 'AI scans 8 fraud signals', 'We check fee demands, fake guarantees, suspicious URLs, pressure tactics, and more.', 'fa-brain'),
+        ('3', 'Get your verdict',         'Fraud probability, flagged patterns, and specific advice on what to do next.', 'fa-shield-check'),
       ] %}
-      <div>
-        <p class="text-xs font-semibold text-t1 mb-1.5">{{ title }}</p>
-        <p class="text-xs text-t3 leading-relaxed">{{ desc }}</p>
+      <div class="card" style="padding:24px;text-align:center;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-dim);border:1px solid var(--accent-ring);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <i class="fa-solid {{ icon }}" style="color:var(--accent);font-size:17px;"></i>
+        </div>
+        <p style="font-size:11px;font-weight:600;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Step {{ step }}</p>
+        <h3 style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px;letter-spacing:-0.01em;">{{ title }}</h3>
+        <p style="font-size:14px;color:var(--t3);line-height:1.6;">{{ desc }}</p>
       </div>
       {% endfor %}
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- What we detect -->
-  <section class="py-10">
-    <p class="label mb-5">What we detect</p>
-    <div class="flex flex-wrap gap-2">
-      {% for signal in [
-        'Registration fee requests',
-        'Guaranteed income promises',
-        'No-experience scams',
-        'Aadhaar / PAN data requests',
-        'Fake WFH data entry schemes',
-        'Urgent pressure tactics',
-        'Upfront payment traps',
-        'MLM disguised as employment',
-        'Vague / generic postings',
-        'Suspicious company domains',
+<!-- WHAT WE DETECT -->
+<section style="padding:64px 0;">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span class="label" style="display:block;margin-bottom:10px;">What we catch</span>
+      <h2 style="font-size:clamp(22px,4vw,28px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);">Every major fraud pattern</h2>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
+      {% for icon, signal in [
+        ('💸', 'Registration fee demands'),
+        ('🏦', 'Aadhaar / PAN data fishing'),
+        ('✅', 'Guaranteed income promises'),
+        ('🏠', 'Fake WFH data-entry schemes'),
+        ('⚡', 'Urgent pressure tactics'),
+        ('🔗', 'Suspicious company domains'),
+        ('🏢', 'Fake or copycat company names'),
+        ('📢', 'MLM disguised as employment'),
+        ('🎯', 'No-experience-needed scams'),
+        ('💬', 'Vague or generic job descriptions'),
       ] %}
-      <span class="pill pill-neutral">{{ signal }}</span>
+      <span class="pill pill-neutral" style="font-size:13px;padding:8px 14px;border-radius:10px;">
+        {{ icon }}&nbsp; {{ signal }}
+      </span>
       {% endfor %}
     </div>
-  </section>
+  </div>
+</section>
 
-</div>
+<!-- CTA BAND -->
+<section style="padding:56px 0;background:var(--surface);border-top:1px solid var(--border);">
+  <div class="container-narrow" style="text-align:center;">
+    <h2 style="font-size:clamp(20px,4vw,28px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);margin-bottom:10px;">Got a suspicious job in mind?</h2>
+    <p style="font-size:16px;color:var(--t3);margin-bottom:24px;">Paste it now. Takes under 10 seconds.</p>
+    <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">
+      <i class="fa-solid fa-magnifying-glass" style="font-size:14px;"></i>
+      Check it now — free
+    </a>
+  </div>
+</section>
+
 {% endblock %}
 
 {% block scripts %}

@@ -1,57 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Result — {{ job.job_title or 'Analysis' }} — JobGuard{% endblock %}
+{% block meta_desc %}Fraud analysis result for {{ job.job_title or 'job posting' }} at {{ job.company or 'unknown company' }}.{% endblock %}
 
 {% block content %}
 
-<!-- Verdict bar -->
-<div class="{% if result.is_fraud %}verdict-fraud-bar{% else %}verdict-legit-bar{% endif %}">
-  <div class="max-w-[960px] mx-auto px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-[var(--r-md)] flex items-center justify-center shrink-0
-        {% if result.is_fraud %}bg-[var(--fraud-dim)] text-fraud{% else %}bg-[var(--legit-dim)] text-legit{% endif %}">
-        <i class="fa-solid {% if result.is_fraud %}fa-circle-xmark{% else %}fa-circle-check{% endif %} text-sm"></i>
+<!-- Verdict banner -->
+<div role="alert"
+     class="{% if result.is_fraud %}verdict-fraud-bar{% else %}verdict-legit-bar{% endif %}">
+  <div style="max-width:1080px;margin-inline:auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div aria-hidden="true" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        {% if result.is_fraud %}background:var(--fraud-dim);{% else %}background:var(--legit-dim);{% endif %}">
+        <i class="fa-solid {% if result.is_fraud %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"
+           style="font-size:16px;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}"></i>
       </div>
       <div>
-        <p class="text-sm font-semibold {% if result.is_fraud %}text-fraud-t{% else %}text-legit-t{% endif %}">
-          {% if result.is_fraud %}Fraudulent Posting Detected{% else %}Legitimate Posting{% endif %}
+        <p style="font-size:15px;font-weight:700;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}">
+          {% if result.is_fraud %}⚠ Fraudulent Posting Detected{% else %}✓ Legitimate Posting{% endif %}
         </p>
-        <p class="font-data text-[10px] text-t3 mt-0.5">
-          {{ result.model_name }}{% if elapsed_ms %} &nbsp;·&nbsp; {{ elapsed_ms }}ms{% endif %}
+        <p style="font-size:12px;color:var(--t3);margin-top:2px;">
+          {{ result.model_name }}{% if elapsed_ms %} &nbsp;·&nbsp; {{ elapsed_ms }} ms{% endif %}
         </p>
       </div>
     </div>
     <a href="{{ url_for('classify') }}" class="btn btn-ghost btn-sm">
-      <i class="fa-solid fa-arrow-left text-[9px]"></i>Analyse another
+      <i class="fa-solid fa-arrow-left" aria-hidden="true" style="font-size:10px;"></i>
+      Check another
     </a>
   </div>
 </div>
 
-<div class="max-w-[960px] mx-auto px-5 py-8">
-  <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+<div class="container" style="padding-top:32px;padding-bottom:80px;">
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start;" class="grid-result">
 
     <!-- LEFT: main analysis -->
-    <div class="space-y-4">
+    <div style="display:flex;flex-direction:column;gap:20px;">
 
-      <!-- Metrics row — fixed: url score shown as RISK (0=safe) -->
-      <div class="grid grid-cols-3 gap-3">
-        <div class="metric {% if result.is_fraud %}border-[var(--fraud-ring)]{% endif %}">
-          <div class="metric-val {% if result.is_fraud %}text-fraud-t{% else %}text-t1{% endif %}">
+      <!-- Metrics row -->
+      <div style="display:grid;gap:14px;" class="grid-3 grid-metrics">
+        <div class="metric" style="{% if result.is_fraud %}border-color:var(--fraud-ring);{% endif %}">
+          <div class="metric-val" style="{% if result.is_fraud %}color:var(--fraud-text);{% endif %}"
+               aria-label="Fraud probability: {{ result.fraud_prob }} percent">
             {{ result.fraud_prob }}%
           </div>
           <div class="metric-lbl">Fraud probability</div>
         </div>
-        <div class="metric {% if not result.is_fraud %}border-[var(--legit-ring)]{% endif %}">
-          <div class="metric-val {% if not result.is_fraud %}text-legit-t{% else %}text-t1{% endif %}">
+        <div class="metric" style="{% if not result.is_fraud %}border-color:var(--legit-ring);{% endif %}">
+          <div class="metric-val" style="{% if not result.is_fraud %}color:var(--legit-text);{% endif %}"
+               aria-label="Legitimate probability: {{ result.legit_prob }} percent">
             {{ result.legit_prob }}%
           </div>
           <div class="metric-lbl">Legit probability</div>
         </div>
         <div class="metric">
-          <div class="metric-val
-            {% if not job.website %}text-t3
-            {% elif analysis.url.risk_level == 'high' %}text-fraud-t
-            {% elif analysis.url.risk_level == 'medium' %}text-warn-t
-            {% else %}text-legit-t{% endif %}">
+          <div class="metric-val" style="
+            {% if not job.website %}color:var(--t3);
+            {% elif analysis.url.risk_level == 'high' %}color:var(--fraud-text);
+            {% elif analysis.url.risk_level == 'medium' %}color:var(--warn-text);
+            {% else %}color:var(--legit-text);{% endif %}"
+            aria-label="URL verdict: {% if not job.website %}not provided{% elif analysis.url.risk_level == 'low' %}safe{% elif analysis.url.risk_level == 'medium' %}suspicious{% else %}high risk{% endif %}">
             {% if not job.website %}N/A
             {% elif analysis.url.risk_level == 'low' %}Safe
             {% elif analysis.url.risk_level == 'medium' %}Warn
@@ -62,248 +69,293 @@
       </div>
 
       <!-- Confidence bar -->
-      <div class="card p-4">
-        <div class="flex items-center justify-between mb-2.5">
-          <span class="label">Model confidence</span>
-          <span class="font-data text-xs font-medium text-t1">{{ result.confidence }}%</span>
+      <div class="card" style="padding:18px 20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="label" id="conf-label">Model confidence</span>
+          <span style="font-size:13px;font-weight:600;color:var(--t1);"
+                aria-label="Confidence: {{ result.confidence }} percent">
+            {{ result.confidence }}%
+          </span>
         </div>
-        <div class="conf-track">
-          <div class="conf-fill {% if result.is_fraud %}bg-fraud{% else %}bg-legit{% endif %}"
-               style="width:0%" data-target="{{ result.confidence }}"></div>
+        <div class="conf-track" role="progressbar"
+             aria-valuenow="{{ result.confidence }}"
+             aria-valuemin="0" aria-valuemax="100"
+             aria-labelledby="conf-label">
+          <div class="conf-fill"
+               style="width:0%;background:{% if result.is_fraud %}var(--fraud){% else %}var(--legit){% endif %};"
+               data-target="{{ result.confidence }}"></div>
         </div>
       </div>
 
       <!-- Fraud patterns -->
       {% set exp = result.explanation %}
       {% if exp.fraud_patterns %}
-      <div class="card">
-        <div class="card-head">
-          <span class="label">Fraud patterns matched</span>
-          <span class="pill pill-fraud">{{ exp.fraud_patterns|length }} found</span>
-        </div>
-        <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {% for pat in exp.fraud_patterns %}
-          <div class="pat-card pat-{{ pat.severity }}">
-            <div class="flex items-center gap-2 mb-1.5">
-              <span class="text-sm leading-none">{{ pat.icon }}</span>
-              <p class="text-xs font-medium text-t1">{{ pat.label }}</p>
-            </div>
-            {% if pat.matched %}
-            <p class="font-data text-[10px] text-t3 mb-1.5">Match: <code>{{ pat.matched }}</code></p>
-            {% endif %}
-            <p class="text-[11px] text-t2 leading-relaxed">{{ pat.reason }}</p>
+      <section aria-labelledby="patterns-hd">
+        <div class="card">
+          <div class="card-head">
+            <span class="label" id="patterns-hd">Fraud patterns matched</span>
+            <span class="pill pill-fraud" aria-label="{{ exp.fraud_patterns|length }} fraud patterns found">
+              {{ exp.fraud_patterns|length }} found
+            </span>
           </div>
-          {% endfor %}
+          <div style="padding:16px;display:grid;gap:12px;" class="grid-2">
+            {% for pat in exp.fraud_patterns %}
+            <div class="pat-card pat-{{ pat.severity }}">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span aria-hidden="true" style="font-size:15px;line-height:1;">{{ pat.icon }}</span>
+                <p style="font-size:13px;font-weight:600;color:var(--t1);">{{ pat.label }}</p>
+              </div>
+              {% if pat.matched %}
+              <p style="font-size:11px;color:var(--t3);margin-bottom:6px;">
+                Matched: <code>{{ pat.matched }}</code>
+              </p>
+              {% endif %}
+              <p style="font-size:12px;color:var(--t2);line-height:1.5;">{{ pat.reason }}</p>
+            </div>
+            {% endfor %}
+          </div>
         </div>
-      </div>
+      </section>
       {% endif %}
 
       <!-- Reasons -->
       {% if exp.reasons %}
-      <div class="card">
-        <div class="card-head">
-          <span class="label">Why this prediction</span>
-        </div>
-        <div class="divide-y divide-border">
-          {% for r in exp.reasons %}
-          <div class="flex items-start gap-3 px-4 py-3">
-            <span class="text-sm shrink-0 leading-none mt-0.5">{{ r.icon }}</span>
-            <p class="text-[12px] text-t2 leading-relaxed">{{ r.text }}</p>
+      <section aria-labelledby="reasons-hd">
+        <div class="card">
+          <div class="card-head">
+            <span class="label" id="reasons-hd">Why this prediction</span>
           </div>
-          {% endfor %}
+          <ul role="list" style="list-style:none;padding:0;margin:0;">
+            {% for r in exp.reasons %}
+            <li style="display:flex;align-items:flex-start;gap:12px;padding:12px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
+              <span aria-hidden="true" style="font-size:15px;flex-shrink:0;line-height:1;margin-top:1px;">{{ r.icon }}</span>
+              <p style="font-size:13px;color:var(--t2);line-height:1.6;">{{ r.text }}</p>
+            </li>
+            {% endfor %}
+          </ul>
         </div>
-      </div>
+      </section>
       {% endif %}
 
-      <!-- Token influence — fixed bar alignment -->
+      <!-- Token influence -->
       {% if exp.top_fraud_words or exp.top_legit_words %}
-      <div class="card">
-        <div class="card-head">
-          <span class="label">Token influence</span>
-          <span class="font-data text-[10px] text-t3">{{ exp.n_fraud_tokens }} fraud · {{ exp.n_legit_tokens }} legit tokens</span>
-        </div>
-        <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-          {% if exp.top_fraud_words %}
-          <div>
-            <p class="label text-fraud-t mb-3">Fraud signals</p>
-            <div class="space-y-2.5">
-              {% for item in exp.top_fraud_words %}
-              <div class="flex items-center gap-2.5">
-                <span class="font-data text-[10px] text-fraud-t/70 w-[90px] truncate shrink-0">{{ item.word }}</span>
-                <div class="bar-track">
-                  <div class="bar-fill" style="width:0%; background:var(--fraud)" data-target="{{ item.pct }}"></div>
-                </div>
-                <span class="font-data text-[10px] text-t3 w-7 text-right shrink-0 tabular-nums">{{ item.pct }}%</span>
-              </div>
-              {% endfor %}
-            </div>
+      <section aria-labelledby="tokens-hd">
+        <div class="card">
+          <div class="card-head">
+            <span class="label" id="tokens-hd">Token influence</span>
+            <span style="font-size:11px;color:var(--t3);">
+              {{ exp.n_fraud_tokens }} fraud · {{ exp.n_legit_tokens }} legit tokens
+            </span>
           </div>
-          {% endif %}
+          <div style="padding:16px;display:grid;gap:24px;" class="grid-2">
 
-          {% if exp.top_legit_words %}
-          <div>
-            <p class="label text-legit-t mb-3">Legit signals</p>
-            <div class="space-y-2.5">
-              {% for item in exp.top_legit_words %}
-              <div class="flex items-center gap-2.5">
-                <span class="font-data text-[10px] text-legit-t/70 w-[90px] truncate shrink-0">{{ item.word }}</span>
-                <div class="bar-track">
-                  <div class="bar-fill" style="width:0%; background:var(--legit)" data-target="{{ item.pct }}"></div>
-                </div>
-                <span class="font-data text-[10px] text-t3 w-7 text-right shrink-0 tabular-nums">{{ item.pct }}%</span>
-              </div>
-              {% endfor %}
+            {% if exp.top_fraud_words %}
+            <div>
+              <p class="label" style="color:var(--fraud-text);margin-bottom:12px;" id="fraud-tokens-lbl">
+                Fraud signals
+              </p>
+              <ul role="list" aria-labelledby="fraud-tokens-lbl"
+                  style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+                {% for item in exp.top_fraud_words %}
+                <li style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:11px;color:var(--fraud-text);width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;"
+                        title="{{ item.word }}">{{ item.word }}</span>
+                  <div class="bar-track" role="presentation">
+                    <div class="bar-fill" style="width:0%;background:var(--fraud);"
+                         data-target="{{ item.pct }}"></div>
+                  </div>
+                  <span style="font-size:11px;color:var(--t3);width:28px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;"
+                        aria-label="{{ item.pct }} percent">{{ item.pct }}%</span>
+                </li>
+                {% endfor %}
+              </ul>
             </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
+            {% if exp.top_legit_words %}
+            <div>
+              <p class="label" style="color:var(--legit-text);margin-bottom:12px;" id="legit-tokens-lbl">
+                Legit signals
+              </p>
+              <ul role="list" aria-labelledby="legit-tokens-lbl"
+                  style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+                {% for item in exp.top_legit_words %}
+                <li style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:11px;color:var(--legit-text);width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;"
+                        title="{{ item.word }}">{{ item.word }}</span>
+                  <div class="bar-track" role="presentation">
+                    <div class="bar-fill" style="width:0%;background:var(--legit);"
+                         data-target="{{ item.pct }}"></div>
+                  </div>
+                  <span style="font-size:11px;color:var(--t3);width:28px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;"
+                        aria-label="{{ item.pct }} percent">{{ item.pct }}%</span>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+
+          </div>
         </div>
-      </div>
+      </section>
       {% endif %}
 
       <!-- Highlighted text -->
       {% if exp.highlighted_html %}
-      <div class="card">
-        <div class="card-head">
-          <span class="label">Text highlights</span>
-          <span class="flex items-center gap-3">
-            <span class="flex items-center gap-1.5 font-data text-[10px] text-fraud-t">
-              <span class="inline-block w-2 h-2 rounded-[2px] bg-[var(--fraud-dim)] border border-[var(--fraud-ring)]"></span>fraud
+      <section aria-labelledby="highlights-hd">
+        <div class="card">
+          <div class="card-head">
+            <span class="label" id="highlights-hd">Text highlights</span>
+            <span style="display:flex;align-items:center;gap:10px;" aria-label="Red = fraud signals, green = legit signals">
+              <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--fraud-text);">
+                <span aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--fraud-dim);border:1px solid var(--fraud-ring);"></span>fraud
+              </span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--legit-text);">
+                <span aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--legit-dim);border:1px solid var(--legit-ring);"></span>legit
+              </span>
             </span>
-            <span class="flex items-center gap-1.5 font-data text-[10px] text-legit-t">
-              <span class="inline-block w-2 h-2 rounded-[2px] bg-[var(--legit-dim)] border border-[var(--legit-ring)]"></span>legit
-            </span>
-          </span>
+          </div>
+          <div style="padding:16px;font-size:13px;color:var(--t2);line-height:2;">
+            {{ exp.highlighted_html | safe }}
+          </div>
         </div>
-        <div class="p-4 font-data text-[12px] text-t2 leading-8">
-          {{ exp.highlighted_html | safe }}
-        </div>
-      </div>
+      </section>
       {% endif %}
 
     </div>
 
     <!-- RIGHT: sidebar -->
-    <div class="space-y-3">
+    <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:68px;" class="result-sidebar">
 
       <!-- Advice -->
-      <div class="card p-4 {% if result.is_fraud %}border-[var(--fraud-ring)]{% else %}border-[var(--legit-ring)]{% endif %}">
-        <p class="label mb-3">{% if result.is_fraud %}What to do now{% else %}Next steps{% endif %}</p>
-        <ul class="space-y-2.5">
-          {% if result.is_fraud %}
-            {% for item, icon in [
-              ('Do not pay any fee to apply or start.', 'fa-ban'),
-              ('Do not share Aadhaar, PAN, or bank details.', 'fa-ban'),
-              ('Do not click links from this posting.', 'fa-ban'),
-              ('Report on the job portal immediately.', 'fa-flag'),
-              ('File complaint at cybercrime.gov.in.', 'fa-circle-exclamation'),
-            ] %}
-            <li class="flex items-start gap-2 text-[11px] text-t2">
-              <i class="fa-solid {{ icon }} text-fraud-t text-[9px] mt-0.5 shrink-0 w-3"></i>
-              {{ item }}
-            </li>
-            {% endfor %}
-          {% else %}
-            {% for item in [
-              'Verify the company on LinkedIn and their official website.',
-              'Apply only through the official careers page.',
-              'Never pay any fee — legitimate employers never charge.',
-              'Research the role and salary range independently.',
-            ] %}
-            <li class="flex items-start gap-2 text-[11px] text-t2">
-              <i class="fa-solid fa-check text-legit-t text-[9px] mt-0.5 shrink-0 w-3"></i>
-              {{ item }}
-            </li>
-            {% endfor %}
-          {% endif %}
-        </ul>
-      </div>
-
-      <!-- URL analysis — fixed: score shown as risk (0=clean, 100=fraud) -->
-      <div class="card">
-        <div class="card-head">
-          <span class="label">URL analysis</span>
-          <span class="font-data text-[11px]
-            {% if not job.website %}text-t3
-            {% elif analysis.url.risk_level == 'high' %}text-fraud-t
-            {% elif analysis.url.risk_level == 'medium' %}text-warn-t
-            {% else %}text-legit-t{% endif %}">
-            {% if not job.website %}No URL
-            {% elif analysis.url.risk_level == 'low' %}Clean
-            {% elif analysis.url.risk_level == 'medium' %}Suspicious
-            {% else %}High risk{% endif %}
-          </span>
-        </div>
-        <div class="p-4 space-y-3">
-          {% if job.website %}
-          <p class="font-data text-[10px] text-t3 truncate">{{ job.website }}</p>
-          {% else %}
-          <p class="font-data text-[10px] text-t4">No URL provided</p>
-          {% endif %}
-          <p class="text-[11px] text-t2 leading-relaxed">{{ analysis.url.summary }}</p>
-          {% if analysis.url.flags %}
-          <div class="space-y-2">
-            {% for icon, title, detail in analysis.url.flags %}
-            {% set is_positive = icon == '✅' %}
-            {% set is_warn = icon == '🟡' %}
-            <div class="rounded-[var(--r-sm)] p-2.5
-              {% if is_positive %}bg-[var(--legit-dim)] border border-[var(--legit-ring)]
-              {% elif is_warn %}bg-[var(--warn-dim)] border border-[var(--warn-ring)]
-              {% else %}bg-[var(--fraud-dim)] border border-[var(--fraud-ring)]{% endif %}">
-              <p class="font-data text-[10px] mb-0.5
-                {% if is_positive %}text-legit-t{% elif is_warn %}text-warn-t{% else %}text-fraud-t{% endif %}">
-                {{ icon }} {{ title }}
-              </p>
-              <p class="font-data text-[10px] text-t3">{{ detail }}</p>
-            </div>
-            {% endfor %}
-          </div>
-          {% else %}
-          <p class="text-[11px] text-legit-t flex items-center gap-1.5">
-            <i class="fa-solid fa-check text-[9px]"></i>No suspicious URL patterns
+      <section aria-labelledby="advice-hd">
+        <div class="card" style="padding:20px;{% if result.is_fraud %}border-color:var(--fraud-ring);{% else %}border-color:var(--legit-ring);{% endif %}">
+          <p class="label" id="advice-hd" style="margin-bottom:14px;">
+            {% if result.is_fraud %}What to do now{% else %}Next steps{% endif %}
           </p>
-          {% endif %}
+          <ul role="list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+            {% if result.is_fraud %}
+              {% for item, icon in [
+                ('Do not pay any fee to apply or start.',              'fa-ban'),
+                ('Do not share Aadhaar, PAN, or bank details.',        'fa-ban'),
+                ('Do not click any links from this posting.',          'fa-ban'),
+                ('Report it on the job portal immediately.',           'fa-flag'),
+                ('File a complaint at cybercrime.gov.in.',             'fa-circle-exclamation'),
+              ] %}
+              <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--t2);">
+                <i class="fa-solid {{ icon }}" aria-hidden="true" style="color:var(--fraud-text);font-size:10px;margin-top:3px;flex-shrink:0;"></i>
+                {{ item }}
+              </li>
+              {% endfor %}
+            {% else %}
+              {% for item in [
+                'Verify the company on LinkedIn and their official website.',
+                'Apply only through the official careers page.',
+                'Never pay any fee — legitimate employers never charge.',
+                'Research the role and salary range independently.',
+              ] %}
+              <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--t2);">
+                <i class="fa-solid fa-check" aria-hidden="true" style="color:var(--legit-text);font-size:10px;margin-top:3px;flex-shrink:0;"></i>
+                {{ item }}
+              </li>
+              {% endfor %}
+            {% endif %}
+          </ul>
         </div>
-      </div>
+      </section>
+
+      <!-- URL analysis -->
+      <section aria-labelledby="url-hd">
+        <div class="card">
+          <div class="card-head">
+            <span class="label" id="url-hd">URL analysis</span>
+            <span style="font-size:12px;font-weight:500;
+              {% if not job.website %}color:var(--t3);
+              {% elif analysis.url.risk_level == 'high' %}color:var(--fraud-text);
+              {% elif analysis.url.risk_level == 'medium' %}color:var(--warn-text);
+              {% else %}color:var(--legit-text);{% endif %}">
+              {% if not job.website %}No URL
+              {% elif analysis.url.risk_level == 'low' %}Clean
+              {% elif analysis.url.risk_level == 'medium' %}Suspicious
+              {% else %}High risk{% endif %}
+            </span>
+          </div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+            {% if job.website %}
+            <p style="font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+               title="{{ job.website }}">{{ job.website }}</p>
+            {% else %}
+            <p style="font-size:12px;color:var(--t4);">No URL provided</p>
+            {% endif %}
+            <p style="font-size:13px;color:var(--t2);line-height:1.5;">{{ analysis.url.summary }}</p>
+            {% if analysis.url.flags %}
+            <ul role="list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">
+              {% for icon, title, detail in analysis.url.flags %}
+              {% set is_pos = icon == '✅' %}
+              {% set is_warn = icon == '🟡' %}
+              <li style="border-radius:8px;padding:10px 12px;
+                {% if is_pos %}background:var(--legit-dim);border:1px solid var(--legit-ring);
+                {% elif is_warn %}background:var(--warn-dim);border:1px solid var(--warn-ring);
+                {% else %}background:var(--fraud-dim);border:1px solid var(--fraud-ring);{% endif %}">
+                <p style="font-size:11px;font-weight:500;margin-bottom:3px;
+                  {% if is_pos %}color:var(--legit-text);{% elif is_warn %}color:var(--warn-text);{% else %}color:var(--fraud-text);{% endif %}">
+                  <span aria-hidden="true">{{ icon }}</span> {{ title }}
+                </p>
+                <p style="font-size:11px;color:var(--t3);">{{ detail }}</p>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p style="font-size:12px;color:var(--legit-text);display:flex;align-items:center;gap:6px;">
+              <i class="fa-solid fa-check" aria-hidden="true" style="font-size:10px;"></i>
+              No suspicious URL patterns detected
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
 
       <!-- Company analysis -->
-      <div class="card">
-        <div class="card-head">
-          <span class="label">Company analysis</span>
-          <span class="font-data text-[11px]
-            {% if analysis.company.risk_level == 'high' %}text-fraud-t
-            {% elif analysis.company.risk_level == 'medium' %}text-warn-t
-            {% elif analysis.company.risk_level == 'unknown' %}text-t3
-            {% else %}text-legit-t{% endif %}">
-            {% if analysis.company.risk_level == 'high' %}High risk
-            {% elif analysis.company.risk_level == 'medium' %}Suspicious
-            {% elif analysis.company.risk_level == 'unknown' %}No data
-            {% else %}Clean{% endif %}
-          </span>
+      <section aria-labelledby="company-hd">
+        <div class="card">
+          <div class="card-head">
+            <span class="label" id="company-hd">Company analysis</span>
+            <span style="font-size:12px;font-weight:500;
+              {% if analysis.company.risk_level == 'high' %}color:var(--fraud-text);
+              {% elif analysis.company.risk_level == 'medium' %}color:var(--warn-text);
+              {% elif analysis.company.risk_level == 'unknown' %}color:var(--t3);
+              {% else %}color:var(--legit-text);{% endif %}">
+              {% if analysis.company.risk_level == 'high' %}High risk
+              {% elif analysis.company.risk_level == 'medium' %}Suspicious
+              {% elif analysis.company.risk_level == 'unknown' %}No data
+              {% else %}Clean{% endif %}
+            </span>
+          </div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:8px;">
+            <p style="font-size:13px;color:var(--t2);line-height:1.5;">{{ analysis.company.summary }}</p>
+            {% if analysis.company.is_known %}
+            <p style="font-size:12px;color:var(--legit-text);display:flex;align-items:center;gap:6px;">
+              <i class="fa-solid fa-check" aria-hidden="true" style="font-size:10px;"></i>
+              Verified known company
+            </p>
+            {% endif %}
+          </div>
         </div>
-        <div class="p-4 space-y-2">
-          <p class="text-[11px] text-t2 leading-relaxed">{{ analysis.company.summary }}</p>
-          {% if analysis.company.is_known %}
-          <p class="text-[11px] text-legit-t flex items-center gap-1.5">
-            <i class="fa-solid fa-check text-[9px]"></i>Verified known company
-          </p>
-          {% endif %}
-        </div>
-      </div>
+      </section>
 
       <!-- Submitted details -->
-      <details class="card group">
-        <summary class="card-head select-none hover:bg-s2 transition-colors">
+      <details class="card" style="overflow:hidden;">
+        <summary style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;cursor:pointer;">
           <span class="label">Submitted details</span>
-          <i class="fa-solid fa-chevron-right text-[9px] text-t3 group-open:rotate-90 transition-transform duration-150"></i>
+          <i class="fa-solid fa-chevron-right" aria-hidden="true"
+             style="font-size:10px;color:var(--t3);transition:transform 0.15s ease;"></i>
         </summary>
-        <div class="p-4 space-y-3">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--border);">
           {% for key, lbl in [('job_title','Title'),('company','Company'),('location','Location'),('salary','Salary')] %}
           {% if job[key] %}
           <div>
-            <p class="label mb-0.5">{{ lbl }}</p>
-            <p class="text-[12px] text-t1">{{ job[key] }}</p>
+            <p class="label" style="margin-bottom:3px;">{{ lbl }}</p>
+            <p style="font-size:13px;color:var(--t1);">{{ job[key] }}</p>
           </div>
           {% endif %}
           {% endfor %}
@@ -319,11 +371,9 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Confidence bar
   document.querySelectorAll('.conf-fill[data-target]').forEach(el => {
     setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 150);
   });
-  // Token bars — staggered
   document.querySelectorAll('.bar-fill[data-target]').forEach((el, i) => {
     setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 300 + i * 30);
   });

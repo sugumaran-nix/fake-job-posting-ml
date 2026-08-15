@@ -1,185 +1,192 @@
 {% extends "base.html" %}
-{% block title %}Analyse a Job — JobGuard{% endblock %}
+{% block title %}Check a Job — JobGuard{% endblock %}
+{% block meta_desc %}Paste a job description and get an instant AI fraud verdict. Free, no account needed.{% endblock %}
 
 {% block content %}
 
 <!-- Loading overlay -->
-<div id="loading-overlay" class="hidden fixed inset-0 z-[200] bg-bg/95 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
-  <div class="relative w-10 h-10">
-    <div class="absolute inset-0 rounded-full border border-b2"></div>
-    <div class="absolute inset-0 rounded-full border border-transparent border-t-accent spin"></div>
+<div id="loading-overlay" role="status" aria-live="polite" aria-label="Analysing job posting"
+     style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="width:40px;height:40px;position:relative;" aria-hidden="true">
+    <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,0.2);"></div>
+    <div class="spin" style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#fff;"></div>
   </div>
-  <div class="text-center">
-    <p class="text-sm font-semibold text-t1 mb-1" id="load-title">Analysing posting...</p>
-    <p class="font-data text-[11px] text-t3" id="load-sub">Running AI inference</p>
+  <div style="text-align:center;">
+    <p style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px;" id="load-title">Analysing posting…</p>
+    <p style="font-size:13px;color:rgba(255,255,255,0.65);">Running AI inference</p>
   </div>
-  <div id="cold-start-note" class="hidden font-data text-[11px] text-warn-t border border-[var(--warn-ring)] bg-[var(--warn-dim)] rounded-[var(--r-md)] px-4 py-2.5 text-center max-w-[280px]">
-    Server waking up - free tier sleeps after inactivity. First request takes ~20s.
+  <div id="cold-start-note" hidden
+       style="font-size:13px;color:var(--warn-text);border:1px solid var(--warn-ring);background:var(--warn-dim);border-radius:10px;padding:10px 16px;text-align:center;max-width:280px;">
+    Server waking up — first request on free tier can take ~20 s.
   </div>
 </div>
 
-<div class="max-w-[960px] mx-auto px-5">
+<div class="container-narrow" style="padding-top:40px;padding-bottom:80px;">
 
   <!-- Page header -->
-  <div class="pt-8 pb-6 border-b border-border flex items-center justify-between gap-4 flex-wrap">
+  <div class="page-header" style="margin-bottom:32px;">
     <div>
-      <h1 class="text-xl font-bold tracking-tight text-t1">Analyse a job posting</h1>
-      <p class="text-xs text-t3 mt-1">Paste the description to get a fraud verdict</p>
+      <h1 style="font-size:clamp(20px,4vw,24px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);">
+        Check a job posting
+      </h1>
+      <p style="font-size:14px;color:var(--t3);margin-top:4px;">
+        Paste the description to get an instant fraud verdict.
+      </p>
     </div>
     {% if active_model %}
-    <span class="pill pill-neutral">
-      <i class="fa-solid fa-microchip text-[9px]"></i>{{ active_model }}
+    <span class="pill pill-neutral" aria-label="Active model: {{ active_model }}">
+      <i class="fa-solid fa-microchip" aria-hidden="true" style="font-size:9px;"></i>
+      {{ active_model }}
     </span>
     {% endif %}
   </div>
 
+  <!-- Sample buttons -->
+  <div style="margin-bottom:28px;">
+    <p class="label" id="samples-label" style="margin-bottom:12px;">Try a sample</p>
+    <div class="sample-row" role="group" aria-labelledby="samples-label">
+      <button type="button" onclick="loadSample('fraud')" class="sample-btn sample-fraud"
+              aria-label="Load fraudulent job sample — WFH data entry with registration fee">
+        <div aria-hidden="true" style="width:32px;height:32px;min-width:32px;border-radius:8px;background:var(--fraud-dim);display:flex;align-items:center;justify-content:center;">
+          <i class="fa-solid fa-triangle-exclamation" style="color:var(--fraud-text);font-size:13px;"></i>
+        </div>
+        <div style="min-width:0;text-align:left;">
+          <p style="font-size:14px;font-weight:600;color:var(--fraud-text);margin-bottom:2px;">Fraudulent posting</p>
+          <p style="font-size:13px;color:var(--t3);">WFH data entry, fee required</p>
+        </div>
+      </button>
+      <button type="button" onclick="loadSample('legit')" class="sample-btn sample-legit"
+              aria-label="Load legitimate job sample — Zoho Python Developer role">
+        <div aria-hidden="true" style="width:32px;height:32px;min-width:32px;border-radius:8px;background:var(--legit-dim);display:flex;align-items:center;justify-content:center;">
+          <i class="fa-solid fa-circle-check" style="color:var(--legit-text);font-size:13px;"></i>
+        </div>
+        <div style="min-width:0;text-align:left;">
+          <p style="font-size:14px;font-weight:600;color:var(--legit-text);margin-bottom:2px;">Legitimate posting</p>
+          <p style="font-size:13px;color:var(--t3);">Zoho Python Developer, Chennai</p>
+        </div>
+      </button>
+    </div>
+  </div>
+
   <!-- Form -->
-  <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform">
+  <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform"
+        aria-label="Job posting fraud check form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:flex;flex-direction:column;gap:22px;">
 
-    <div class="py-8 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
-
-      <!-- LEFT: input fields -->
-      <div class="space-y-5">
-
-        <!-- Basic fields -->
-        <div>
-          <p class="label mb-3">Job details</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {% for fname, ph in [
-              ('job_title',  'Job title'),
-              ('company',    'Company name'),
-              ('location',   'Location or Remote'),
-              ('salary',     'Salary range (optional)'),
-            ] %}
-            <input type="text" id="f_{{ fname }}" name="{{ fname }}"
+      <!-- Job details 2×2 grid -->
+      <fieldset style="border:none;padding:0;margin:0;">
+        <legend class="label" style="margin-bottom:12px;float:left;width:100%;">Job details</legend>
+        <div class="grid-inputs" style="clear:both;">
+          {% for fname, lbl, ph, ac in [
+            ('job_title', 'Job title',              'e.g. Software Engineer',   'organization-title'),
+            ('company',   'Company name',           'e.g. Infosys',             'organization'),
+            ('location',  'Location',               'e.g. Bangalore or Remote', 'address-level2'),
+            ('salary',    'Salary range',           'e.g. ₹6–10 LPA',          'off'),
+          ] %}
+          <div>
+            <label for="f_{{ fname }}" class="field-label">{{ lbl }}</label>
+            <input type="text"
+                   id="f_{{ fname }}"
+                   name="{{ fname }}"
                    placeholder="{{ ph }}"
                    value="{{ (form or {}).get(fname, '') }}"
+                   autocomplete="{{ ac }}"
                    class="field">
-            {% endfor %}
           </div>
+          {% endfor %}
         </div>
+      </fieldset>
 
-        <!-- Website -->
-        <div>
-          <p class="label mb-2">Company website <span class="normal-case tracking-normal font-ui text-t4 text-[10px]">(optional - enables URL fraud scan)</span></p>
-          <input type="url" id="f_website" name="website"
-                 placeholder="https://company.com/careers"
-                 value="{{ (form or {}).get('website', '') }}"
-                 class="field">
-        </div>
-
-        <!-- Description -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <p class="label">Job description <span class="text-fraud-t">*</span></p>
-            <span id="char-label" class="font-data text-[10px] text-t4">0 chars</span>
-          </div>
-          <textarea id="f_description" name="description" rows="10" required
-                    placeholder="Paste the full job description here — include responsibilities, requirements, and compensation details..."
-                    class="field leading-relaxed">{{ (form or {}).get('description', '') }}</textarea>
-          <div class="mt-2 conf-track">
-            <div id="char-fill" class="conf-fill" style="background: var(--t3)"></div>
-          </div>
-          <p class="font-data text-[10px] text-t4 mt-1.5">Aim for 150+ characters for accurate results</p>
-        </div>
-
-        <!-- Requirements -->
-        <div>
-          <p class="label mb-2">Requirements / skills <span class="normal-case tracking-normal font-ui text-t4 text-[10px]">(optional)</span></p>
-          <textarea id="f_requirements" name="requirements" rows="4"
-                    placeholder="Required qualifications, experience, technical skills..."
-                    class="field leading-relaxed">{{ (form or {}).get('requirements', '') }}</textarea>
-        </div>
-
+      <!-- Website -->
+      <div>
+        <label for="f_website" class="field-label">
+          Company website
+          <span class="opt">optional — enables URL fraud scan</span>
+        </label>
+        <input type="url"
+               id="f_website"
+               name="website"
+               placeholder="https://company.com"
+               value="{{ (form or {}).get('website', '') }}"
+               autocomplete="url"
+               class="field">
       </div>
 
-      <!-- RIGHT: sidebar -->
-      <div class="space-y-3">
-
-        <!-- Samples -->
-        <div class="card">
-          <div class="card-head">
-            <span class="label">Try a sample</span>
-          </div>
-          <div class="p-3 space-y-2">
-            <button type="button" onclick="loadSample('fraud')" class="sample-btn sample-fraud">
-              <div class="w-6 h-6 rounded-[var(--r-sm)] bg-[var(--fraud-dim)] flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-triangle-exclamation text-fraud-t text-[10px]"></i>
-              </div>
-              <div class="min-w-0">
-                <p class="text-[11px] font-medium text-fraud-t leading-none mb-1">Fraudulent posting</p>
-                <p class="font-data text-[10px] text-t3 truncate">WFH data entry, fee required</p>
-              </div>
-            </button>
-            <button type="button" onclick="loadSample('legit')" class="sample-btn sample-legit">
-              <div class="w-6 h-6 rounded-[var(--r-sm)] bg-[var(--legit-dim)] flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-check text-legit-t text-[10px]"></i>
-              </div>
-              <div class="min-w-0">
-                <p class="text-[11px] font-medium text-legit-t leading-none mb-1">Legitimate posting</p>
-                <p class="font-data text-[10px] text-t3 truncate">Zoho Python Developer, Chennai</p>
-              </div>
-            </button>
-          </div>
+      <!-- Description -->
+      <div>
+        <label for="f_description" class="field-label">
+          Job description
+          <abbr title="required" class="req" aria-label="required">*</abbr>
+        </label>
+        <textarea id="f_description"
+                  name="description"
+                  rows="10"
+                  required
+                  aria-required="true"
+                  aria-describedby="desc-hint desc-counter"
+                  placeholder="Paste the full job description — responsibilities, requirements, and compensation details. More text = more accurate results."
+                  class="field"
+                  style="line-height:1.6;resize:vertical;">{{ (form or {}).get('description', '') }}</textarea>
+        <div class="char-bar-track" aria-hidden="true">
+          <div id="char-fill" class="char-bar-fill"></div>
         </div>
-
-        <!-- Submit -->
-        <div class="card p-3 space-y-2">
-          <button type="submit" id="sbtn" class="btn btn-primary w-full h-9 text-sm">
-            <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
-            Analyse this posting
-          </button>
-          <button type="reset" onclick="resetForm()" class="btn btn-ghost w-full h-8 text-[11px]">
-            <i class="fa-solid fa-rotate text-[9px]"></i>Clear form
-          </button>
-        </div>
-
-        <!-- What we check -->
-        <div class="card p-4">
-          <p class="label mb-3">What we check</p>
-          <ul class="space-y-2.5">
-            {% for icon, item in [
-              ('fa-brain',    'BERT fraud classification'),
-              ('fa-globe',    'Domain and URL analysis'),
-              ('fa-building', 'Company name scoring'),
-              ('fa-flag',     '8 fraud pattern categories'),
-            ] %}
-            <li class="flex items-center gap-2.5 text-t2 text-[11px]">
-              <i class="fa-solid {{ icon }} text-t4 text-[10px] w-3 text-center shrink-0"></i>
-              {{ item }}
-            </li>
-            {% endfor %}
-          </ul>
-        </div>
-
+        <span id="desc-counter" class="field-hint" aria-live="polite" aria-atomic="true">0 characters</span>
+        <span id="desc-hint" class="field-hint">Aim for 150+ characters for the most accurate result.</span>
       </div>
+
+      <!-- Requirements -->
+      <div>
+        <label for="f_requirements" class="field-label">
+          Requirements / skills
+          <span class="opt">optional</span>
+        </label>
+        <textarea id="f_requirements"
+                  name="requirements"
+                  rows="4"
+                  placeholder="Required qualifications, experience, and technical skills…"
+                  class="field"
+                  style="line-height:1.6;resize:vertical;">{{ (form or {}).get('requirements', '') }}</textarea>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;">
+        <button type="submit" id="sbtn" class="btn btn-primary" style="flex:1;">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i>
+          Analyse this posting
+        </button>
+        <button type="reset" id="cbtn" class="btn btn-secondary" style="min-width:90px;">
+          <i class="fa-solid fa-rotate" aria-hidden="true" style="font-size:11px;"></i>
+          Clear
+        </button>
+      </div>
+
     </div>
   </form>
-</div>
 
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const SAMPLES = {
   fraud: {
-    job_title:    'Work From Home - Easy Data Entry',
+    job_title:    'Work From Home – Easy Data Entry',
     company:      'QuickEarn Digital Pvt Ltd',
     location:     'Remote, Anywhere in India',
-    salary:       '50,000 to 1,20,000 per month guaranteed',
+    salary:       '₹50,000–₹1,20,000/month guaranteed',
     website:      'http://quickearnnow.in.free.hosting.com',
-    description:  'URGENT HIRING! Earn 50,000 to 1,20,000 per month working from home. No experience needed, no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of 799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
-    requirements: 'No degree needed. Registration fee of 799 compulsory to receive your joining kit.'
+    description:  'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed, no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
+    requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive your joining kit.'
   },
   legit: {
     job_title:    'Junior Backend Developer (Python)',
     company:      'Zoho Corporation',
     location:     'Chennai, Tamil Nadu',
-    salary:       '4,00,000 to 7,00,000 per annum',
+    salary:       '₹4–7 LPA',
     website:      'https://careers.zohocorp.com',
     description:  'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office. Apply by sending your resume to careers@zohocorp.com.',
-    requirements: 'B.E./B.Tech/MCA in Computer Science or related field. Proficiency in Python 3.x. Familiarity with Flask or FastAPI, Git, and SQL. 0-2 years experience or strong internship background.'
+    requirements: 'B.E./B.Tech/MCA in Computer Science or related. Proficiency in Python 3.x, Flask or FastAPI, Git, SQL. 0–2 years experience or strong internship background.'
   }
 };
 
@@ -196,61 +203,95 @@ function loadSample(type) {
     desc.dispatchEvent(new Event('input', { bubbles: true }));
     setTimeout(() => desc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
   }
-  updateCounter();
 }
 
 function updateCounter() {
-  const desc  = document.getElementById('f_description');
-  const fill  = document.getElementById('char-fill');
-  const label = document.getElementById('char-label');
+  const desc    = document.getElementById('f_description');
+  const fill    = document.getElementById('char-fill');
+  const counter = document.getElementById('desc-counter');
   if (!desc) return;
   const len = desc.value.length;
-  const pct = Math.min(len / 500 * 100, 100);
+  const pct = Math.min((len / 500) * 100, 100);
+
   if (fill) {
     fill.style.width = pct + '%';
     fill.style.background =
       len >= 150 ? 'var(--legit)' :
-      len > 50  ? 'var(--warn)' :
-                  'var(--t3)';
+      len >  50  ? 'var(--warn)'  :
+                   'var(--t4)';
   }
-  if (label) {
-    label.textContent = len < 150 ? `${len} chars (aim for 150+)` : `${len} chars`;
+  if (counter) {
+    if (len === 0) {
+      counter.textContent = '0 characters';
+      counter.style.color = '';
+    } else if (len < 150) {
+      counter.textContent = `${len} characters — ${150 - len} more recommended`;
+      counter.style.color = 'var(--warn-text)';
+    } else {
+      counter.textContent = `${len} characters ✓`;
+      counter.style.color = 'var(--legit-text)';
+    }
   }
 }
 
-function resetForm() {
+// Clear button: reset counter too
+document.getElementById('cbtn')?.addEventListener('click', () => {
   setTimeout(updateCounter, 10);
-}
+});
 
 document.getElementById('f_description')?.addEventListener('input', updateCounter);
 updateCounter();
 
 let coldTimer = null;
-document.getElementById('cform')?.addEventListener('submit', () => {
+document.getElementById('cform')?.addEventListener('submit', function (e) {
+  // Client-side validation
+  const desc = document.getElementById('f_description');
+  if (!desc || desc.value.trim().length < 20) {
+    e.preventDefault();
+    desc.focus();
+    desc.style.borderColor = 'var(--fraud)';
+    desc.style.boxShadow   = '0 0 0 3px var(--fraud-dim)';
+    const counter = document.getElementById('desc-counter');
+    if (counter) {
+      counter.textContent = 'Please paste a job description before analysing.';
+      counter.style.color = 'var(--fraud-text)';
+    }
+    return;
+  }
+
   const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.classList.remove('hidden');
+  if (overlay) overlay.style.display = 'flex';
+
   coldTimer = setTimeout(() => {
     const note = document.getElementById('cold-start-note');
-    if (note) note.classList.remove('hidden');
+    if (note) note.removeAttribute('hidden');
     const title = document.getElementById('load-title');
-    if (title) title.textContent = 'Still running...';
-  }, 5000);
+    if (title) title.textContent = 'Still running…';
+  }, 6000);
+
   const btn = document.getElementById('sbtn');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[10px]"></i>Analysing...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true" style="font-size:13px;"></i> Analysing…';
   }
 });
 
+// Reset field styling on input
+document.getElementById('f_description')?.addEventListener('input', function () {
+  this.style.borderColor = '';
+  this.style.boxShadow   = '';
+});
+
+// Restore submit button if user navigates back (bfcache)
 window.addEventListener('pageshow', (e) => {
   if (!e.persisted) return;
   const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.classList.add('hidden');
+  if (overlay) overlay.style.display = 'none';
   if (coldTimer) clearTimeout(coldTimer);
   const btn = document.getElementById('sbtn');
   if (btn) {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-[10px]"></i>Analyse this posting';
+    btn.innerHTML = '<i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i> Analyse this posting';
   }
 });
 </script>
