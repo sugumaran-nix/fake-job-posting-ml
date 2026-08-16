@@ -84,21 +84,36 @@ function loadSample(type) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('[data-sample]').forEach((button) => {
-    button.addEventListener('click', () => loadSample(button.dataset.sample));
-  });
+let classifyInitialized = false;
+
+function initClassify() {
+  if (classifyInitialized) return;
   const form = document.getElementById('cform');
-  document.getElementById('cbtn')?.addEventListener('click', (event) => {
-    event.preventDefault();
-    clearFormFields();
+  if (!form) return;
+  classifyInitialized = true;
+
+  // Delegate clicks so the handlers remain reliable after navigation and bfcache restores.
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const sampleButton = target?.closest('[data-sample]');
+    if (sampleButton) {
+      event.preventDefault();
+      loadSample(sampleButton.dataset.sample);
+      return;
+    }
+    const clearButton = target?.closest('#cbtn');
+    if (clearButton) {
+      event.preventDefault();
+      clearFormFields();
+    }
   });
-  form?.addEventListener('reset', (event) => {
+
+  form.addEventListener('reset', (event) => {
     event.preventDefault();
     clearFormFields();
   });
   document.getElementById('f_description')?.addEventListener('input', updateCounter);
-  form?.addEventListener('submit', (event) => {
+  form.addEventListener('submit', (event) => {
     const description = document.getElementById('f_description');
     if (!description || description.value.trim().length < 20) {
       event.preventDefault();
@@ -123,7 +138,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   updateCounter();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initClassify, { once: true });
+} else {
+  initClassify();
+}
 
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) resetFormState();
