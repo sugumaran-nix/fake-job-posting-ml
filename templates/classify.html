@@ -27,10 +27,10 @@
   <div class="page-header" style="margin-bottom:32px;">
     <div>
       <h1 style="font-size:clamp(20px,4vw,24px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);">
-        Check a job posting
+        Check before you apply
       </h1>
       <p style="font-size:14px;color:var(--t3);margin-top:4px;">
-        Paste the description to get an instant fraud verdict.
+        Paste the posting as you found it. We’ll return a verdict with the signals behind it.
       </p>
     </div>
     {% if active_model %}
@@ -47,7 +47,43 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div style="display:flex;flex-direction:column;gap:22px;">
 
-      <!-- Job details 2×2 grid -->
+      <!-- Primary input: ask for the full posting first -->
+      <div>
+        <label for="f_description" class="field-label">
+          Job description
+          <abbr title="required" class="req" aria-label="required">*</abbr>
+        </label>
+        <textarea id="f_description"
+                  name="description"
+                  rows="10"
+                  required
+                  aria-required="true"
+                  aria-describedby="desc-hint desc-counter"
+                  placeholder="Paste the full job description — responsibilities, requirements, and compensation details. More text = more accurate results."
+                  class="field"
+                  style="line-height:1.6;resize:vertical;">{{ (form or {}).get('description', '') }}</textarea>
+        <div class="char-bar-track" aria-hidden="true">
+          <div id="char-fill" class="char-bar-fill"></div>
+        </div>
+        <span id="desc-counter" class="field-hint" aria-live="polite" aria-atomic="true">0 characters</span>
+        <span id="desc-hint" class="field-hint">Aim for 150+ characters for the most accurate result.</span>
+      </div>
+
+      <!-- Requirements -->
+      <div>
+        <label for="f_requirements" class="field-label">
+          Requirements / skills
+          <span class="opt">optional</span>
+        </label>
+        <textarea id="f_requirements"
+                  name="requirements"
+                  rows="4"
+                  placeholder="Required qualifications, experience, and technical skills…"
+                  class="field"
+                  style="line-height:1.6;resize:vertical;">{{ (form or {}).get('requirements', '') }}</textarea>
+      </div>
+
+      <!-- Supporting job metadata -->
       <fieldset style="border:none;padding:0;margin:0;">
         <legend class="label" style="margin-bottom:12px;float:left;width:100%;">Job details</legend>
         <div class="grid-inputs" style="clear:both;">
@@ -86,70 +122,34 @@
                class="field">
       </div>
 
-      <!-- Description -->
-      <div>
-        <label for="f_description" class="field-label">
-          Job description
-          <abbr title="required" class="req" aria-label="required">*</abbr>
-        </label>
-        <textarea id="f_description"
-                  name="description"
-                  rows="10"
-                  required
-                  aria-required="true"
-                  aria-describedby="desc-hint desc-counter"
-                  placeholder="Paste the full job description — responsibilities, requirements, and compensation details. More text = more accurate results."
-                  class="field"
-                  style="line-height:1.6;resize:vertical;">{{ (form or {}).get('description', '') }}</textarea>
-        <div class="char-bar-track" aria-hidden="true">
-          <div id="char-fill" class="char-bar-fill"></div>
-        </div>
-        <span id="desc-counter" class="field-hint" aria-live="polite" aria-atomic="true">0 characters</span>
-        <span id="desc-hint" class="field-hint">Aim for 150+ characters for the most accurate result.</span>
-      </div>
-
-      <!-- Requirements -->
-      <div>
-        <label for="f_requirements" class="field-label">
-          Requirements / skills
-          <span class="opt">optional</span>
-        </label>
-        <textarea id="f_requirements"
-                  name="requirements"
-                  rows="4"
-                  placeholder="Required qualifications, experience, and technical skills…"
-                  class="field"
-                  style="line-height:1.6;resize:vertical;">{{ (form or {}).get('requirements', '') }}</textarea>
-      </div>
-
-      <!-- Samples: placed after all fields so users can preview examples before analysing -->
+      <!-- Optional starter templates: placed after fields and before analysis -->
       <section class="sample-section" aria-labelledby="samples-label">
         <div class="sample-section-head">
-          <p class="label" id="samples-label">Need a starting point?</p>
-          <p class="sample-section-note">Load an example to see the expected format.</p>
+          <p class="label" id="samples-label">Use a starter template</p>
+          <p class="sample-section-note">Optional · templates are only loaded into this form.</p>
         </div>
         <div class="sample-row" role="group" aria-labelledby="samples-label">
           <button type="button" data-sample="fraud" class="sample-btn sample-fraud"
-                  aria-label="Load fraudulent job sample — WFH data entry with registration fee">
+                  aria-label="Load a fraud-signal starter template">
             <div aria-hidden="true" class="sample-icon sample-icon-fraud">
               <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
             </div>
             <div class="sample-copy">
-              <p>Fraudulent posting</p>
-              <span>WFH data entry, fee required</span>
+              <p>Fraud-signal pattern</p>
+              <span>Fee demand, urgency, and easy-income cues</span>
             </div>
-            <i class="fa-solid fa-arrow-up-right-from-square sample-arrow" aria-hidden="true"></i>
+            <i class="fa-solid fa-arrow-down sample-arrow" aria-hidden="true"></i>
           </button>
           <button type="button" data-sample="legit" class="sample-btn sample-legit"
-                  aria-label="Load legitimate job sample — Zoho Python Developer role">
+                  aria-label="Load a structured role starter template">
             <div aria-hidden="true" class="sample-icon sample-icon-legit">
               <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
             </div>
             <div class="sample-copy">
-              <p>Legitimate posting</p>
-              <span>Zoho Python Developer, Chennai</span>
+              <p>Structured role format</p>
+              <span>Technical role with clear responsibilities</span>
             </div>
-            <i class="fa-solid fa-arrow-up-right-from-square sample-arrow" aria-hidden="true"></i>
+            <i class="fa-solid fa-arrow-down sample-arrow" aria-hidden="true"></i>
           </button>
         </div>
       </section>
@@ -158,7 +158,7 @@
       <div style="display:flex;gap:10px;">
         <button type="submit" id="sbtn" class="btn btn-primary" style="flex:1;">
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i>
-          Analyse this posting
+          Get my risk report
         </button>
         <button type="reset" id="cbtn" class="btn btn-secondary" style="min-width:90px;">
           <i class="fa-solid fa-rotate" aria-hidden="true" style="font-size:11px;"></i>
