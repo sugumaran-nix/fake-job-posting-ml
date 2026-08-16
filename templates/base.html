@@ -18,12 +18,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- Theme: apply before paint to avoid flash -->
-  <script>
-    (function(){
-      var t = localStorage.getItem('jg-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    })();
-  </script>
+  <script src="{{ url_for('static', filename='js/theme-init.js') }}"></script>
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230071E3'/><path d='M16 7a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9zm0 2a7 7 0 1 0 0 14A7 7 0 0 0 16 9zm0 2 1.5 4.5H22l-3.6 2.6 1.4 4.4-3.8-2.8-3.8 2.8 1.4-4.4L10 15.5h4.5z' fill='white'/></svg>">
 
@@ -132,35 +127,28 @@
         <span class="footer-mark" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
         <span class="footer-wordmark">Job<span>Guard</span></span>
       </a>
-      <p class="footer-kicker">A safer second opinion before you apply.</p>
-      <p class="footer-description">AI-powered fraud detection for job seekers. Free, private, and built to help you pause before sharing your time or personal data.</p>
-      <a class="footer-status" href="{{ url_for('classify') }}">
-        <span class="footer-status-dot" aria-hidden="true"></span>
-        <span>Ready to check a posting</span>
-        <i class="fa-solid fa-arrow-up-right" aria-hidden="true"></i>
-      </a>
+      <p class="footer-description">A clear second opinion before you apply. Free, private, and built for job seekers.</p>
     </div>
-    <nav class="footer-col" aria-label="Tool links">
-      <h4 id="footer-tool">Explore the tool</h4>
+    <nav class="footer-col" aria-label="Primary links">
+      <h4 id="footer-tool">Use JobGuard</h4>
       <ul role="list" aria-labelledby="footer-tool">
-        <li><a href="{{ url_for('classify') }}">Check a Job <span aria-hidden="true">↗</span></a></li>
-        <li><a href="{{ url_for('history') }}">Prediction History</a></li>
-        <li><a href="{{ url_for('models_page') }}">Model Evaluation</a></li>
+        <li><a href="{{ url_for('classify') }}">Check a job <span aria-hidden="true">↗</span></a></li>
+        <li><a href="{{ url_for('history') }}">History</a></li>
       </ul>
     </nav>
     <nav class="footer-col" aria-label="Information links">
-      <h4 id="footer-info">Learn more</h4>
+      <h4 id="footer-info">About</h4>
       <ul role="list" aria-labelledby="footer-info">
         <li><a href="{{ url_for('about') }}">How it works</a></li>
-        <li><a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener noreferrer">
-          Source Code <span aria-hidden="true">↗</span>
-        </a></li>
+        <li><a href="{{ url_for('models_page') }}">Model evaluation</a></li>
+        <li><a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener noreferrer">Source code <span aria-hidden="true">↗</span></a></li>
       </ul>
     </nav>
+    <a class="footer-cta" href="{{ url_for('classify') }}">Run a check <i class="fa-solid fa-arrow-up-right" aria-hidden="true"></i></a>
   </div>
   <div class="footer-bottom">
     <span>© 2026 JobGuard</span>
-    <span class="footer-meta"><span class="footer-meta-dot" aria-hidden="true"></span> Free · No account required</span>
+    <span>Free · No account required</span>
   </div>
 </footer>
 

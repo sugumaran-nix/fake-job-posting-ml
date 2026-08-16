@@ -289,7 +289,10 @@ _APPLY_TERMS = {
 
 def _is_job_posting(text: str) -> bool:
     """Return True only if text looks like a genuine job posting."""
-    word_list = text.lower().split()
+    word_list = [
+        token.strip(".,:;!?()[]{}\"'")
+        for token in text.lower().split()
+    ]
     # Concise postings can still be valid when they contain all three
     # semantic signals below; reject only genuinely sparse input.
     if len(word_list) < 12:

@@ -1,594 +1,118 @@
 {% extends "base.html" %}
-{% block title %}JobGuard — AI Fraud Detection for Job Seekers{% endblock %}
-{% block meta_desc %}1 in 5 Indians lost money to a fake job in 2025. Paste any posting. Get a fraud verdict in under a second — free, no account.{% endblock %}
-
-{% block head %}
-<style>
-/* ── Hero mesh gradient ──────────────────────────────────────── */
-.hero-bg {
-  position:absolute;inset:0;pointer-events:none;overflow:hidden;
-}
-.hero-orb {
-  position:absolute;border-radius:50%;filter:blur(80px);will-change:transform;
-}
-.hero-orb-1 {
-  width:700px;height:700px;top:-280px;left:-180px;
-  background:radial-gradient(circle,rgba(37,99,235,0.18) 0%,transparent 65%);
-}
-.hero-orb-2 {
-  width:500px;height:500px;top:-120px;right:-140px;
-  background:radial-gradient(circle,rgba(99,102,241,0.14) 0%,transparent 65%);
-}
-.hero-orb-3 {
-  width:600px;height:600px;bottom:-250px;left:50%;transform:translateX(-50%);
-  background:radial-gradient(circle,rgba(37,99,235,0.09) 0%,transparent 65%);
-}
-[data-theme="dark"] .hero-orb-1 { background:radial-gradient(circle,rgba(59,130,246,0.22) 0%,transparent 65%); }
-[data-theme="dark"] .hero-orb-2 { background:radial-gradient(circle,rgba(99,102,241,0.17) 0%,transparent 65%); }
-[data-theme="dark"] .hero-orb-3 { background:radial-gradient(circle,rgba(59,130,246,0.11) 0%,transparent 65%); }
-
-/* ── Noise overlay ───────────────────────────────────────────── */
-.hero-noise {
-  position:absolute;inset:0;width:100%;height:100%;
-  opacity:0.028;pointer-events:none;
-}
-
-/* ── Product mock card ───────────────────────────────────────── */
-.mock-card {
-  background:var(--surface);
-  border:1px solid var(--border-2);
-  border-radius:16px;
-  box-shadow:0 24px 60px rgba(0,0,0,0.12),0 4px 12px rgba(0,0,0,0.06);
-  overflow:hidden;
-  max-width:520px;
-  margin:0 auto;
-  text-align:left;
-}
-[data-theme="dark"] .mock-card {
-  box-shadow:0 24px 60px rgba(0,0,0,0.45),0 4px 12px rgba(0,0,0,0.30);
-}
-.mock-topbar {
-  display:flex;align-items:center;gap:6px;
-  padding:12px 16px;border-bottom:1px solid var(--border);
-  background:var(--surface-2);
-}
-.mock-dot { width:10px;height:10px;border-radius:50%; }
-.mock-body { padding:20px; }
-.mock-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
-.mock-label { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--t4); }
-.mock-bar-track { height:6px;background:var(--surface-3);border-radius:99px;overflow:hidden;flex:1;margin-left:12px; }
-.mock-bar-fill  { height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(0.23,1,0.32,1); }
-.mock-verdict {
-  display:flex;align-items:center;gap:10px;
-  padding:12px 14px;border-radius:10px;
-  background:var(--fraud-dim);border:1px solid var(--fraud-ring);
-  margin-bottom:14px;
-}
-.mock-verdict-legit {
-  background:var(--legit-dim);border:1px solid var(--legit-ring);
-}
-.mock-tags { display:flex;gap:6px;flex-wrap:wrap; }
-.mock-tag {
-  font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;
-  background:var(--fraud-dim);border:1px solid var(--fraud-ring);color:var(--fraud-text);
-}
-
-/* ── Section dividers ────────────────────────────────────────── */
-.section-divider {
-  width:100%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--border-2),transparent);
-  border:none;margin:0;
-}
-
-/* ── Bento grid ──────────────────────────────────────────────── */
-.bento {
-  display:grid;
-  grid-template-columns:2fr 1fr;
-  grid-template-rows:auto auto;
-  gap:14px;
-}
-.bento-wide    { grid-column:1/2; }
-.bento-tall    { grid-column:2/3;grid-row:1/3; }
-.bento-half    { grid-column:1/2; }
-
-/* ── Stat items ──────────────────────────────────────────────── */
-.stat-item {
-  flex:1;padding:20px 24px;border-right:1px solid var(--border);
-  transition:background 0.15s;
-}
-.stat-item:last-child { border-right:none; }
-.stat-item:hover { background:var(--surface-2); }
-
-/* ── CTA section gradient border ────────────────────────────── */
-.cta-section {
-  position:relative;border-radius:20px;overflow:hidden;
-  background:var(--surface);
-  padding:64px 48px;text-align:center;
-}
-.cta-section::before {
-  content:'';position:absolute;inset:0;border-radius:20px;padding:1px;
-  background:linear-gradient(135deg,var(--accent-ring),transparent 50%,var(--accent-ring));
-  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
-}
-
-/* ── Animations ──────────────────────────────────────────────── */
-@keyframes pulse-dot {
-  0%,100%{opacity:1;transform:scale(1);}
-  50%{opacity:0.5;transform:scale(1.5);}
-}
-@keyframes float-card {
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-6px);}
-}
-.float-anim { animation:float-card 5s ease-in-out infinite; }
-
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width:767px) {
-  .hero-split { flex-direction:column !important; text-align:center; }
-  .bento { grid-template-columns:1fr !important; }
-  .bento-tall { grid-column:1 !important; grid-row:auto !important; }
-  .why-grid  { grid-template-columns:1fr !important; }
-  .stats-row { flex-direction:column !important; }
-  .stat-item { border-right:none !important; border-bottom:1px solid var(--border); }
-  .stat-item:last-child { border-bottom:none; }
-  .cta-section { padding:40px 24px !important; }
-  .hero-orb-1 { width:400px;height:400px;top:-180px;left:-120px; }
-  .hero-orb-2 { width:300px;height:300px; }
-}
-@media (max-width:479px) {
-  .bento { gap:10px; }
-}
-</style>
-{% endblock %}
+{% block title %}JobGuard — Check before you apply{% endblock %}
+{% block meta_desc %}Paste a job posting and get a fast, explainable fraud check before you apply. Free, private, and no account required.{% endblock %}
 
 {% block content %}
-
-<!-- ══════════════════════════════════════════════════════════════
-     HERO — split layout: copy left, product mock right
-     ══════════════════════════════════════════════════════════════ -->
-<section style="padding:80px 0 72px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;">
-
-  <!-- Mesh gradient -->
-  <div class="hero-bg" aria-hidden="true">
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-orb hero-orb-3"></div>
-    <svg class="hero-noise" xmlns="http://www.w3.org/2000/svg">
-      <filter id="hero-noise">
-        <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch"/>
-        <feColorMatrix type="saturate" values="0"/>
-      </filter>
-      <rect width="100%" height="100%" filter="url(#hero-noise)"/>
-    </svg>
-  </div>
-
-  <div class="container" style="position:relative;z-index:1;">
-    <div class="hero-split" style="display:flex;align-items:center;gap:64px;">
-
-      <!-- LEFT: copy -->
-      <div style="flex:1;min-width:0;">
-
-        <!-- Badge -->
-        <div style="display:inline-flex;align-items:center;gap:7px;padding:4px 12px 4px 8px;border-radius:99px;background:var(--accent-dim);border:1px solid var(--accent-ring);margin-bottom:24px;">
-          <span style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;letter-spacing:0.05em;">LIVE</span>
-          <span style="font-size:12px;font-weight:500;color:var(--accent);">AI fraud detection · Free · No account</span>
-        </div>
-
-        <!-- Headline — extreme weight contrast -->
-        <h1 style="font-size:clamp(36px,5.5vw,62px);font-weight:800;letter-spacing:-0.04em;line-height:1.04;color:var(--t1);margin-bottom:22px;">
-          Don't apply to<br>
-          a fake job.<br>
-          <span style="color:var(--accent);font-weight:800;">Check first.</span>
-        </h1>
-
-        <!-- Subtext — specific and urgent -->
-        <p style="font-size:clamp(15px,2vw,18px);color:var(--t3);line-height:1.7;margin-bottom:32px;max-width:420px;">
-          6 in 10 job seekers encountered a scam posting in 2025.
-          Paste the description — our AI returns a fraud verdict,
-          matched patterns, and URL risk in under a second.
-        </p>
-
-        <!-- CTAs -->
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
+<main class="home-page">
+  <section class="home-hero" aria-labelledby="home-title">
+    <div class="container home-hero-grid">
+      <div class="home-hero-copy">
+        <div class="home-eyebrow"><span class="home-eyebrow-dot" aria-hidden="true"></span>Free AI fraud check · No account required</div>
+        <h1 id="home-title">Check the job<br><span>before you apply.</span></h1>
+        <p class="home-lede">Scam postings are designed to look ordinary. JobGuard checks the language, URL, company signals, and pressure tactics that applicants often miss.</p>
+        <div class="home-actions">
           <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">
-            <i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:14px;"></i>
-            Check a posting free
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            Check a job
           </a>
-          <a href="{{ url_for('about') }}" class="btn btn-secondary" style="min-height:50px;padding:14px 24px;font-size:16px;border-radius:12px;">
-            How it works
-          </a>
+          <a href="{{ url_for('about') }}" class="btn btn-secondary btn-lg">How it works</a>
         </div>
-
-        <!-- Trust row -->
-        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-          {% for icon, txt in [
-            ('fa-lock','No data stored'),
-            ('fa-bolt','Under 1 second'),
-            ('fa-shield-halved','8 fraud signals'),
-          ] %}
-          <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t4);">
-            <i class="fa-solid {{ icon }}" aria-hidden="true" style="font-size:11px;color:var(--t3);"></i>{{ txt }}
-          </span>
-          {% endfor %}
+        <div class="home-trust" aria-label="JobGuard benefits">
+          <span><i class="fa-solid fa-lock" aria-hidden="true"></i>Private by default</span>
+          <span><i class="fa-solid fa-bolt" aria-hidden="true"></i>Results in seconds</span>
+          <span><i class="fa-solid fa-list-check" aria-hidden="true"></i>Evidence, not just a score</span>
         </div>
-
       </div>
 
-      <!-- RIGHT: product mock -->
-      <div style="flex:0 0 auto;width:min(480px,100%);">
-        <div class="mock-card float-anim" role="img" aria-label="Example fraud analysis result showing 94% fraud probability">
-
-          <!-- Topbar -->
-          <div class="mock-topbar">
-            <div class="mock-dot" style="background:#ef4444;" aria-hidden="true"></div>
-            <div class="mock-dot" style="background:#f59e0b;" aria-hidden="true"></div>
-            <div class="mock-dot" style="background:#22c55e;" aria-hidden="true"></div>
-            <span style="margin-left:8px;font-size:11px;color:var(--t4);font-weight:500;">JobGuard Analysis</span>
-          </div>
-
-          <div class="mock-body">
-            <!-- Job info -->
-            <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
-              <p style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:2px;">Work From Home – Easy Data Entry</p>
-              <p style="font-size:12px;color:var(--t3);">QuickEarn Digital Pvt Ltd · Remote, India</p>
-            </div>
-
-            <!-- Verdict -->
-            <div class="mock-verdict" style="margin-bottom:14px;">
-              <i class="fa-solid fa-circle-xmark" aria-hidden="true" style="color:var(--fraud-text);font-size:18px;flex-shrink:0;"></i>
-              <div>
-                <p style="font-size:13px;font-weight:700;color:var(--fraud-text);margin-bottom:1px;">Fraudulent Posting Detected</p>
-                <p style="font-size:11px;color:var(--t3);">High confidence · Linear SVM</p>
-              </div>
-            </div>
-
-            <!-- Probability bars -->
-            <div style="margin-bottom:14px;">
-              {% for lbl, pct, clr in [
-                ('Fraud probability','94%','var(--fraud)'),
-                ('Model confidence','97%','var(--accent)'),
-              ] %}
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span class="mock-label" style="width:130px;flex-shrink:0;">{{ lbl }}</span>
-                <div class="mock-bar-track">
-                  <div class="mock-bar-fill" style="width:0%;background:{{ clr }};" data-w="{{ pct }}"></div>
-                </div>
-                <span style="font-size:12px;font-weight:600;color:{{ clr }};width:30px;text-align:right;flex-shrink:0;">{{ pct }}</span>
-              </div>
-              {% endfor %}
-            </div>
-
-            <!-- Matched patterns -->
-            <div>
-              <p class="mock-label" style="margin-bottom:8px;">Patterns matched</p>
-              <div class="mock-tags">
-                {% for tag in ['Fee demand','Data fishing','Fake guarantee','Urgency tactics'] %}
-                <span class="mock-tag">{{ tag }}</span>
-                {% endfor %}
-              </div>
-            </div>
-
-          </div>
+      <div class="home-guide" aria-label="How JobGuard checks a posting">
+        <div class="home-guide-head">
+          <span>What happens next</span>
+          <span class="home-guide-time">~10 sec</span>
         </div>
-
-        <!-- Caption below card -->
-        <p style="text-align:center;font-size:11px;color:var(--t4);margin-top:12px;">
-          ↑ Sample result — real output from our AI model
-        </p>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════════════
-     STATS ROW — real numbers with evidence
-     ══════════════════════════════════════════════════════════════ -->
-<div style="background:var(--surface);border-bottom:1px solid var(--border);">
-  <div class="container">
-    <div class="stats-row" style="display:flex;align-items:stretch;" role="region" aria-label="Key statistics">
-      {% for val, lbl, clr in [
-        ('₹22,495 Cr', 'Lost to cybercrime in India, 2025',          'var(--fraud-text)'),
-        ('6 in 10',    'Job seekers hit by a scam posting in 2025',   'var(--t1)'),
-        ('15%',        'Of Indian cybercrimes are job offer scams',    'var(--fraud-text)'),
-        ('6%',         'Average recovery rate for scam victims',       'var(--warn-text)'),
-      ] %}
-      <div class="stat-item">
-        <div style="font-size:clamp(20px,3vw,28px);font-weight:700;letter-spacing:-0.03em;color:{{ clr }};margin-bottom:4px;font-variant-numeric:tabular-nums;">{{ val }}</div>
-        <div style="font-size:12px;color:var(--t3);line-height:1.4;">{{ lbl }}</div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  <p style="text-align:right;font-size:10px;color:var(--t4);padding:6px 24px;max-width:1080px;margin-inline:auto;">
-    Sources: NCRB 2025 · PasswordManager.com Survey 2025 · Hirist / NCRB 2020–23
-  </p>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════════
-     HOW IT WORKS — numbered steps, no equal boxes
-     ══════════════════════════════════════════════════════════════ -->
-<section style="padding:88px 0;">
-  <div class="container">
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;" class="why-grid">
-
-      <!-- Left: sticky label + headline -->
-      <div style="position:sticky;top:80px;" class="reveal">
-        <span class="label" style="display:block;margin-bottom:14px;">How it works</span>
-        <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-0.03em;line-height:1.1;color:var(--t1);margin-bottom:20px;">
-          From paste<br>to verdict<br>
-          <em class="font-display" style="font-size:clamp(28px,4.5vw,42px);color:var(--accent);">in one second.</em>
-        </h2>
-        <p style="font-size:15px;color:var(--t3);line-height:1.7;margin-bottom:28px;">
-          No account, no waiting, no guesswork. Every result includes exactly what was flagged and why — not just a score.
-        </p>
-        <a href="{{ url_for('classify') }}" class="btn btn-primary">
-          Try it now
-          <i class="fa-solid fa-arrow-right" aria-hidden="true" style="font-size:11px;"></i>
-        </a>
-      </div>
-
-      <!-- Right: steps -->
-      <div style="display:flex;flex-direction:column;gap:0;">
-        {% for n, title, desc, icon in [
-          ('01','Paste the full posting',
-           'Include the job title, company name, responsibilities, salary, and any requirements. The more text, the more accurate the result.',
-           'fa-paste'),
-          ('02','AI reads 8 fraud categories',
-           'Fee demands, false income guarantees, suspicious URLs, data fishing, urgency tactics, fake company signals, MLM patterns, and vague descriptions.',
-           'fa-brain'),
-          ('03','Get your verdict with proof',
-           'Fraud probability, confidence score, matched fraud patterns with explanations, URL risk analysis, and specific advice on what to do next.',
-           'fa-shield-check'),
+        {% for number, title, text, icon in [
+          ('01', 'Paste the posting', 'Use the full description, including the title, company, salary, and requirements.', 'fa-paste'),
+          ('02', 'Scan the signals', 'The model checks fraud language, URL risk, company cues, and urgency patterns.', 'fa-magnifying-glass-chart'),
+          ('03', 'Understand the result', 'See the verdict, probability, matched patterns, and practical next steps.', 'fa-shield-halved')
         ] %}
-        <div class="reveal" style="display:flex;gap:20px;padding:28px 0;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-          <div style="flex-shrink:0;">
-            <div style="width:44px;height:44px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;">
-              <i class="fa-solid {{ icon }}" aria-hidden="true" style="color:var(--accent);font-size:16px;"></i>
-            </div>
-          </div>
+        <div class="home-guide-step">
+          <span class="home-guide-number">{{ number }}</span>
+          <span class="home-guide-icon" aria-hidden="true"><i class="fa-solid {{ icon }}"></i></span>
           <div>
-            <p style="font-size:10px;font-weight:700;color:var(--t4);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">Step {{ n }}</p>
-            <h3 style="font-size:17px;font-weight:700;color:var(--t1);margin-bottom:8px;letter-spacing:-0.01em;">{{ title }}</h3>
-            <p style="font-size:14px;color:var(--t3);line-height:1.65;">{{ desc }}</p>
+            <h2>{{ title }}</h2>
+            <p>{{ text }}</p>
           </div>
         </div>
         {% endfor %}
       </div>
-
     </div>
-  </div>
-</section>
+  </section>
 
-<hr class="section-divider">
-
-<!-- ══════════════════════════════════════════════════════════════
-     BENTO FEATURES — asymmetric, not uniform
-     ══════════════════════════════════════════════════════════════ -->
-<section style="padding:88px 0;background:var(--surface);">
-  <div class="container">
-
-    <div style="margin-bottom:52px;" class="reveal">
-      <span class="label" style="display:block;margin-bottom:14px;">Fraud intelligence</span>
-      <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-0.03em;color:var(--t1);max-width:520px;line-height:1.1;">
-        The patterns that expose a scam — every time.
-      </h2>
+  <section class="home-proof" aria-label="Live JobGuard statistics">
+    <div class="container home-proof-grid">
+      <div><strong>{{ stats.total }}</strong><span>postings analysed</span></div>
+      <div><strong>{{ stats.fraud }}</strong><span>fraud cases flagged</span></div>
+      <div><strong>17,880</strong><span>training examples</span></div>
+      <p class="home-proof-note">EMSCAD dataset · Linear SVM active · Results are explainable</p>
     </div>
+  </section>
 
-    <!-- Asymmetric bento: 2/3 wide + 1/3 tall, then 2 halves -->
-    <div class="bento reveal">
-
-      <!-- Wide card — fee demands -->
-      <div class="bento-wide card" style="padding:28px;border-left:3px solid var(--fraud);display:flex;gap:20px;align-items:flex-start;">
-        <span aria-hidden="true" style="font-size:40px;line-height:1;flex-shrink:0;">💸</span>
-        <div>
-          <h3 style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:8px;letter-spacing:-0.01em;">Registration fee demands</h3>
-          <p style="font-size:14px;color:var(--t3);line-height:1.7;">
-            Any request for a "joining fee," "registration kit," or "starter deposit" before employment starts is a near-certain scam. Real employers never charge applicants — not ₹99, not ₹799, not ₹5,000.
-          </p>
-          <div style="margin-top:14px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--fraud-text);">
-            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true" style="font-size:10px;"></i>
-            Most common pattern — present in 68% of scam postings
-          </div>
-        </div>
+  <section class="home-section" aria-labelledby="signals-title">
+    <div class="container">
+      <div class="home-section-heading">
+        <span class="section-kicker">Why check first</span>
+        <h2 id="signals-title">Scams hide behind ordinary language.</h2>
+        <p>Professional grammar does not make a posting legitimate. Look for the behaviours that create pressure, collect money, or ask for sensitive information too early.</p>
       </div>
-
-      <!-- Tall card — data fishing -->
-      <div class="bento-tall card" style="padding:28px;">
-        <span aria-hidden="true" style="font-size:36px;line-height:1;display:block;margin-bottom:16px;">🏦</span>
-        <h3 style="font-size:17px;font-weight:700;color:var(--t1);margin-bottom:10px;letter-spacing:-0.01em;">Financial data fishing</h3>
-        <p style="font-size:14px;color:var(--t3);line-height:1.65;margin-bottom:20px;">
-          Upfront requests for Aadhaar, PAN, bank account details, or OTPs during application. Legitimate employers request documents only after issuing a formal offer letter.
-        </p>
-        <div style="background:var(--fraud-dim);border:1px solid var(--fraud-ring);border-radius:10px;padding:14px;margin-bottom:14px;">
-          <p style="font-size:12px;color:var(--fraud-text);font-weight:500;line-height:1.5;">
-            🚨 India's PAN card was the world's most-targeted ID document in 2024 — 27% of all global identity attacks.
-          </p>
-        </div>
-        <div style="background:var(--warn-dim);border:1px solid var(--warn-ring);border-radius:10px;padding:14px;">
-          <p style="font-size:12px;color:var(--warn-text);font-weight:500;line-height:1.5;">
-            ⚠️ Once shared, identity data is sold within 48 hours on dark web marketplaces.
-          </p>
-        </div>
-      </div>
-
-      <!-- Half card — false guarantees -->
-      <div class="bento-half card" style="padding:24px;display:flex;gap:16px;align-items:flex-start;">
-        <span aria-hidden="true" style="font-size:28px;line-height:1;flex-shrink:0;">✅</span>
-        <div>
-          <h3 style="font-size:16px;font-weight:700;color:var(--t1);margin-bottom:6px;">False income guarantees</h3>
-          <p style="font-size:13px;color:var(--t3);line-height:1.6;">
-            "₹50,000/month guaranteed" or "100% assured placement" with no interview process. No legitimate employer can guarantee income before meeting you.
-          </p>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Remaining patterns as pills -->
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;" class="reveal">
-      {% for icon, signal in [
-        ('⚡','Urgency pressure tactics'),
-        ('🏠','Fake WFH data-entry schemes'),
-        ('🔗','Suspicious or fake company domains'),
-        ('🏢','Copycat company names'),
-        ('📢','MLM disguised as employment'),
-        ('🎯','No-experience-needed traps'),
-        ('💬','Vague or AI-generated descriptions'),
-      ] %}
-      <span class="pill pill-neutral" style="font-size:13px;padding:7px 13px;border-radius:8px;">
-        <span aria-hidden="true">{{ icon }}</span> {{ signal }}
-      </span>
-      {% endfor %}
-    </div>
-
-  </div>
-</section>
-
-<hr class="section-divider">
-
-<!-- ══════════════════════════════════════════════════════════════
-     THE PROBLEM — why this matters now
-     ══════════════════════════════════════════════════════════════ -->
-<section style="padding:88px 0;">
-  <div class="container">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;" class="why-grid">
-
-      <!-- Left: stat cards -->
-      <div style="display:flex;flex-direction:column;gap:12px;" class="reveal">
-        {% for stat, desc, clr, icon in [
-          ('80.6M',  'Fake accounts LinkedIn removed in H2 2024 alone',                 'var(--fraud-text)', 'fa-users-slash'),
-          ('150%',   'Year-over-year rise in job scam financial losses',                 'var(--fraud-text)', 'fa-arrow-trend-up'),
-          ('99%',    'Of victims who never fully recover their losses',                  'var(--warn-text)',  'fa-money-bill-slash'),
-          ('&lt;1s', 'Time JobGuard takes to flag a fraudulent posting',                 'var(--legit-text)', 'fa-bolt'),
+      <div class="home-signal-grid">
+        {% for icon, title, text, tone in [
+          ('fa-money-bill-transfer', 'Money before employment', 'Registration fees, starter kits, training deposits, and paid onboarding are strong warning signs.', 'red'),
+          ('fa-id-card', 'Sensitive data too early', 'Aadhaar, PAN, bank details, or OTP requests should never be part of a casual first application.', 'blue'),
+          ('fa-hourglass-end', 'Pressure to act now', 'Fake deadlines, guaranteed income, and limited-seat language are designed to stop you checking.', 'orange')
         ] %}
-        <div style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;background:var(--surface);border:1px solid var(--border);transition:border-color 0.15s,box-shadow 0.15s;" class="card-hover">
-          <div style="width:40px;height:40px;border-radius:10px;background:{{ clr }}14;border:1px solid {{ clr }}28;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="fa-solid {{ icon }}" aria-hidden="true" style="color:{{ clr }};font-size:13px;"></i>
-          </div>
-          <div>
-            <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:{{ clr }};line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums;">{{ stat }}</div>
-            <div style="font-size:13px;color:var(--t3);">{{ desc }}</div>
-          </div>
+        <article class="home-signal-card">
+          <span class="home-signal-icon home-signal-{{ tone }}" aria-hidden="true"><i class="fa-solid {{ icon }}"></i></span>
+          <h3>{{ title }}</h3>
+          <p>{{ text }}</p>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="home-process" aria-labelledby="process-title">
+    <div class="container home-process-grid">
+      <div class="home-process-intro">
+        <span class="section-kicker">A clearer second opinion</span>
+        <h2 id="process-title">Know what was flagged and why.</h2>
+        <p>JobGuard keeps the workflow simple: paste, analyse, then decide with more context.</p>
+        <a href="{{ url_for('classify') }}" class="text-link">Try the checker <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      </div>
+      <div class="home-process-list">
+        {% for number, title, text in [
+          ('01', 'Start with the complete text', 'More context helps the model separate a real role from a copied or manipulative pitch.'),
+          ('02', 'Review multiple signals', 'The result combines text classification with URL and company-name analysis.'),
+          ('03', 'Choose your next step', 'Use the evidence to verify the employer, move to the official careers page, or walk away.')
+        ] %}
+        <div class="home-process-item">
+          <span>{{ number }}</span>
+          <div><h3>{{ title }}</h3><p>{{ text }}</p></div>
         </div>
         {% endfor %}
       </div>
-
-      <!-- Right: editorial copy -->
-      <div class="reveal">
-        <span class="label" style="display:block;margin-bottom:16px;">The threat is evolving</span>
-        <h2 style="font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-0.03em;line-height:1.1;color:var(--t1);margin-bottom:20px;">
-          AI is making scam postings
-          <em class="font-display" style="color:var(--fraud-text);font-size:clamp(26px,4.5vw,38px);">indistinguishable</em>
-          from real ones.
-        </h2>
-        <div style="display:flex;flex-direction:column;gap:16px;font-size:15px;color:var(--t2);line-height:1.75;">
-          <p>Before 2024, scam postings were identifiable — poor grammar, copied text, unrealistic promises. Scammers now use LLMs to generate professional, company-specific, convincing descriptions in seconds.</p>
-          <p>Grammar is no longer a signal. Industry terminology is no longer a signal. Even a matching company website can be spun up in minutes. <strong style="color:var(--t1);font-weight:600;">Behavioural patterns are what remain.</strong></p>
-          <p>JobGuard analyses those patterns — the things AI-generated scams cannot hide, regardless of how polished they look.</p>
-        </div>
-      </div>
-
     </div>
-  </div>
-</section>
+  </section>
 
-<hr class="section-divider">
-
-<!-- ══════════════════════════════════════════════════════════════
-     LIVE STATS — what JobGuard has processed
-     ══════════════════════════════════════════════════════════════ -->
-<section style="padding:88px 0;background:var(--surface);">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:48px;" class="reveal">
-      <span class="label" style="display:block;margin-bottom:14px;">Live data</span>
-      <h2 style="font-size:clamp(24px,4vw,36px);font-weight:800;letter-spacing:-0.03em;color:var(--t1);">Built on real data. Tested on real scams.</h2>
-    </div>
-    <div class="grid-3 stagger">
-      {% for val, lbl, sub, icon, clr in [
-        (stats.total|string,  'Postings analysed',    'Through the tool so far',           'fa-chart-bar',            'var(--accent)'),
-        (stats.fraud|string,  'Fraud cases flagged',  'By our AI model',                   'fa-triangle-exclamation', 'var(--fraud-text)'),
-        ('17,880',            'Training samples',     'EMSCAD real-world dataset',          'fa-brain',                'var(--legit-text)'),
-      ] %}
-      <div class="metric reveal" style="text-align:center;padding:28px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:{{ clr }}14;border:1px solid {{ clr }}26;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-          <i class="fa-solid {{ icon }}" aria-hidden="true" style="color:{{ clr }};font-size:16px;"></i>
+  <section class="home-cta" aria-labelledby="home-cta-title">
+    <div class="container">
+      <div class="home-cta-inner">
+        <div>
+          <span class="section-kicker">Free to use</span>
+          <h2 id="home-cta-title">Have a suspicious posting?</h2>
+          <p>Run a check before you send your documents, pay a fee, or invest your time.</p>
         </div>
-        <div class="metric-val" style="color:{{ clr }};font-size:36px;">{{ val }}</div>
-        <div class="metric-lbl" style="margin-top:4px;">{{ lbl }}</div>
-        <div style="font-size:12px;color:var(--t4);margin-top:3px;">{{ sub }}</div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<hr class="section-divider">
-
-<!-- ══════════════════════════════════════════════════════════════
-     CTA — gradient border card
-     ══════════════════════════════════════════════════════════════ -->
-<section style="padding:88px 0;">
-  <div class="container">
-    <div class="cta-section reveal">
-
-      <!-- Orb behind CTA -->
-      <div aria-hidden="true" style="position:absolute;width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,0.06) 0%,transparent 70%);pointer-events:none;filter:blur(40px);"></div>
-
-      <div style="position:relative;z-index:1;">
-        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--accent-ring);border-radius:99px;padding:4px 12px;margin-bottom:20px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--legit);animation:pulse-dot 2s ease-in-out infinite;" aria-hidden="true"></span>
-          <span style="font-size:12px;color:var(--accent);font-weight:500;">Free — always</span>
-        </div>
-
-        <h2 style="font-size:clamp(26px,4vw,42px);font-weight:800;letter-spacing:-0.035em;color:var(--t1);margin-bottom:12px;line-height:1.1;">
-          Got a suspicious job posting?
-        </h2>
-        <p style="font-size:clamp(15px,2vw,18px);color:var(--t3);margin-bottom:36px;max-width:440px;margin-inline:auto;line-height:1.65;">
-          Paste it. We'll tell you if it's real — with evidence, not just a score. Takes 10 seconds.
-        </p>
-
-        <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
-          <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">
-            <i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:14px;"></i>
-            Check a job posting — free
-          </a>
-          <a href="{{ url_for('about') }}" class="btn btn-ghost btn-lg">
-            Learn how it works
-          </a>
-        </div>
-
-        <p style="font-size:12px;color:var(--t4);margin-top:20px;">
-          No account · No data stored · No rate limit
-        </p>
+        <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">Check a job <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
       </div>
     </div>
-  </div>
-</section>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-// Scroll reveal
-const obs = new IntersectionObserver(
-  entries => entries.forEach(e => {
-    if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
-  }),
-  { threshold: 0.07 }
-);
-document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-document.querySelectorAll('.stagger').forEach(el => el.classList.add('go'));
-
-// Animate mock card bars on load
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.querySelectorAll('.mock-bar-fill[data-w]').forEach(el => {
-      el.style.width = el.dataset.w;
-    });
-  }, 600);
-});
-</script>
+  </section>
+</main>
 {% endblock %}

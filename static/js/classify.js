@@ -1,12 +1,12 @@
 const SAMPLES = {
   fraud: {
-    job_title: 'Work From Home – Easy Data Entry',
+    job_title: 'Work From Home – Easy Data Entry Operator',
     company: 'QuickEarn Digital Pvt Ltd',
     location: 'Remote, Anywhere in India',
     salary: '₹50,000–₹1,20,000/month guaranteed',
     website: 'http://quickearnnow.in.free.hosting.com',
-    description: 'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed, no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
-    requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive your joining kit.'
+    description: 'URGENT HIRING for a Work From Home Data Entry Operator job. Role: online typing and simple data entry work. Responsibilities: copy information into forms, submit daily reports, and complete assigned tasks. Requirements: no degree needed, basic smartphone skills, and a bank account. Earn guaranteed income of ₹50,000 per month. Pay a registration fee of ₹799 to receive the starter kit. Apply now before the offer expires!',
+    requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive the joining kit.'
   },
   legit: {
     job_title: 'Junior Backend Developer (Python)',
@@ -18,21 +18,6 @@ const SAMPLES = {
     requirements: 'B.E./B.Tech/MCA in Computer Science or related. Proficiency in Python 3.x, Flask or FastAPI, Git, SQL. 0–2 years experience or strong internship background.'
   }
 };
-
-function loadSample(type) {
-  const sample = SAMPLES[type];
-  if (!sample) return;
-  ['job_title', 'company', 'location', 'salary', 'website', 'requirements'].forEach((field) => {
-    const element = document.getElementById(`f_${field}`);
-    if (element) element.value = sample[field] || '';
-  });
-  const description = document.getElementById('f_description');
-  if (description) {
-    description.value = sample.description;
-    description.dispatchEvent(new Event('input', { bubbles: true }));
-    setTimeout(() => description.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
-  }
-}
 
 function updateCounter() {
   const description = document.getElementById('f_description');
@@ -59,13 +44,45 @@ function updateCounter() {
   }
 }
 
+function resetFormState() {
+  const description = document.getElementById('f_description');
+  if (description) {
+    description.style.borderColor = '';
+    description.style.boxShadow = '';
+  }
+  const button = document.getElementById('sbtn');
+  if (button) {
+    button.disabled = false;
+    button.innerHTML = '<i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i> Analyse this posting';
+  }
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.style.display = 'none';
+  window.requestAnimationFrame(updateCounter);
+}
+
+function loadSample(type) {
+  const sample = SAMPLES[type];
+  if (!sample) return;
+  ['job_title', 'company', 'location', 'salary', 'website', 'requirements'].forEach((field) => {
+    const element = document.getElementById(`f_${field}`);
+    if (element) element.value = sample[field] || '';
+  });
+  const description = document.getElementById('f_description');
+  if (description) {
+    description.value = sample.description;
+    description.dispatchEvent(new Event('input', { bubbles: true }));
+    window.setTimeout(() => description.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-sample]').forEach((button) => {
     button.addEventListener('click', () => loadSample(button.dataset.sample));
   });
-  document.getElementById('cbtn')?.addEventListener('click', () => setTimeout(updateCounter, 10));
+  const form = document.getElementById('cform');
+  form?.addEventListener('reset', () => window.setTimeout(resetFormState, 0));
   document.getElementById('f_description')?.addEventListener('input', updateCounter);
-  document.getElementById('cform')?.addEventListener('submit', (event) => {
+  form?.addEventListener('submit', (event) => {
     const description = document.getElementById('f_description');
     if (!description || description.value.trim().length < 20) {
       event.preventDefault();
@@ -83,31 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.style.display = 'flex';
-    window.setTimeout(() => {
-      document.getElementById('cold-start-note')?.removeAttribute('hidden');
-      const title = document.getElementById('load-title');
-      if (title) title.textContent = 'Still running…';
-    }, 6000);
     const button = document.getElementById('sbtn');
     if (button) {
       button.disabled = true;
       button.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true" style="font-size:13px;"></i> Analysing…';
     }
   });
-  document.getElementById('f_description')?.addEventListener('input', function () {
-    this.style.borderColor = '';
-    this.style.boxShadow = '';
-  });
   updateCounter();
 });
 
 window.addEventListener('pageshow', (event) => {
-  if (!event.persisted) return;
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.style.display = 'none';
-  const button = document.getElementById('sbtn');
-  if (button) {
-    button.disabled = false;
-    button.innerHTML = '<i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i> Analyse this posting';
-  }
+  if (event.persisted) resetFormState();
 });

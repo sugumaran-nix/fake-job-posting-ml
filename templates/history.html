@@ -48,7 +48,7 @@
   <!-- Stats -->
   {% set fraud_count = history|selectattr('prediction','eq','Fraudulent')|list|length %}
   {% set legit_count = history|length - fraud_count %}
-  <div class="grid-3 stagger history-stats" style="margin-bottom:28px;" role="region" aria-label="Summary statistics">
+  <div class="grid-3 history-stats" style="margin-bottom:28px;" role="region" aria-label="Summary statistics">
     <div class="metric">
       <div class="metric-val" aria-label="{{ history|length }} total">{{ history|length }}</div>
       <div class="metric-lbl">Total analysed</div>
