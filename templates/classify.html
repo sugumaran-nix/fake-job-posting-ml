@@ -41,33 +41,6 @@
     {% endif %}
   </div>
 
-  <!-- Sample buttons -->
-  <div style="margin-bottom:28px;">
-    <p class="label" id="samples-label" style="margin-bottom:12px;">Try a sample</p>
-    <div class="sample-row" role="group" aria-labelledby="samples-label">
-      <button type="button" onclick="loadSample('fraud')" class="sample-btn sample-fraud"
-              aria-label="Load fraudulent job sample — WFH data entry with registration fee">
-        <div aria-hidden="true" style="width:32px;height:32px;min-width:32px;border-radius:8px;background:var(--fraud-dim);display:flex;align-items:center;justify-content:center;">
-          <i class="fa-solid fa-triangle-exclamation" style="color:var(--fraud-text);font-size:13px;" aria-hidden="true"></i>
-        </div>
-        <div style="min-width:0;text-align:left;">
-          <p style="font-size:14px;font-weight:600;color:var(--fraud-text);margin-bottom:2px;">Fraudulent posting</p>
-          <p style="font-size:13px;color:var(--t3);">WFH data entry, fee required</p>
-        </div>
-      </button>
-      <button type="button" onclick="loadSample('legit')" class="sample-btn sample-legit"
-              aria-label="Load legitimate job sample — Zoho Python Developer role">
-        <div aria-hidden="true" style="width:32px;height:32px;min-width:32px;border-radius:8px;background:var(--legit-dim);display:flex;align-items:center;justify-content:center;">
-          <i class="fa-solid fa-circle-check" style="color:var(--legit-text);font-size:13px;" aria-hidden="true"></i>
-        </div>
-        <div style="min-width:0;text-align:left;">
-          <p style="font-size:14px;font-weight:600;color:var(--legit-text);margin-bottom:2px;">Legitimate posting</p>
-          <p style="font-size:13px;color:var(--t3);">Zoho Python Developer, Chennai</p>
-        </div>
-      </button>
-    </div>
-  </div>
-
   <!-- Form -->
   <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform"
         aria-label="Job posting fraud check form">
@@ -149,6 +122,38 @@
                   style="line-height:1.6;resize:vertical;">{{ (form or {}).get('requirements', '') }}</textarea>
       </div>
 
+      <!-- Samples: placed after all fields so users can preview examples before analysing -->
+      <section class="sample-section" aria-labelledby="samples-label">
+        <div class="sample-section-head">
+          <p class="label" id="samples-label">Need a starting point?</p>
+          <p class="sample-section-note">Load an example to see the expected format.</p>
+        </div>
+        <div class="sample-row" role="group" aria-labelledby="samples-label">
+          <button type="button" data-sample="fraud" class="sample-btn sample-fraud"
+                  aria-label="Load fraudulent job sample — WFH data entry with registration fee">
+            <div aria-hidden="true" class="sample-icon sample-icon-fraud">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            </div>
+            <div class="sample-copy">
+              <p>Fraudulent posting</p>
+              <span>WFH data entry, fee required</span>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square sample-arrow" aria-hidden="true"></i>
+          </button>
+          <button type="button" data-sample="legit" class="sample-btn sample-legit"
+                  aria-label="Load legitimate job sample — Zoho Python Developer role">
+            <div aria-hidden="true" class="sample-icon sample-icon-legit">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            </div>
+            <div class="sample-copy">
+              <p>Legitimate posting</p>
+              <span>Zoho Python Developer, Chennai</span>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square sample-arrow" aria-hidden="true"></i>
+          </button>
+        </div>
+      </section>
+
       <!-- Actions -->
       <div style="display:flex;gap:10px;">
         <button type="submit" id="sbtn" class="btn btn-primary" style="flex:1;">
@@ -167,132 +172,7 @@
 </div>
 {% endblock %}
 
+
 {% block scripts %}
-<script>
-const SAMPLES = {
-  fraud: {
-    job_title:    'Work From Home – Easy Data Entry',
-    company:      'QuickEarn Digital Pvt Ltd',
-    location:     'Remote, Anywhere in India',
-    salary:       '₹50,000–₹1,20,000/month guaranteed',
-    website:      'http://quickearnnow.in.free.hosting.com',
-    description:  'URGENT HIRING! Earn ₹50,000 to ₹1,20,000 per month working from home. No experience needed, no qualifications required. Just a smartphone and internet connection. GUARANTEED INCOME every month. Send your Aadhaar card, PAN card and bank account details to register. Pay a one-time registration fee of ₹799 to receive your starter kit. Work responsibilities include simple data entry tasks and online typing. Requirements: Must have a bank account. 1,00,000 happy members already earning! 100% genuine opportunity. Start today!',
-    requirements: 'No degree needed. Registration fee of ₹799 compulsory to receive your joining kit.'
-  },
-  legit: {
-    job_title:    'Junior Backend Developer (Python)',
-    company:      'Zoho Corporation',
-    location:     'Chennai, Tamil Nadu',
-    salary:       '₹4–7 LPA',
-    website:      'https://careers.zohocorp.com',
-    description:  'We are looking for a motivated Junior Backend Developer to join our engineering team in Chennai. You will work on REST APIs, microservices, and internal tooling. Responsibilities include writing clean, testable Python code, participating in code reviews, contributing to Agile sprints, and maintaining technical documentation. We offer a competitive salary, health insurance, PF, gratuity, and structured L&D support. Five days a week, work from office. Apply by sending your resume to careers@zohocorp.com.',
-    requirements: 'B.E./B.Tech/MCA in Computer Science or related. Proficiency in Python 3.x, Flask or FastAPI, Git, SQL. 0–2 years experience or strong internship background.'
-  }
-};
-
-function loadSample(type) {
-  const s = SAMPLES[type];
-  if (!s) return;
-  ['job_title','company','location','salary','website','requirements'].forEach(f => {
-    const el = document.getElementById('f_' + f);
-    if (el) el.value = s[f] || '';
-  });
-  const desc = document.getElementById('f_description');
-  if (desc) {
-    desc.value = s.description;
-    desc.dispatchEvent(new Event('input', { bubbles: true }));
-    setTimeout(() => desc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
-  }
-}
-
-function updateCounter() {
-  const desc    = document.getElementById('f_description');
-  const fill    = document.getElementById('char-fill');
-  const counter = document.getElementById('desc-counter');
-  if (!desc) return;
-  const len = desc.value.length;
-  const pct = Math.min((len / 500) * 100, 100);
-
-  if (fill) {
-    fill.style.width = pct + '%';
-    fill.style.background =
-      len >= 150 ? 'var(--legit)' :
-      len >  50  ? 'var(--warn)'  :
-                   'var(--t4)';
-  }
-  if (counter) {
-    if (len === 0) {
-      counter.textContent = '0 characters';
-      counter.style.color = '';
-    } else if (len < 150) {
-      counter.textContent = `${len} characters — ${150 - len} more recommended`;
-      counter.style.color = 'var(--warn-text)';
-    } else {
-      counter.textContent = `${len} characters ✓`;
-      counter.style.color = 'var(--legit-text)';
-    }
-  }
-}
-
-// Clear button: reset counter too
-document.getElementById('cbtn')?.addEventListener('click', () => {
-  setTimeout(updateCounter, 10);
-});
-
-document.getElementById('f_description')?.addEventListener('input', updateCounter);
-updateCounter();
-
-let coldTimer = null;
-document.getElementById('cform')?.addEventListener('submit', function (e) {
-  // Client-side validation
-  const desc = document.getElementById('f_description');
-  if (!desc || desc.value.trim().length < 20) {
-    e.preventDefault();
-    desc.focus();
-    desc.style.borderColor = 'var(--fraud)';
-    desc.style.boxShadow   = '0 0 0 3px var(--fraud-dim)';
-    const counter = document.getElementById('desc-counter');
-    if (counter) {
-      counter.textContent = 'Please paste a job description before analysing.';
-      counter.style.color = 'var(--fraud-text)';
-    }
-    return;
-  }
-
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.style.display = 'flex';
-
-  coldTimer = setTimeout(() => {
-    const note = document.getElementById('cold-start-note');
-    if (note) note.removeAttribute('hidden');
-    const title = document.getElementById('load-title');
-    if (title) title.textContent = 'Still running…';
-  }, 6000);
-
-  const btn = document.getElementById('sbtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true" style="font-size:13px;"></i> Analysing…';
-  }
-});
-
-// Reset field styling on input
-document.getElementById('f_description')?.addEventListener('input', function () {
-  this.style.borderColor = '';
-  this.style.boxShadow   = '';
-});
-
-// Restore submit button if user navigates back (bfcache)
-window.addEventListener('pageshow', (e) => {
-  if (!e.persisted) return;
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.style.display = 'none';
-  if (coldTimer) clearTimeout(coldTimer);
-  const btn = document.getElementById('sbtn');
-  if (btn) {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i> Analyse this posting';
-  }
-});
-</script>
+<script src="{{ url_for('static', filename='js/classify.js') }}"></script>
 {% endblock %}

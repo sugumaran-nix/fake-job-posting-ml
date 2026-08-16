@@ -128,35 +128,39 @@
 <footer class="footer">
   <div class="footer-inner">
     <div class="footer-brand">
-      <a href="{{ url_for('home') }}" class="nav-logo" style="margin-bottom:0;" aria-label="JobGuard home">
-        <div class="nav-logo-icon" aria-hidden="true" style="width:24px;height:24px;font-size:11px;">
-          <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-        </div>
-        <span class="nav-logo-text" style="font-size:14px;">Job<span>Guard</span></span>
+      <a href="{{ url_for('home') }}" class="footer-brand-link" aria-label="JobGuard home">
+        <span class="footer-mark" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
+        <span class="footer-wordmark">Job<span>Guard</span></span>
       </a>
-      <p>AI-powered fraud detection for job seekers. Free, no account needed.</p>
+      <p class="footer-kicker">A safer second opinion before you apply.</p>
+      <p class="footer-description">AI-powered fraud detection for job seekers. Free, private, and built to help you pause before sharing your time or personal data.</p>
+      <a class="footer-status" href="{{ url_for('classify') }}">
+        <span class="footer-status-dot" aria-hidden="true"></span>
+        <span>Ready to check a posting</span>
+        <i class="fa-solid fa-arrow-up-right" aria-hidden="true"></i>
+      </a>
     </div>
     <nav class="footer-col" aria-label="Tool links">
-      <h4 id="footer-tool">Tool</h4>
+      <h4 id="footer-tool">Explore the tool</h4>
       <ul role="list" aria-labelledby="footer-tool">
-        <li><a href="{{ url_for('classify') }}">Check a Job</a></li>
-        <li><a href="{{ url_for('history') }}">History</a></li>
+        <li><a href="{{ url_for('classify') }}">Check a Job <span aria-hidden="true">↗</span></a></li>
+        <li><a href="{{ url_for('history') }}">Prediction History</a></li>
         <li><a href="{{ url_for('models_page') }}">Model Evaluation</a></li>
       </ul>
     </nav>
-    <nav class="footer-col" aria-label="Info links">
-      <h4 id="footer-info">Info</h4>
+    <nav class="footer-col" aria-label="Information links">
+      <h4 id="footer-info">Learn more</h4>
       <ul role="list" aria-labelledby="footer-info">
-        <li><a href="{{ url_for('about') }}">About</a></li>
+        <li><a href="{{ url_for('about') }}">How it works</a></li>
         <li><a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener noreferrer">
-          Source Code <span style="font-size:10px;" aria-label="opens in new tab">↗</span>
+          Source Code <span aria-hidden="true">↗</span>
         </a></li>
       </ul>
     </nav>
   </div>
   <div class="footer-bottom">
     <span>© 2026 JobGuard</span>
-    <span>Free · No account required</span>
+    <span class="footer-meta"><span class="footer-meta-dot" aria-hidden="true"></span> Free · No account required</span>
   </div>
 </footer>
 

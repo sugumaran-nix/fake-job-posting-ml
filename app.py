@@ -290,12 +290,14 @@ _APPLY_TERMS = {
 def _is_job_posting(text: str) -> bool:
     """Return True only if text looks like a genuine job posting."""
     word_list = text.lower().split()
-    if len(word_list) < 30:
+    # Concise postings can still be valid when they contain all three
+    # semantic signals below; reject only genuinely sparse input.
+    if len(word_list) < 12:
         return False
     words = set(word_list)
     if not (words & _CORE_JOB_TERMS):
         return False
-    if len(words & _QUALIFICATION_TERMS) < 2:
+    if len(words & _QUALIFICATION_TERMS) < 1:
         return False
     if not any(words & c for c in [_WORK_TERMS, _COMPENSATION_TERMS, _APPLY_TERMS]):
         return False
@@ -457,9 +459,17 @@ def save_pred(
 
 
 def get_history(limit: int = 100) -> list[dict[str, Any]]:
-    return _fetch(
+    rows = _fetch(
         "SELECT * FROM predictions ORDER BY submitted_at DESC LIMIT %s", (limit,)
     )
+    # Older local databases may predate probability columns. Normalize rows
+    # at the data boundary so templates can render mixed history safely.
+    for row in rows:
+        row.setdefault("fraud_prob", None)
+        row.setdefault("legit_prob", None)
+        row.setdefault("url_risk", None)
+        row.setdefault("model_used", None)
+    return rows
 
 
 def get_stats() -> dict[str, int]:
@@ -670,6 +680,11 @@ def api_predict():
         },
     })
 
+
+# JSON clients do not carry the HTML form token; API input validation and
+# rate limiting remain active for this endpoint.
+if csrf is not None:
+    csrf.exempt(api_predict)
 
 @app.route("/api/models", methods=["GET"])
 def api_models():
