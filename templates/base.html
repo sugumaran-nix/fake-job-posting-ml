@@ -20,7 +20,8 @@
   <!-- Theme: apply before paint to avoid flash -->
   <script src="{{ url_for('static', filename='js/theme-init.js') }}"></script>
 
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230071E3'/><path d='M16 7a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9zm0 2a7 7 0 1 0 0 14A7 7 0 0 0 16 9zm0 2 1.5 4.5H22l-3.6 2.6 1.4 4.4-3.8-2.8-3.8 2.8 1.4-4.4L10 15.5h4.5z' fill='white'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.svg') }}">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">

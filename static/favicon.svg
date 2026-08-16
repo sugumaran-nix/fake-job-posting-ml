@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>JobGuard</title>
+  <rect width="64" height="64" rx="16" fill="#2563eb"/>
+  <path d="M32 10 49 16v13c0 11.2-6.8 20.1-17 25-10.2-4.9-17-13.8-17-25V16l17-6Z" fill="#fff"/>
+  <path d="m23 31 6 6 12-13" fill="none" stroke="#2563eb" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+</svg>
