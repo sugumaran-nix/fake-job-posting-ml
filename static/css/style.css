@@ -1079,7 +1079,7 @@ main { min-width:0; }
 .classify-page .sample-copy p { font-size: 14px; }
 .classify-page .sample-copy span { font-size: 12px; }
 .classify-page .sample-arrow { color: var(--accent); transition: transform .2s ease; }
-.classify-page .sample-btn:hover .sample-arrow { transform: translateY(2px); }
+.classify-page .sample-btn:hover .sample-arrow { transform: translateY(-2px); }
 .classify-page #sbtn,
 .classify-page #cbtn { min-height: 48px !important; font-size: 15px; }
 .classify-page #cbtn { min-width: 108px !important; }
