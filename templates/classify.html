@@ -41,6 +41,15 @@
     {% endif %}
   </div>
 
+  <nav class="check-progress" aria-label="Analysis progress">
+    <span class="check-progress-step is-active"><b>1</b> Paste posting</span>
+    <span class="check-progress-line" aria-hidden="true"></span>
+    <span class="check-progress-step"><b>2</b> Review details</span>
+    <span class="check-progress-line" aria-hidden="true"></span>
+    <span class="check-progress-step"><b>3</b> Get risk report</span>
+  </nav>
+  <p class="privacy-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Your submission is analyzed on this service and saved in History with the result and submitted details. Use “Clear all” in History to remove saved records.</p>
+
   <!-- Form -->
   <form method="POST" action="{{ url_for('predict_route') }}" novalidate id="cform"
         aria-label="Job posting fraud check form">

@@ -85,7 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 300 + i * 30);
   });
 
-  /* ── Flash auto-dismiss ────────────────────────────────────── */
+  /* ── Flash dismissal + auto-dismiss ────────────────────────── */
+  document.querySelectorAll('[data-dismiss-flash]').forEach(button => {
+    button.addEventListener('click', () => button.closest('.flash')?.remove());
+  });
   document.querySelectorAll('.flash').forEach(el => {
     setTimeout(() => {
       el.style.transition = 'opacity 350ms ease, transform 350ms ease';

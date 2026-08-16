@@ -16,14 +16,19 @@
       </p>
     </div>
     {% if history %}
-    <form method="POST" action="{{ url_for('clear_history') }}"
-          onsubmit="return confirm('Clear all history? This cannot be undone.')">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-danger-ghost">
-        <i class="fa-solid fa-trash" aria-hidden="true" style="font-size:11px;"></i>
-        Clear all
-      </button>
-    </form>
+    <div class="history-header-actions">
+      <a href="{{ url_for('export_history') }}" class="btn btn-ghost" download>
+        <i class="fa-solid fa-download" aria-hidden="true" style="font-size:11px;"></i>
+        Export CSV
+      </a>
+      <form method="POST" action="{{ url_for('clear_history') }}" data-confirm-clear>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger-ghost">
+          <i class="fa-solid fa-trash" aria-hidden="true" style="font-size:11px;"></i>
+          Clear all
+        </button>
+      </form>
+    </div>
     {% endif %}
   </div>
 
@@ -63,6 +68,23 @@
     </div>
   </div>
 
+  <div class="history-toolbar" role="search" aria-label="Filter analysis history">
+    <label class="history-search">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <span class="sr-only">Search history</span>
+      <input id="history-search" type="search" placeholder="Search title or company" autocomplete="off">
+    </label>
+    <label class="history-filter">
+      <span class="sr-only">Filter by verdict</span>
+      <select id="history-filter">
+        <option value="all">All verdicts</option>
+        <option value="fraud">Fraud only</option>
+        <option value="legit">Legitimate only</option>
+      </select>
+    </label>
+    <span id="history-filter-status" class="history-filter-status" aria-live="polite"></span>
+  </div>
+
   <!-- Table — desktop -->
   <div class="card tbl-wrap history-table-card" id="tbl-desktop" style="display:none;" role="region" aria-label="Analysis history table">
     <table class="tbl" aria-label="Job posting history">
@@ -74,6 +96,7 @@
           <th scope="col">Fraud risk</th>
           <th scope="col" class="col-hide-xs">URL risk</th>
           <th scope="col">Verdict</th>
+          <th scope="col" class="history-actions-col"><span class="sr-only">Actions</span></th>
         </tr>
       </thead>
       <tbody>
@@ -81,7 +104,7 @@
         {% set is_fraud = r.prediction == 'Fraudulent' %}
         {% set fraud_prob = r.fraud_prob|default(none, true) %}
         {% set fp = fraud_prob|round(1) if fraud_prob is not none else none %}
-        <tr>
+        <tr data-history-item>
           <td class="td-primary" style="max-width:180px;">
             <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
                   title="{{ r.job_title or '' }}">
@@ -125,6 +148,14 @@
               {{ 'Fraud' if is_fraud else 'Legit' }}
             </span>
           </td>
+          <td class="history-actions-col">
+            <form method="POST" action="{{ url_for('delete_history_item', prediction_id=r.id) }}" data-confirm-delete>
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="history-delete" aria-label="Remove {{ r.job_title or 'this analysis' }} from History" title="Remove from History">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </form>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -137,7 +168,7 @@
     {% set is_fraud = r.prediction == 'Fraudulent' %}
     {% set fraud_prob = r.fraud_prob|default(none, true) %}
         {% set fp = fraud_prob|round(1) if fraud_prob is not none else none %}
-    <div class="card" role="listitem" style="{% if not loop.last %}margin-bottom:10px;{% endif %}padding:16px;">
+    <div class="card" role="listitem" data-history-item style="{% if not loop.last %}margin-bottom:10px;{% endif %}padding:16px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;">
         <p style="font-size:15px;font-weight:600;color:var(--t1);line-height:1.3;">
           {{ r.job_title or 'Untitled' }}
@@ -162,6 +193,13 @@
         {% endif %}
         {% if r.submitted_at %}<span>{{ r.submitted_at[:10] }}</span>{% endif %}
       </div>
+      <form method="POST" action="{{ url_for('delete_history_item', prediction_id=r.id) }}" data-confirm-delete style="margin-top:14px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="history-delete history-delete-mobile">
+          <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+          Remove this analysis
+        </button>
+      </form>
     </div>
     {% endfor %}
   </div>

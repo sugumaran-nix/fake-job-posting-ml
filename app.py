@@ -14,8 +14,10 @@ Changes from v8:
 
 from __future__ import annotations
 
+import csv
 import datetime
 import hmac
+import io
 import json
 import logging
 import os
@@ -31,7 +33,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, flash, jsonify, redirect, render_template, request, url_for
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -570,6 +572,34 @@ def predict_route():
 def history() -> str:
     return render_template("history.html", history=get_history(), stats=get_stats())
 
+@app.route("/history/delete/<int:prediction_id>", methods=["POST"])
+def delete_history_item(prediction_id: int):
+    _exec("DELETE FROM predictions WHERE id=%s", (prediction_id,))
+    flash("Analysis removed from History.", "success")
+    return redirect(url_for("history"))
+
+@app.route("/history/export")
+def export_history() -> Response:
+    rows = get_history()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "submitted_at", "job_title", "company", "location", "salary", "website",
+        "prediction", "fraud_probability", "legit_probability", "confidence",
+        "url_risk", "model_used",
+    ])
+    for row in rows:
+        writer.writerow([
+            row.get("submitted_at", ""), row.get("job_title", ""), row.get("company", ""),
+            row.get("location", ""), row.get("salary", ""), row.get("website", ""),
+            row.get("prediction", ""), row.get("fraud_prob", ""), row.get("legit_prob", ""),
+            row.get("confidence", ""), row.get("url_risk", ""), row.get("model_used", ""),
+        ])
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=jobguard-history.csv"},
+    )
 
 @app.route("/about")
 def about() -> str:

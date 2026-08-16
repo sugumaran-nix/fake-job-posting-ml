@@ -30,7 +30,41 @@
   </div>
 </div>
 
-<div class="container" style="padding-top:32px;padding-bottom:80px;">
+<div class="container result-page" style="padding-top:32px;padding-bottom:80px;">
+  <section class="result-next-step {% if result.is_fraud %}result-next-step-danger{% else %}result-next-step-safe{% endif %}" aria-labelledby="next-step-title">
+    <div class="result-next-step-main">
+      <span class="result-next-step-icon" aria-hidden="true">
+        <i class="fa-solid {% if result.is_fraud %}fa-shield-halved{% else %}fa-circle-check{% endif %}"></i>
+      </span>
+      <div>
+        <p class="label">Recommended next step</p>
+        <h2 id="next-step-title">
+          {% if result.is_fraud %}Pause before you respond to this posting.{% else %}Verify the employer before you apply.{% endif %}
+        </h2>
+        <p>
+          {% if result.is_fraud %}
+            Do not pay, share identity documents, or continue through the supplied contact details until the employer is independently verified.
+          {% else %}
+            This result is not a guarantee. Confirm the role on the employer’s official careers page and apply through a trusted channel.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="result-next-step-list">
+      {% if result.is_fraud %}
+      <span><i class="fa-solid fa-ban" aria-hidden="true"></i> No fees or deposits</span>
+      <span><i class="fa-solid fa-id-card" aria-hidden="true"></i> No sensitive documents</span>
+      <span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Verify the official employer</span>
+      {% else %}
+      <span><i class="fa-solid fa-building" aria-hidden="true"></i> Check the official careers site</span>
+      <span><i class="fa-solid fa-user-check" aria-hidden="true"></i> Confirm the recruiter identity</span>
+      <span><i class="fa-solid fa-ban" aria-hidden="true"></i> Never pay to apply</span>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<div class="container" style="padding-top:0;padding-bottom:80px;">
   <div style="display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start;" class="grid-result">
 
     <!-- LEFT: main analysis -->
@@ -44,6 +78,13 @@
             {{ result.fraud_prob }}%
           </div>
           <div class="metric-lbl">Fraud probability</div>
+          {% if result.fraud_prob >= 70 %}
+          <span class="risk-band risk-band-high">High risk</span>
+          {% elif result.fraud_prob >= 40 %}
+          <span class="risk-band risk-band-review">Review carefully</span>
+          {% else %}
+          <span class="risk-band risk-band-low">Lower risk</span>
+          {% endif %}
         </div>
         <div class="metric" style="{% if not result.is_fraud %}border-color:var(--legit-ring);{% endif %}">
           <div class="metric-val" style="{% if not result.is_fraud %}color:var(--legit-text);{% endif %}"
@@ -264,6 +305,21 @@
         </div>
       </section>
 
+      <!-- Verify independently -->
+      <section aria-labelledby="verify-hd">
+        <div class="card verify-card">
+          <div class="card-head">
+            <span class="label" id="verify-hd">Verify independently</span>
+            <span class="verify-kicker">Before you act</span>
+          </div>
+          <ul class="verify-list" role="list">
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i><span>Find the employer’s official website yourself rather than using a link in the posting.</span></li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i><span>Confirm the job title and recruiter through a second trusted source.</span></li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i><span>Reject requests for fees, gift cards, crypto, passwords, or identity documents.</span></li>
+          </ul>
+        </div>
+      </section>
+
       <!-- URL analysis -->
       <section aria-labelledby="url-hd">
         <div class="card">
@@ -369,14 +425,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.conf-fill[data-target]').forEach(el => {
-    setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 150);
-  });
-  document.querySelectorAll('.bar-fill[data-target]').forEach((el, i) => {
-    setTimeout(() => { el.style.width = el.dataset.target + '%'; }, 300 + i * 30);
-  });
-});
-</script>
+<script src="{{ url_for('static', filename='js/result.js') }}"></script>
 {% endblock %}
