@@ -12,7 +12,7 @@
       <div aria-hidden="true" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
         {% if result.is_fraud %}background:var(--fraud-dim);{% else %}background:var(--legit-dim);{% endif %}">
         <i class="fa-solid {% if result.is_fraud %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"
-           style="font-size:16px;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}"></i>
+           style="font-size:16px;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}" aria-hidden="true"></i>
       </div>
       <div>
         <p style="font-size:15px;font-weight:700;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}">

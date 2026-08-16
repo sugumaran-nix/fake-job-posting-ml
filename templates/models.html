@@ -12,7 +12,7 @@
     </div>
     {% if active_model %}
     <span class="pill pill-accent" style="margin-top:4px;">
-      <i class="fa-solid fa-crown" style="font-size:9px;"></i> {{ active_model }}
+      <i class="fa-solid fa-crown" style="font-size:9px;" aria-hidden="true"></i> {{ active_model }}
     </span>
     {% endif %}
   </div>
@@ -39,7 +39,7 @@
           <td class="td-primary">
             <div style="display:flex;align-items:center;gap:8px;">
               {% if is_active %}
-              <i class="fa-solid fa-crown" style="color:var(--warn-text);font-size:10px;"></i>
+              <i class="fa-solid fa-crown" style="color:var(--warn-text);font-size:10px;" aria-hidden="true"></i>
               {% endif %}
               {{ m.name }}
             </div>
@@ -95,7 +95,7 @@
           {% endfor %}
         </select>
         <button type="submit" class="btn btn-secondary">
-          <i class="fa-solid fa-shuffle" style="font-size:11px;"></i> Switch model
+          <i class="fa-solid fa-shuffle" style="font-size:11px;" aria-hidden="true"></i> Switch model
         </button>
       </form>
     </div>
@@ -125,7 +125,7 @@
   <!-- No metrics -->
   <div class="card" style="padding:64px 24px;text-align:center;">
     <div style="width:48px;height:48px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-      <i class="fa-solid fa-vials" style="color:var(--t3);font-size:20px;"></i>
+      <i class="fa-solid fa-vials" style="color:var(--t3);font-size:20px;" aria-hidden="true"></i>
     </div>
     <p style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px;">No metrics available</p>
     <p style="font-size:14px;color:var(--t3);">Run <code>python train.py</code> to train models and generate evaluation data.</p>

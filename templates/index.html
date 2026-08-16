@@ -8,7 +8,7 @@
   <div class="container-narrow">
 
     <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:99px;background:var(--accent-dim);border:1px solid var(--accent-ring);margin-bottom:24px;">
-      <i class="fa-solid fa-shield-halved" style="color:var(--accent);font-size:11px;"></i>
+      <i class="fa-solid fa-shield-halved" style="color:var(--accent);font-size:11px;" aria-hidden="true"></i>
       <span style="font-size:12px;font-weight:500;color:var(--accent);">AI Fraud Detection · Free · No sign-up</span>
     </div>
 
@@ -22,7 +22,7 @@
 
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
       <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg btn-mobile-full" style="max-width:280px;">
-        <i class="fa-solid fa-magnifying-glass" style="font-size:14px;"></i>
+        <i class="fa-solid fa-magnifying-glass" style="font-size:14px;" aria-hidden="true"></i>
         Check a job posting
       </a>
       <a href="{{ url_for('about') }}" class="btn btn-secondary btn-lg btn-mobile-full" style="max-width:280px;">
@@ -47,7 +47,7 @@
       ] %}
       <div class="metric" style="text-align:center;">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-          <i class="fa-solid {{ icon }}" style="color:var(--accent);font-size:14px;"></i>
+          <i class="fa-solid {{ icon }}" style="color:var(--accent);font-size:14px;" aria-hidden="true"></i>
         </div>
         <div class="metric-val">{{ val }}</div>
         <div class="metric-lbl">{{ lbl }}</div>
@@ -72,7 +72,7 @@
       ] %}
       <div class="card" style="padding:24px;text-align:center;">
         <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-dim);border:1px solid var(--accent-ring);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-          <i class="fa-solid {{ icon }}" style="color:var(--accent);font-size:17px;"></i>
+          <i class="fa-solid {{ icon }}" style="color:var(--accent);font-size:17px;" aria-hidden="true"></i>
         </div>
         <p style="font-size:11px;font-weight:600;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Step {{ step }}</p>
         <h3 style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px;letter-spacing:-0.01em;">{{ title }}</h3>
@@ -117,7 +117,7 @@
     <h2 style="font-size:clamp(20px,4vw,28px);font-weight:700;letter-spacing:-0.02em;color:var(--t1);margin-bottom:10px;">Got a suspicious job in mind?</h2>
     <p style="font-size:16px;color:var(--t3);margin-bottom:24px;">Paste it now. Takes under 10 seconds.</p>
     <a href="{{ url_for('classify') }}" class="btn btn-primary btn-lg">
-      <i class="fa-solid fa-magnifying-glass" style="font-size:14px;"></i>
+      <i class="fa-solid fa-magnifying-glass" style="font-size:14px;" aria-hidden="true"></i>
       Check it now — free
     </a>
   </div>
