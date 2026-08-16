@@ -44,6 +44,15 @@ function updateCounter() {
   }
 }
 
+function clearFormFields() {
+  const form = document.getElementById('cform');
+  if (!form) return;
+  form.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach((field) => {
+    field.value = '';
+  });
+  resetFormState();
+}
+
 function resetFormState() {
   const description = document.getElementById('f_description');
   if (description) {
@@ -53,7 +62,7 @@ function resetFormState() {
   const button = document.getElementById('sbtn');
   if (button) {
     button.disabled = false;
-    button.innerHTML = '<i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i> Analyse this posting';
+    button.innerHTML = '<i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="font-size:13px;"></i> Get my risk report';
   }
   const overlay = document.getElementById('loading-overlay');
   if (overlay) overlay.style.display = 'none';
@@ -80,7 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
     button.addEventListener('click', () => loadSample(button.dataset.sample));
   });
   const form = document.getElementById('cform');
-  form?.addEventListener('reset', () => window.setTimeout(resetFormState, 0));
+  document.getElementById('cbtn')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    clearFormFields();
+  });
+  form?.addEventListener('reset', (event) => {
+    event.preventDefault();
+    clearFormFields();
+  });
   document.getElementById('f_description')?.addEventListener('input', updateCounter);
   form?.addEventListener('submit', (event) => {
     const description = document.getElementById('f_description');
