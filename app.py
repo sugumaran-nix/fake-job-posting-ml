@@ -33,7 +33,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, Response, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, flash, g, jsonify, redirect, render_template, request, url_for
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -51,6 +51,32 @@ logger = logging.getLogger(__name__)
 # ── Flask app ─────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "")
+
+
+@app.before_request
+def _start_request_context() -> None:
+    g.request_id = uuid.uuid4().hex[:12]
+    g.request_started = time.perf_counter()
+
+
+@app.after_request
+def _finish_request(response: Response) -> Response:
+    request_id = getattr(g, "request_id", "-")
+    started = getattr(g, "request_started", None)
+    elapsed_ms = (time.perf_counter() - started) * 1000 if started else 0.0
+    response.headers["X-Request-ID"] = request_id
+    if request.endpoint != "static":
+        logger.info(
+            "request | id=%s | %s %s | status=%s | %.1fms | ip=%s",
+            request_id,
+            request.method,
+            request.path,
+            response.status_code,
+            elapsed_ms,
+            request.remote_addr or "-",
+        )
+    return response
+
 
 if not app.secret_key:
     if os.environ.get("FLASK_ENV") == "production":
@@ -70,12 +96,12 @@ app.config.update(
 
 # ── CSP + Security headers ────────────────────────────────────────────
 # secure-code-guardian: CSP enabled with nonces via Talisman.
-# Allows Tailwind CDN + FontAwesome CDN used in templates.
+# Allows the FontAwesome CDN and explicit Google Fonts stylesheet used in templates.
 CSP: dict[str, Any] = {
     "default-src": "'self'",
-    "script-src":  ["'self'", "https://cdn.tailwindcss.com"],
-    "style-src":   ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
-    "font-src":    ["'self'", "https://cdnjs.cloudflare.com"],
+    "script-src":  ["'self'"],
+    "style-src":   ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
+    "font-src":    ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
     "img-src":     ["'self'", "data:"],
     "connect-src": "'self'",
     "frame-ancestors": "'none'",
@@ -304,7 +330,19 @@ def _is_job_posting(text: str) -> bool:
         return False
     if len(words & _QUALIFICATION_TERMS) < 1:
         return False
-    if not any(words & c for c in [_WORK_TERMS, _COMPENSATION_TERMS, _APPLY_TERMS]):
+    has_posting_context = any(
+        words & c for c in [_WORK_TERMS, _COMPENSATION_TERMS, _APPLY_TERMS]
+    )
+    # API clients often send responsibilities and requirements as separate
+    # fields, so the field labels are not present in ``combined``. Treat a
+    # responsibilities signal plus at least one additional qualification
+    # signal as an equivalent structured-posting fallback.
+    structured_qualification_hits = words & _QUALIFICATION_TERMS
+    has_structured_sections = (
+        bool(words & {"responsibilities", "responsibility", "duties"})
+        and len(structured_qualification_hits) >= 2
+    )
+    if not (has_posting_context or has_structured_sections):
         return False
     return True
 
@@ -506,7 +544,7 @@ def classify() -> str:
 @app.route("/predict", methods=["POST"])
 def predict_route():
     t0 = time.perf_counter()
-    request_id = uuid.uuid4().hex[:8]
+    request_id = getattr(g, "request_id", uuid.uuid4().hex[:8])
 
     # secure-code-guardian: cap ALL fields before any processing
     fd: dict[str, str] = {
@@ -785,16 +823,27 @@ def health():
         bert_size += os.path.getsize(onnx_path) / 1e6
     if os.path.exists(data_path):
         bert_size += os.path.getsize(data_path) / 1e6
+
     p = _get_predictor_safe()
-    return jsonify({
-        "status":       "ok",
+    db_ok = True
+    try:
+        _fetchone("SELECT 1 AS ok")
+    except Exception:
+        db_ok = False
+        logger.exception("Health database check failed | id=%s", getattr(g, "request_id", "-"))
+
+    ready = bool(p) and db_ok
+    body = {
+        "status":       "ok" if ready else "degraded",
         "predictor":    type(p).__name__ if p else "None",
         "active_model": _active_model_name(),
         "bert_onnx":    bert_active,
         "bert_size_mb": round(bert_size, 1) if bert_active else None,
         "db_backend":   "postgresql" if DATABASE_URL else "sqlite",
+        "db_ok":        db_ok,
         "timestamp":    datetime.datetime.now().isoformat(),
-    })
+    }
+    return jsonify(body), (200 if ready else 503)
 
 
 @app.errorhandler(404)
@@ -804,7 +853,12 @@ def not_found(e: Exception) -> tuple[str, int]:
 
 @app.errorhandler(500)
 def server_error(e: Exception) -> tuple[str, int]:
-    logger.error("500: %s", e)
+    logger.error(
+        "Unhandled 500 | id=%s | path=%s",
+        getattr(g, "request_id", "-"),
+        request.path,
+        exc_info=(type(e), e, e.__traceback__),
+    )
     return render_template("500.html"), 500
 
 

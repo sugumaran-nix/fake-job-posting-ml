@@ -4,6 +4,7 @@ services:
     runtime: python
     plan: free
     region: singapore
+    healthCheckPath: /health
     buildCommand: >
       pip install -r requirements.txt &&
       python nltk_setup.py &&

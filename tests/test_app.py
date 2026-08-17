@@ -72,6 +72,19 @@ def test_health(client):
     assert d["status"] == "ok"
     assert "predictor" in d
     assert "db_backend" in d
+    assert d["db_ok"] is True
+    assert len(r.headers.get("X-Request-ID", "")) == 12
+
+
+def test_health_reports_degraded_database(client, monkeypatch):
+    def fail_fetchone(*args, **kwargs):
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(flask_app, "_fetchone", fail_fetchone)
+    response = client.get("/health")
+    assert response.status_code == 503
+    assert response.get_json()["status"] == "degraded"
+    assert response.get_json()["db_ok"] is False
 
 
 def test_404(client):
@@ -147,6 +160,31 @@ def test_guard_rejects_non_job_text(text):
 def test_guard_accepts_job_text(text):
     assert _is_job_posting(text) is True, \
         f"Guard should accept: '{text[:80]}...'"
+
+
+def test_guard_accepts_structured_posting_without_salary_or_apply():
+    text = (
+        "Junior Backend Developer at Example Technology. Responsibilities include building "
+        "REST APIs, reviewing code, and maintaining services. Requirements: Python, Flask, "
+        "SQL, Git, and two years of experience."
+    )
+    assert _is_job_posting(text) is True
+
+
+def test_api_accepts_structured_posting_with_separate_requirements(client):
+    response = client.post("/api/predict", json={
+        "title": "Junior Backend Developer",
+        "company": "Infosys",
+        "description": (
+            "We are hiring a junior backend developer to build REST APIs and internal services. "
+            "Responsibilities include writing tested Python code, reviewing pull requests, "
+            "maintaining documentation, and collaborating with the engineering team."
+        ),
+        "requirements": "BTech in Computer Science, Python, Flask, SQL, Git, and two years of experience.",
+        "website": "https://infosys.com/careers",
+    })
+    assert response.status_code == 200, response.get_data(as_text=True)
+    assert "prediction" in response.get_json()
 
 
 def test_predict_route_rejects_pollution(client):
