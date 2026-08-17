@@ -66,8 +66,7 @@
       </button>
 
       <a href="{{ url_for('classify') }}"
-         class="btn btn-primary nav-cta-desktop"
-         style="font-size:13px;min-height:34px;padding:7px 14px;border-radius:9px;">
+         class="btn btn-primary nav-cta-desktop">
         Check a Job
       </a>
 
@@ -97,19 +96,16 @@
 <!-- FLASH MESSAGES -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div role="alert" aria-live="polite" style="max-width:1080px;margin-inline:auto;padding:16px 24px 0;display:flex;flex-direction:column;gap:8px;">
+<div class="flash-stack" role="alert" aria-live="polite">
   {% for cat, msg in messages %}
-  <div class="flash" role="status" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;font-size:14px;border:1px solid;
-    {% if cat == 'error' %}background:var(--fraud-dim);border-color:var(--fraud-ring);color:var(--fraud-text);
-    {% elif cat == 'success' %}background:var(--legit-dim);border-color:var(--legit-ring);color:var(--legit-text);
-    {% else %}background:var(--warn-dim);border-color:var(--warn-ring);color:var(--warn-text);{% endif %}">
-    <i class="fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"
-       aria-hidden="true" style="flex-shrink:0;"></i>
+  <div class="flash flash-{{ cat }}" role="status">
+    <i class="flash-icon fa-solid {% if cat == 'error' %}fa-circle-exclamation{% elif cat == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"
+       aria-hidden="true"></i>
     <span>{{ msg }}</span>
     <button type="button"
+            class="flash-dismiss"
             data-dismiss-flash
-            aria-label="Dismiss message"
-            style="margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:0.6;font-size:14px;padding:4px;">
+            aria-label="Dismiss message">
       <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </div>
