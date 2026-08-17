@@ -31,7 +31,8 @@ psycopg2-binary==2.9.10
 # ── BERT inference (Render / production) ──────────────────────────────
 # onnxruntime: INT8 dynamic quantisation with quantize_dynamic()
 # produces a single self-contained .onnx (no .data sidecar).
-onnxruntime==1.19.2
+torch==2.3.1+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
 # huggingface-hub: download_bert.py fetches the ONNX model at startup.
 huggingface-hub==0.24.6
 # transformers: tokenizer only (no torch dependency at inference time).
