@@ -606,6 +606,11 @@ def about() -> str:
     return render_template("about.html", metadata=load_metadata())
 
 
+@app.route("/privacy")
+def privacy() -> str:
+    return render_template("privacy.html")
+
+
 @app.route("/models")
 def models_page() -> str:
     bert_meta_path = os.path.join(BASE_DIR, "models", "bert_results.json")

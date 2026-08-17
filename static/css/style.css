@@ -1198,3 +1198,120 @@ main { min-width:0; }
 .verify-list li { display:flex; align-items:flex-start; gap:9px; padding:11px 16px; color:var(--t2); font-size:12px; line-height:1.5; }
 .verify-list li + li { border-top:1px solid var(--border); }
 .verify-list i { color:var(--accent); font-size:10px; margin-top:3px; flex-shrink:0; }
+
+/* ══════════════════════════════════════════════════════════════
+   FOOTER + PRIVACY REFINEMENT
+   ══════════════════════════════════════════════════════════════ */
+.footer {
+  margin-top:28px;
+  background:#101827;
+}
+.footer-inner {
+  grid-template-columns:minmax(260px,1.45fr) minmax(130px,.7fr) minmax(190px,.9fr);
+  gap:40px;
+  padding:26px 24px 22px;
+}
+.footer-description {
+  max-width:260px;
+  margin-top:8px;
+  font-size:12px;
+  line-height:1.4;
+}
+.footer-trust {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:10px;
+  color:#eaf3ff;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:-.01em;
+}
+.footer-trust i { color:#93c5fd; font-size:11px; }
+.footer-col h4 {
+  margin-bottom:8px;
+  color:#91a4be;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.11em;
+  line-height:1.2;
+  text-transform:uppercase;
+}
+.footer-primary h4 { color:#bfdbfe; }
+.footer-col ul { gap:5px; }
+.footer-col a {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:24px;
+  color:#c7d4e5;
+  font-size:14px;
+  line-height:1.25;
+}
+.footer-primary a { color:#f0f6ff; font-weight:600; }
+.footer-secondary a { color:#b8c7da; font-weight:500; }
+.footer-col a:hover { color:#fff; }
+.footer-col a i { color:#93c5fd; font-size:10px; }
+.footer-bottom {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  max-width:1180px;
+  padding:10px 24px 11px;
+  font-size:11px;
+  line-height:1.25;
+}
+.footer-bottom-note { color:#a8bad0; font-weight:600; }
+.footer a:focus-visible { outline:2px solid #93c5fd; outline-offset:3px; border-radius:4px; }
+
+.privacy-page { padding-top:56px; padding-bottom:72px; }
+.privacy-header {
+  padding-bottom:28px !important;
+  border-bottom:1px solid var(--border-2);
+}
+.privacy-header h1 {
+  margin-top:7px;
+  color:var(--t1);
+  font-size:clamp(40px,7vw,72px);
+  font-weight:720;
+  letter-spacing:-.075em;
+  line-height:.98;
+}
+.privacy-header p:not(.eyebrow) { margin-top:12px; color:var(--t3); font-size:15px; }
+.privacy-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:28px; }
+.privacy-card { padding:22px; border:1px solid var(--border-2); border-radius:18px; background:var(--surface); box-shadow:var(--shadow-sm); }
+.privacy-card-wide { grid-column:1 / -1; }
+.privacy-card h2 { margin-top:8px; color:var(--t1); font-size:24px; letter-spacing:-.045em; line-height:1.1; }
+.privacy-card > p:not(.label) { margin-top:10px; color:var(--t2); font-size:14px; line-height:1.65; }
+.privacy-list { display:flex; flex-direction:column; gap:12px; margin-top:14px; padding:0; list-style:none; }
+.privacy-list li { display:flex; align-items:flex-start; gap:10px; color:var(--t2); font-size:13px; line-height:1.55; }
+.privacy-list i { width:16px; margin-top:3px; color:var(--accent); font-size:12px; text-align:center; flex-shrink:0; }
+.privacy-action { display:inline-flex; margin-top:16px; }
+.privacy-action i { margin-left:3px; font-size:11px; }
+
+@media (max-width: 767px) {
+  .footer { margin-top:22px; }
+  .footer-inner { grid-template-columns:1fr 1fr; gap:18px 14px; padding:22px 16px 16px; }
+  .footer-brand { grid-column:1 / -1; }
+  .footer-description { margin-top:6px; font-size:11px; }
+  .footer-trust { margin-top:8px; font-size:12px; }
+  .footer-col h4 { margin-bottom:6px; font-size:10px; }
+  .footer-col ul { gap:3px; }
+  .footer-col a { min-height:22px; font-size:13px; }
+  .footer-bottom { padding:9px 16px 10px; font-size:10px; }
+  .privacy-page { padding-top:36px; padding-bottom:52px; }
+  .privacy-header { padding-bottom:22px !important; }
+  .privacy-header h1 { font-size:clamp(38px,12vw,56px); }
+  .privacy-grid { grid-template-columns:1fr; gap:10px; margin-top:18px; }
+  .privacy-card-wide { grid-column:auto; }
+  .privacy-card { padding:18px; border-radius:16px; }
+  .privacy-card h2 { font-size:21px; }
+  .privacy-card > p:not(.label) { font-size:13px; }
+}
+@media (max-width: 479px) {
+  .footer-inner { grid-template-columns:1fr; gap:14px; }
+  .footer-brand,.footer-secondary { grid-column:auto; }
+  .footer-secondary { padding-top:2px; }
+  .footer-bottom { align-items:flex-start; flex-direction:column; gap:3px; }
+}

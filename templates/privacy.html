@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Privacy &amp; data — JobGuard{% endblock %}
+{% block meta_desc %}How JobGuard stores submitted job postings, History records, exports, and deletion controls.{% endblock %}
+
+{% block content %}
+<div class="container privacy-page">
+  <header class="page-header privacy-header">
+    <div>
+      <p class="eyebrow">DATA &amp; CONTROL</p>
+      <h1>Privacy &amp; data</h1>
+      <p>What JobGuard stores when you check a posting, and how to remove it.</p>
+    </div>
+  </header>
+
+  <div class="privacy-grid">
+    <article class="privacy-card privacy-card-wide">
+      <p class="label">At a glance</p>
+      <h2>Use JobGuard without an account.</h2>
+      <p>JobGuard does not ask you to create a profile. When you run a check, the submitted job details and analysis result are saved in History so you can review, filter, export, or remove them later.</p>
+    </article>
+
+    <section class="privacy-card" aria-labelledby="stored-heading">
+      <p class="label" id="stored-heading">What is stored</p>
+      <ul class="privacy-list">
+        <li><i class="fa-solid fa-file-lines" aria-hidden="true"></i><span>Submitted job fields, including the description, requirements, title, company, location, salary, and website.</span></li>
+        <li><i class="fa-solid fa-chart-simple" aria-hidden="true"></i><span>The verdict, probability scores, model name, URL risk, and submission time.</span></li>
+      </ul>
+    </section>
+
+    <section class="privacy-card" aria-labelledby="control-heading">
+      <p class="label" id="control-heading">Your controls</p>
+      <ul class="privacy-list">
+        <li><i class="fa-solid fa-trash-can" aria-hidden="true"></i><span>Remove a single record from History with its delete action.</span></li>
+        <li><i class="fa-solid fa-broom" aria-hidden="true"></i><span>Use Clear all to remove the saved History records together.</span></li>
+        <li><i class="fa-solid fa-download" aria-hidden="true"></i><span>Export a CSV summary. The export does not include the full description or requirements text.</span></li>
+      </ul>
+    </section>
+
+    <section class="privacy-card privacy-card-wide" aria-labelledby="safe-heading">
+      <p class="label" id="safe-heading">Use safer inputs</p>
+      <p>Submit the job posting you want to check, not your own identity documents or financial information. Do not paste Aadhaar, PAN, bank details, passwords, or private correspondence into the form. JobGuard’s analysis is a screening aid and should be followed by independent verification.</p>
+      <a href="{{ url_for('history') }}" class="btn btn-secondary privacy-action">Open History <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+    </section>
+  </div>
+</div>
+{% endblock %}
