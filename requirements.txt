@@ -15,9 +15,9 @@ flask-limiter==3.8.0
 # ── ML ────────────────────────────────────────────────────────────────
 # FIX: scikit-learn 1.8.0 does not exist — latest stable is 1.5.x.
 # Pin to 1.5.2 which is the last stable release as of late 2024.
-scikit-learn==1.5.2
-numpy==1.26.4
-scipy==1.13.1
+scikit-learn
+numpy
+scipy
 joblib==1.4.2
 nltk==3.9.1
 pandas==2.2.3
