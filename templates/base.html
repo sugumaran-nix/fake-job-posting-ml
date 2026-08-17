@@ -129,28 +129,25 @@
         <span class="footer-wordmark">Job<span>Guard</span></span>
       </a>
       <p class="footer-description">A clear second opinion before you apply.</p>
-      <p class="footer-trust"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Free · No account required</p>
     </div>
     <nav class="footer-col footer-primary" aria-label="Use JobGuard">
       <h4 id="footer-tool">Use JobGuard</h4>
-      <ul role="list" aria-labelledby="footer-tool">
-        <li><a href="{{ url_for('classify') }}">Check a job</a></li>
+      <ul class="footer-inline-links" role="list" aria-labelledby="footer-tool">
+        <li><a href="{{ url_for('classify') }}">Check a job <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></li>
         <li><a href="{{ url_for('history') }}">History</a></li>
       </ul>
     </nav>
-    <nav class="footer-col footer-secondary" aria-label="Learn about JobGuard">
-      <h4 id="footer-info">Learn</h4>
-      <ul role="list" aria-labelledby="footer-info">
+    <nav class="footer-col footer-secondary" aria-label="About JobGuard">
+      <h4 id="footer-info">About</h4>
+      <ul class="footer-inline-links" role="list" aria-labelledby="footer-info">
         <li><a href="{{ url_for('about') }}">How it works</a></li>
         <li><a href="{{ url_for('models_page') }}">Model evaluation</a></li>
-        <li><a href="{{ url_for('privacy') }}">Privacy &amp; data</a></li>
         <li><a href="https://github.com/sugumaran-nix/fake-job-posting-ml" target="_blank" rel="noopener noreferrer">Source code <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></li>
       </ul>
     </nav>
   </div>
   <div class="footer-bottom">
     <span>© 2026 JobGuard</span>
-    <span class="footer-bottom-note">Built for safer job searching</span>
   </div>
 </footer>
 
