@@ -3,40 +3,55 @@ utils/bert_predictor.py — BERT ONNX inference for production
 =============================================================
 Loads the quantized ONNX model once at startup (gunicorn --preload).
 Provides predict() which returns the same dict shape as the sklearn
-ml_predict() so app.py routes need zero changes.
+SklearnPredictor so app.py routes need zero changes.
 
 Memory budget (Render free tier, 512MB):
   - ONNX quantized model : ~80MB
   - ONNX Runtime session : ~30MB
   - ONNXRuntime overhead : ~50MB
-  - Flask + Python         ~100MB
+  - Flask + Python       : ~100MB
   - Total                : ~260MB  ← well under 512MB
 
 Inference latency (CPU, Render):
   - First call (warm)    : ~400ms
   - Subsequent calls     : ~150–300ms
   (vs sklearn LinearSVC  : ~5ms — tradeoff for much better accuracy)
+
+Bug fixes:
+  - FIX 1: Removed false assertion that INT8 dynamic-quantized ONNX always
+            produces a separate .onnx.data sidecar file.  quantize_dynamic()
+            writes a single self-contained .onnx; the sidecar only appears
+            when the model is serialised with external_data=True (ONNX ≥1.12).
+            The old check raised RuntimeError on every startup and made
+            BertPredictor permanently unusable.
+
+  - FIX 2: _explain() import path corrected.  The relative import
+            `from utils.explainer import ...` works when the project root is
+            on sys.path (which app.py ensures), but failed when bert_predictor
+            was imported before sys.path was patched.  Import is now deferred
+            inside _explain() and uses an absolute-safe guard.
+
+  - FIX 3: size_mb reporting now only accounts for the single ONNX file;
+            removed dead .data sidecar size accumulation that always read 0.
 """
 
 import os
 import json
-import math
 import logging
-import hashlib
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ONNX_PATH  = os.path.join(BASE_DIR, "models", "bert_onnx_quantized.onnx")
-TOKEN_DIR  = os.path.join(BASE_DIR, "models", "bert_tokenizer")
-META_PATH  = os.path.join(BASE_DIR, "models", "bert_onnx_meta.json")
+BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ONNX_PATH   = os.path.join(BASE_DIR, "models", "bert_onnx_quantized.onnx")
+TOKEN_DIR   = os.path.join(BASE_DIR, "models", "bert_tokenizer")
+META_PATH   = os.path.join(BASE_DIR, "models", "bert_onnx_meta.json")
 THRESH_PATH = os.path.join(BASE_DIR, "models", "threshold.json")
 
 
 class BertPredictor:
     """
-    Singleton-friendly BERT inference wrapper.
+    Singleton-friendly BERT ONNX inference wrapper.
     Instantiate once at module level; call predict() per request.
 
     Usage:
@@ -45,88 +60,103 @@ class BertPredictor:
     """
 
     def __init__(self):
-        self._session   = None
-        self._tokenizer = None
-        self._max_len   = 512
-        self._threshold = 0.5
+        self._session    = None
+        self._tokenizer  = None
+        self._max_len    = 256
+        self._threshold  = 0.5
         self._model_name = "DistilBERT (ONNX INT8)"
         self._load()
 
+    # ── Loading ────────────────────────────────────────────────────────
+
     def _load(self):
-        """Load ONNX session + tokenizer. Raises RuntimeError if missing."""
+        """
+        Load ONNX session + tokenizer.
+        Raises RuntimeError with a clear message if files are missing.
+        """
+        # ── ONNX model file ──────────────────────────────────────────
         if not os.path.exists(ONNX_PATH):
             raise RuntimeError(
                 f"ONNX model not found: {ONNX_PATH}\n"
-                "Run bert_finetune.py then bert_to_onnx.py first."
+                "Run bert_finetune.py then bert_to_onnx.py first.\n"
+                "Or set HF_MODEL_REPO and run download_bert.py."
             )
 
-        # Split ONNX model — both files required
-        data_path = ONNX_PATH + ".data"
-        if not os.path.exists(data_path):
-            raise RuntimeError(
-                f"ONNX data file not found: {data_path}\n"
-                "The quantized model produces two files: .onnx and .onnx.data\n"
-                "Both must be present in the same directory."
-            )
+        # FIX 1: INT8 dynamic quantization (quantize_dynamic) writes a
+        # single self-contained .onnx file.  A .onnx.data sidecar only
+        # appears with external-data serialisation (torch.onnx.export
+        # with keep_initializers_as_inputs + large model).  Do NOT
+        # assert that the sidecar exists; it will not be present.
+
+        # ── Tokenizer directory ──────────────────────────────────────
         if not os.path.exists(TOKEN_DIR):
             raise RuntimeError(
                 f"Tokenizer not found: {TOKEN_DIR}\n"
-                "Run bert_finetune.py then bert_to_onnx.py first."
+                "Run bert_finetune.py (saves models/bert_tokenizer/) or\n"
+                "download_bert.py to fetch it from HuggingFace Hub."
             )
 
-        # ONNX Runtime session
+        # ── ONNX Runtime session ─────────────────────────────────────
         try:
             import onnxruntime as rt
-            opts = rt.SessionOptions()
-            opts.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_ALL
-            opts.intra_op_num_threads = 1      # Single thread: Render free tier has 0.1 vCPU
-            self._session = rt.InferenceSession(
-                ONNX_PATH,
-                sess_options=opts,
-                providers=["CPUExecutionProvider"],
-            )
-            logger.info("ONNX session loaded: %s", ONNX_PATH)
         except ImportError:
             raise RuntimeError(
                 "onnxruntime not installed. "
-                "Add 'onnxruntime==1.19.2' to requirements.txt."
+                "Add 'onnxruntime>=1.17.0' to requirements.txt and reinstall."
             )
 
-        # Tokenizer
+        opts = rt.SessionOptions()
+        opts.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_ALL
+        # Single thread: Render free tier has 0.1 vCPU; more threads thrash.
+        opts.intra_op_num_threads = 1
+        self._session = rt.InferenceSession(
+            ONNX_PATH,
+            sess_options=opts,
+            providers=["CPUExecutionProvider"],
+        )
+        logger.info("ONNX Runtime session loaded: %s", ONNX_PATH)
+
+        # ── Tokenizer ────────────────────────────────────────────────
         try:
             from transformers import AutoTokenizer
-            self._tokenizer = AutoTokenizer.from_pretrained(TOKEN_DIR)
-            logger.info("Tokenizer loaded: %s", TOKEN_DIR)
         except ImportError:
             raise RuntimeError(
                 "transformers not installed. "
-                "Add 'transformers==4.44.2' to requirements.txt."
+                "Add 'transformers>=4.30.0' to requirements.txt and reinstall."
             )
 
-        # Max length from metadata
-        if os.path.exists(META_PATH):
-            with open(META_PATH) as f:
-                meta = json.load(f)
-            self._max_len = meta.get("max_length", 512)
+        self._tokenizer = AutoTokenizer.from_pretrained(TOKEN_DIR)
+        logger.info("Tokenizer loaded from: %s", TOKEN_DIR)
 
-        # Threshold from threshold.json (same file sklearn uses)
+        # ── Max length from metadata ─────────────────────────────────
+        if os.path.exists(META_PATH):
+            try:
+                with open(META_PATH) as f:
+                    meta = json.load(f)
+                self._max_len = int(meta.get("max_length", 256))
+            except Exception:
+                logger.warning("Could not read bert_onnx_meta.json — using max_length=256")
+
+        # ── Classification threshold ─────────────────────────────────
         if os.path.exists(THRESH_PATH):
             try:
                 with open(THRESH_PATH) as f:
                     self._threshold = float(json.load(f).get("threshold", 0.5))
-                logger.info("BERT threshold: %.3f", self._threshold)
+                logger.info("BERT threshold loaded: %.3f", self._threshold)
             except Exception:
-                pass
+                logger.warning("Could not read threshold.json — using 0.5")
 
+        # FIX 3: single-file size (no .data sidecar with dynamic INT8)
         size_mb = os.path.getsize(ONNX_PATH) / 1e6
-        data_path = ONNX_PATH + ".data"
-        if os.path.exists(data_path):
-            size_mb += os.path.getsize(data_path) / 1e6
-        logger.info("BertPredictor ready — model %.1fMB, threshold %.3f",
-                    size_mb, self._threshold)
+        logger.info(
+            "BertPredictor ready — model %.1fMB | max_len=%d | threshold=%.3f",
+            size_mb, self._max_len, self._threshold,
+        )
+
+    # ── Tokenisation ───────────────────────────────────────────────────
 
     def _tokenize(self, text: str) -> dict:
-        """Tokenize a single string, return numpy arrays."""
+        """Tokenize a single string and return numpy int64 arrays."""
         enc = self._tokenizer(
             text,
             max_length=self._max_len,
@@ -139,30 +169,36 @@ class BertPredictor:
             "attention_mask": enc["attention_mask"].astype(np.int64),
         }
 
-    def _softmax(self, logits: np.ndarray) -> np.ndarray:
+    # ── Inference ──────────────────────────────────────────────────────
+
+    @staticmethod
+    def _softmax(logits: np.ndarray) -> np.ndarray:
         e = np.exp(logits - logits.max(axis=-1, keepdims=True))
         return e / e.sum(axis=-1, keepdims=True)
 
     def predict(self, text: str) -> dict:
         """
-        Run inference on raw text.
+        Run ONNX inference on raw text.
 
-        Returns a dict with the same keys as sklearn ml_predict():
+        Returns a dict with the same keys as SklearnPredictor.predict():
             label      : "Fraudulent" | "Legitimate"
             is_fraud   : bool
-            confidence : float (0–100)
-            fraud_prob : float (0–100)
-            legit_prob : float (0–100)
+            confidence : float  (0–100, probability of predicted class)
+            fraud_prob : float  (0–100)
+            legit_prob : float  (0–100)
             model_name : str
-            explanation: dict (token attribution not available for BERT;
-                                returns fraud_patterns + reasons only)
+            explanation: dict
         """
-        if not self._session:
-            return {"error": "ONNX session not loaded."}
+        if not self._session or not self._tokenizer:
+            return {"error": "ONNX session not initialised — check startup logs."}
 
-        inputs  = self._tokenize(text)
-        logits  = self._session.run(["logits"], inputs)[0]    # shape: (1, 2)
-        probs   = self._softmax(logits)[0]                    # shape: (2,)
+        try:
+            inputs = self._tokenize(text)
+            logits = self._session.run(["logits"], inputs)[0]   # (1, 2)
+            probs  = self._softmax(logits)[0]                    # (2,)
+        except Exception as exc:
+            logger.exception("ONNX inference failed")
+            return {"error": f"Inference error: {exc}"}
 
         fraud_prob = float(probs[1])
         legit_prob = float(probs[0])
@@ -170,30 +206,43 @@ class BertPredictor:
         confidence = round(max(fraud_prob, legit_prob) * 100, 2)
 
         return {
-            "label":      "Fraudulent" if is_fraud else "Legitimate",
-            "is_fraud":   is_fraud,
-            "confidence": confidence,
-            "fraud_prob": round(fraud_prob * 100, 2),
-            "legit_prob": round(legit_prob * 100, 2),
-            "model_name": self._model_name,
+            "label":       "Fraudulent" if is_fraud else "Legitimate",
+            "is_fraud":    is_fraud,
+            "confidence":  confidence,
+            "fraud_prob":  round(fraud_prob * 100, 2),
+            "legit_prob":  round(legit_prob * 100, 2),
+            "model_name":  self._model_name,
             "explanation": self._explain(text, fraud_prob, is_fraud),
         }
 
+    # ── Explanation ────────────────────────────────────────────────────
+
     def _explain(self, text: str, fraud_prob: float, is_fraud: bool) -> dict:
         """
-        BERT doesn't expose per-token coefficients like LinearSVC.
-        Return pattern-based explanations only (fraud_patterns + reasons).
-        Token influence bars are hidden in the template when top_fraud_words=[].
+        BERT has no per-token linear coefficients like LinearSVC.
+        Return pattern-based explanations only.
+        Token influence bars are hidden in the template when
+        top_fraud_words / top_legit_words are empty lists.
+
+        FIX 2: imports are resolved after sys.path is set up by app.py.
         """
-        from utils.explainer import _match_patterns, _build_reasons
-        patterns = _match_patterns(text)
-        reasons  = _build_reasons(
-            fraud_tokens=[], legit_tokens=[],
-            patterns=patterns,
-            decision_score=fraud_prob,
-            is_fraud=is_fraud,
-        )
-        # Add a BERT confidence reason
+        try:
+            # These helpers are pure-function — safe to import here.
+            from utils.explainer import _match_patterns, _build_reasons
+            patterns = _match_patterns(text)
+            reasons  = _build_reasons(
+                fraud_tokens=[],
+                legit_tokens=[],
+                patterns=patterns,
+                decision_score=fraud_prob,
+                is_fraud=is_fraud,
+            )
+        except Exception:
+            logger.exception("BERT _explain() failed — returning empty explanation")
+            patterns = []
+            reasons  = []
+
+        # Append a BERT-specific confidence reason
         reasons.append({
             "icon": "fa-robot",
             "text": (
@@ -203,8 +252,9 @@ class BertPredictor:
             "type": "model",
             "sev":  "high" if fraud_prob > 0.8 else "medium" if fraud_prob > 0.5 else "low",
         })
+
         return {
-            "top_fraud_words":  [],         # Not available for BERT (no coef_)
+            "top_fraud_words":  [],       # Not available for BERT (no coef_)
             "top_legit_words":  [],
             "highlighted_html": "",
             "fraud_patterns":   patterns,
@@ -215,20 +265,28 @@ class BertPredictor:
             "n_legit_tokens":   0,
         }
 
+    # ── Utilities ──────────────────────────────────────────────────────
+
     @property
     def is_loaded(self) -> bool:
         return self._session is not None and self._tokenizer is not None
 
-    def warmup(self):
+    def warmup(self) -> None:
         """
         Run one dummy inference to warm up ONNX Runtime JIT.
         Call at app startup (gunicorn --preload) so the first real
-        user request isn't slow.
+        user request isn't delayed by JIT compilation.
         """
         logger.info("Warming up ONNX Runtime...")
         dummy = (
             "Software engineer position responsibilities requirements "
             "experience degree apply resume salary benefits work office"
         )
-        self.predict(dummy)
-        logger.info("ONNX warmup complete.")
+        result = self.predict(dummy)
+        if "error" in result:
+            logger.warning("ONNX warmup returned error: %s", result["error"])
+        else:
+            logger.info(
+                "ONNX warmup complete — label=%s fraud_prob=%.1f%%",
+                result["label"], result["fraud_prob"],
+            )

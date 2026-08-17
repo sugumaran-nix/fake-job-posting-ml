@@ -816,13 +816,12 @@ def api_models():
 @app.route("/health")
 def health():
     onnx_path   = os.path.join(BASE_DIR, "models", "bert_onnx_quantized.onnx")
-    data_path   = onnx_path + ".data"
+    # INT8 dynamic quantisation (quantize_dynamic) produces a single self-
+    # contained .onnx file — there is no separate .data sidecar.
     bert_active = os.path.exists(onnx_path)
     bert_size   = 0.0
     if bert_active:
-        bert_size += os.path.getsize(onnx_path) / 1e6
-    if os.path.exists(data_path):
-        bert_size += os.path.getsize(data_path) / 1e6
+        bert_size = os.path.getsize(onnx_path) / 1e6
 
     p = _get_predictor_safe()
     db_ok = True

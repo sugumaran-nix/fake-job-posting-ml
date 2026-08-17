@@ -8,7 +8,7 @@
   <div style="padding-bottom:24px;border-bottom:1px solid var(--border);margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
     <div>
       <h1 style="font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--t1);">Model evaluation</h1>
-      <p style="font-size:14px;color:var(--t3);margin-top:4px;">Four classifiers trained on EMSCAD, selected by fraud-class F1.</p>
+      <p style="font-size:14px;color:var(--t3);margin-top:4px;">Classifiers trained on EMSCAD (17,880 postings). BERT uses DistilBERT fine-tuned on the same dataset.</p>
     </div>
     {% if active_model %}
     <span class="pill pill-accent" style="margin-top:4px;">
@@ -19,10 +19,10 @@
 
   {% if metrics %}
 
-  <!-- Comparison table -->
+  <!-- Sklearn comparison table -->
   <div class="card" style="margin-bottom:24px;overflow-x:auto;">
     <div class="card-head">
-      <span class="label">Classifier comparison</span>
+      <span class="label">Sklearn classifiers</span>
     </div>
     <table class="tbl">
       <thead>
@@ -79,12 +79,90 @@
     </table>
   </div>
 
-  <!-- Model switcher -->
+  {% endif %}
+
+  <!-- BERT / ONNX panel -->
+  {% if bert_meta %}
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-head">
+      <span class="label">DistilBERT (ONNX INT8)</span>
+      {% set bert_active = 'BERT' in active_model or 'DistilBERT' in active_model %}
+      {% if bert_active %}
+      <span class="pill pill-legit">Active</span>
+      {% else %}
+      <span class="pill pill-neutral">Available</span>
+      {% endif %}
+    </div>
+    <div style="padding:20px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+      {% set bm = bert_meta %}
+      <div>
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:4px;">ACCURACY</p>
+        <p style="font-size:20px;font-weight:700;color:var(--t1);">
+          {% if bm.test_accuracy %}{{ "%.1f"|format(bm.test_accuracy * 100) }}%{% else %}—{% endif %}
+        </p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:4px;">PRECISION (FRAUD)</p>
+        <p style="font-size:20px;font-weight:700;color:var(--legit-text);">
+          {% if bm.test_precision_fraud %}{{ "%.1f"|format(bm.test_precision_fraud * 100) }}%{% else %}—{% endif %}
+        </p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:4px;">RECALL (FRAUD)</p>
+        <p style="font-size:20px;font-weight:700;color:var(--legit-text);">
+          {% if bm.test_recall_fraud %}{{ "%.1f"|format(bm.test_recall_fraud * 100) }}%{% else %}—{% endif %}
+        </p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:4px;">F1 (FRAUD)</p>
+        <p style="font-size:20px;font-weight:700;color:var(--legit-text);">
+          {% if bm.test_f1_fraud %}{{ "%.1f"|format(bm.test_f1_fraud * 100) }}%{% else %}—{% endif %}
+        </p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:4px;">ROC-AUC</p>
+        <p style="font-size:20px;font-weight:700;color:var(--t1);">
+          {% if bm.test_roc_auc %}{{ "%.4f"|format(bm.test_roc_auc) }}{% else %}—{% endif %}
+        </p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:4px;">THRESHOLD</p>
+        <p style="font-size:20px;font-weight:700;color:var(--t1);">
+          {% if bm.optimal_threshold %}{{ "%.3f"|format(bm.optimal_threshold) }}{% else %}0.500{% endif %}
+        </p>
+      </div>
+    </div>
+    <div style="padding:0 20px 16px;border-top:1px solid var(--border);">
+      <p style="font-size:12px;color:var(--t3);margin-top:12px;">
+        <i class="fa-solid fa-robot" aria-hidden="true"></i>
+        DistilBERT base uncased fine-tuned for {{ bm.epochs or 3 }} epochs · max_length={{ bm.max_length or 256 }} · INT8 dynamic quantisation (single-file ONNX)
+      </p>
+    </div>
+  </div>
+  {% else %}
+  <!-- BERT not yet trained -->
+  <div class="card" style="margin-bottom:24px;padding:32px 24px;">
+    <div style="display:flex;align-items:flex-start;gap:16px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="fa-solid fa-robot" style="color:var(--t3);font-size:18px;" aria-hidden="true"></i>
+      </div>
+      <div>
+        <p style="font-size:15px;font-weight:600;color:var(--t1);margin-bottom:6px;">DistilBERT (ONNX INT8) — not yet trained</p>
+        <p style="font-size:13px;color:var(--t3);line-height:1.6;">
+          Run <code>python bert_finetune.py</code> then <code>python bert_to_onnx.py</code> to fine-tune and export DistilBERT.
+          The ONNX model loads automatically and takes priority over sklearn at startup.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Model switcher (sklearn only) -->
   {% if registry %}
   <div class="card" style="margin-bottom:24px;">
     <div class="card-head">
-      <span class="label">Switch active model</span>
-      <span style="font-size:11px;color:var(--t3);">Hot-swap · single worker</span>
+      <span class="label">Switch active sklearn model</span>
+      <span style="font-size:11px;color:var(--t3);">Hot-swap · sklearn backend only</span>
     </div>
     <div style="padding:16px;">
       <form method="POST" action="{{ url_for('select_model') }}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
@@ -98,6 +176,9 @@
           <i class="fa-solid fa-shuffle" style="font-size:11px;" aria-hidden="true"></i> Switch model
         </button>
       </form>
+      <p style="font-size:12px;color:var(--t3);margin-top:10px;">
+        Model switcher applies only when the sklearn backend is active (BERT ONNX not present).
+      </p>
     </div>
   </div>
   {% endif %}
@@ -108,9 +189,9 @@
     <div style="display:grid;gap:14px;" class="grid-4">
       {% for num, title, desc in [
         ('01', 'Dataset',    'EMSCAD — 17,880 real postings, 866 fraudulent (4.8%). Class imbalance handled with SMOTE on training split only.'),
-        ('02', 'Features',   'Title, company, description, and requirements concatenated. TF-IDF into 10,000 weighted n-gram features.'),
+        ('02', 'Features',   'Title, company, description, and requirements concatenated. TF-IDF into 10,000 weighted n-gram features (sklearn) or raw text to DistilBERT (BERT).'),
         ('03', 'Evaluation', 'Stratified 80/20 split. 5-fold cross-validation on training data. Full classification report per model.'),
-        ('04', 'Selection',  'Highest fraud-class F1 wins. Missing a fraud (false negative) is the costlier error.'),
+        ('04', 'Selection',  'Highest fraud-class F1 wins. Missing a fraud (false negative) is the costlier error. Optimal threshold saved to threshold.json.'),
       ] %}
       <div class="card" style="padding:20px;">
         <p style="font-size:11px;color:var(--t4);font-weight:600;margin-bottom:8px;font-variant-numeric:tabular-nums;">{{ num }}</p>
@@ -121,14 +202,14 @@
     </div>
   </div>
 
-  {% else %}
-  <!-- No metrics -->
-  <div class="card" style="padding:64px 24px;text-align:center;">
+  {% if not metrics and not bert_meta %}
+  <!-- No metrics at all -->
+  <div class="card" style="padding:64px 24px;text-align:center;margin-top:24px;">
     <div style="width:48px;height:48px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
       <i class="fa-solid fa-vials" style="color:var(--t3);font-size:20px;" aria-hidden="true"></i>
     </div>
     <p style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px;">No metrics available</p>
-    <p style="font-size:14px;color:var(--t3);">Run <code>python train.py</code> to train models and generate evaluation data.</p>
+    <p style="font-size:14px;color:var(--t3);">Run <code>python train.py</code> to train sklearn models, or <code>python bert_finetune.py</code> for BERT.</p>
   </div>
   {% endif %}
 

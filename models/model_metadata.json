@@ -14,6 +14,15 @@
     "Logistic Regression",
     "Random Forest",
     "Linear SVM",
-    "Naive Bayes"
-  ]
+    "Naive Bayes",
+    "DistilBERT (ONNX INT8)"
+  ],
+  "bert": {
+    "base_model": "distilbert-base-uncased",
+    "max_length": 256,
+    "quantization": "INT8 dynamic (quantize_dynamic)",
+    "onnx_path": "models/bert_onnx_quantized.onnx",
+    "tokenizer_path": "models/bert_tokenizer",
+    "note": "Single self-contained ONNX file — no .data sidecar"
+  }
 }

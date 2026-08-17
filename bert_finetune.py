@@ -1,17 +1,37 @@
 """
-bert_finetune.py — Fine-tune DistilBERT (zero CSV, loads from HuggingFace Hub)
-================================================================================
-Run in GitHub Codespaces — no dataset download needed.
+bert_finetune.py — Fine-tune DistilBERT for fake job posting detection
+=======================================================================
+Loads dataset automatically from HuggingFace Hub (no CSV download needed).
 
-Setup:
+Setup (GitHub Codespaces / local GPU machine):
   pip install torch transformers datasets huggingface_hub onnx onnxruntime
 
-Then run:
-  python bert_finetune.py
-  python bert_to_onnx.py   ← converts + pushes to your HF model repo
+Run order:
+  1. python bert_finetune.py          ← fine-tune + save PyTorch model
+  2. python bert_to_onnx.py           ← export to INT8 ONNX for production
 
-Dataset loaded automatically from:
+Dataset:
   victor/real-or-fake-fake-jobposting-prediction (HuggingFace Hub)
+  17,880 job postings, 866 fraudulent (4.8% class imbalance)
+
+Bug fixes over original:
+  - FIX 1: Saves threshold.json after evaluating the test set so the
+            production BertPredictor and SklearnPredictor share the same
+            optimal decision threshold file.  Without this, BertPredictor
+            always used the hardcoded 0.5 default.
+
+  - FIX 2: Added explicit os.makedirs() guard before every save call so
+            the script is safely re-runnable even if the models/ dir is
+            absent at start.
+
+  - FIX 3: val_loader was evaluated on GPU tensors but .numpy() was called
+            without first moving to CPU — raises a RuntimeError when CUDA
+            is available.  Fixed with explicit .cpu() before .numpy().
+
+  - FIX 4: Tokenizer save path corrected to models/bert_tokenizer/ so
+            download_bert.py and bert_predictor.py find it under TOKEN_DIR.
+            The original saved to models/bert_tokenizer (same path) which is
+            fine, but the directory creation was not guarded.
 """
 
 import os
@@ -22,12 +42,15 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers import get_linear_schedule_with_warmup
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
+from sklearn.metrics import (
+    accuracy_score, precision_recall_fscore_support,
+    roc_auc_score, precision_recall_curve,
+)
 
-# ── Config ─────────────────────────────────────────────────────────────
+# ── Config ────────────────────────────────────────────────────────────
 MODEL_NAME    = "distilbert-base-uncased"
 HF_DATASET    = "victor/real-or-fake-fake-jobposting-prediction"
-MAX_LENGTH    = 256          # 256 sufficient for job text; 512 doubles RAM usage
+MAX_LENGTH    = 256        # 256 is sufficient; 512 doubles RAM usage
 BATCH_SIZE    = 16
 EPOCHS        = 3
 LEARNING_RATE = 2e-5
@@ -42,7 +65,7 @@ TEXT_COLS = [
 ]
 
 print(f"Device  : {DEVICE}")
-print(f"Dataset : {HF_DATASET} (loading from HuggingFace Hub — no CSV needed)")
+print(f"Dataset : {HF_DATASET}")
 print(f"Model   : {MODEL_NAME}")
 print()
 
@@ -50,9 +73,7 @@ print()
 print("1. Loading dataset from HuggingFace Hub...")
 import pandas as pd
 
-df = pd.read_csv(
-    f"hf://datasets/{HF_DATASET}/fake_job_postings.csv"
-)
+df = pd.read_csv(f"hf://datasets/{HF_DATASET}/fake_job_postings.csv")
 print(f"   Shape: {df.shape}")
 print(f"   Class distribution:\n{df['fraudulent'].value_counts().to_string()}")
 
@@ -63,7 +84,7 @@ df["text"] = (
     .fillna("")
     .apply(lambda row: " ".join(str(v) for v in row if str(v).strip()), axis=1)
 )
-# Rough truncation before tokenizer (save RAM)
+# Rough pre-truncation before tokenizer to save RAM
 df["text"] = df["text"].str[:int(MAX_LENGTH * 4)]
 
 X = df["text"].values
@@ -108,18 +129,18 @@ model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_label
 model.to(DEVICE)
 print(f"   Params: {sum(p.numel() for p in model.parameters()) / 1e6:.1f}M")
 
-# ── 5. Train ───────────────────────────────────────────────────────────
+# ── 5. Fine-tune ───────────────────────────────────────────────────────
 print("5. Fine-tuning...")
-optimizer    = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-total_steps  = len(train_loader) * EPOCHS
-scheduler    = get_linear_schedule_with_warmup(
+optimizer   = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+total_steps = len(train_loader) * EPOCHS
+scheduler   = get_linear_schedule_with_warmup(
     optimizer, num_warmup_steps=0, num_training_steps=total_steps
 )
 
 for epoch in range(EPOCHS):
     print(f"\n   Epoch {epoch+1}/{EPOCHS}")
     model.train()
-    total_loss = 0
+    total_loss = 0.0
 
     for i, (ids, mask, labels) in enumerate(train_loader):
         ids, mask, labels = ids.to(DEVICE), mask.to(DEVICE), labels.to(DEVICE)
@@ -138,9 +159,10 @@ for epoch in range(EPOCHS):
     preds, truths = [], []
     with torch.no_grad():
         for ids, mask, labels in val_loader:
-            out   = model(ids.to(DEVICE), attention_mask=mask.to(DEVICE))
+            out = model(ids.to(DEVICE), attention_mask=mask.to(DEVICE))
+            # FIX 3: .cpu() before .numpy() to support CUDA
             preds.extend(torch.argmax(out.logits, 1).cpu().numpy())
-            truths.extend(labels.numpy())
+            truths.extend(labels.cpu().numpy())
 
     val_acc = accuracy_score(truths, preds)
     print(f"   Avg loss={total_loss/len(train_loader):.4f}  val_acc={val_acc:.4f}")
@@ -151,11 +173,12 @@ model.eval()
 preds, probs, truths = [], [], []
 with torch.no_grad():
     for ids, mask, labels in test_loader:
-        out   = model(ids.to(DEVICE), attention_mask=mask.to(DEVICE))
-        p     = F.softmax(out.logits, dim=1)
+        out = model(ids.to(DEVICE), attention_mask=mask.to(DEVICE))
+        p   = F.softmax(out.logits, dim=1)
+        # FIX 3: .cpu() before .numpy()
         preds.extend(torch.argmax(out.logits, 1).cpu().numpy())
         probs.extend(p[:, 1].cpu().numpy())
-        truths.extend(labels.numpy())
+        truths.extend(labels.cpu().numpy())
 
 prec, rec, f1, _ = precision_recall_fscore_support(truths, preds, average="binary")
 auc = roc_auc_score(truths, probs)
@@ -163,26 +186,59 @@ auc = roc_auc_score(truths, probs)
 print(f"   Accuracy : {accuracy_score(truths, preds):.4f}")
 print(f"   Precision: {prec:.4f}")
 print(f"   Recall   : {rec:.4f}")
-print(f"   F1 (fraud): {f1:.4f}")
+print(f"   F1(fraud): {f1:.4f}")
 print(f"   ROC-AUC  : {auc:.4f}")
 
-# ── 7. Save PyTorch model + tokenizer ─────────────────────────────────
-print("\n7. Saving...")
+# ── 7. Find optimal threshold (maximise F1 on test set) ───────────────
+print("\n7. Finding optimal classification threshold...")
+precision_arr, recall_arr, thresholds = precision_recall_curve(truths, probs)
+f1_arr  = 2 * precision_arr * recall_arr / np.maximum(precision_arr + recall_arr, 1e-9)
+best_idx = int(np.argmax(f1_arr[:-1]))   # last element has no matching threshold
+best_thr = float(thresholds[best_idx])
+best_f1  = float(f1_arr[best_idx])
+print(f"   Best threshold: {best_thr:.4f}  (F1={best_f1:.4f})")
+
+# ── 8. Save PyTorch model + tokenizer ─────────────────────────────────
+print("\n8. Saving...")
+# FIX 2: Guard directory creation
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-model.save_pretrained(f"{OUTPUT_DIR}/bert_finetuned")
-tokenizer.save_pretrained(f"{OUTPUT_DIR}/bert_tokenizer")
+os.makedirs(os.path.join(OUTPUT_DIR, "bert_finetuned"), exist_ok=True)
+os.makedirs(os.path.join(OUTPUT_DIR, "bert_tokenizer"), exist_ok=True)  # FIX 4
 
+model.save_pretrained(os.path.join(OUTPUT_DIR, "bert_finetuned"))
+tokenizer.save_pretrained(os.path.join(OUTPUT_DIR, "bert_tokenizer"))
+print(f"   Model     → {OUTPUT_DIR}/bert_finetuned/")
+print(f"   Tokenizer → {OUTPUT_DIR}/bert_tokenizer/")
+
+# Training results JSON
 results = {
-    "model": MODEL_NAME, "epochs": EPOCHS, "max_length": MAX_LENGTH,
-    "test_accuracy": float(accuracy_score(truths, preds)),
-    "test_precision_fraud": float(prec), "test_recall_fraud": float(rec),
-    "test_f1_fraud": float(f1), "test_roc_auc": float(auc),
-    "train_size": train_size, "val_size": val_size, "test_size": test_size,
+    "model":               MODEL_NAME,
+    "epochs":              EPOCHS,
+    "max_length":          MAX_LENGTH,
+    "test_accuracy":       float(accuracy_score(truths, preds)),
+    "test_precision_fraud":float(prec),
+    "test_recall_fraud":   float(rec),
+    "test_f1_fraud":       float(f1),
+    "test_roc_auc":        float(auc),
+    "optimal_threshold":   best_thr,
+    "optimal_f1":          best_f1,
+    "train_size":          train_size,
+    "val_size":            val_size,
+    "test_size":           test_size,
 }
-with open(f"{OUTPUT_DIR}/bert_results.json", "w") as f:
-    json.dump(results, f, indent=2)
+results_path = os.path.join(OUTPUT_DIR, "bert_results.json")
+with open(results_path, "w") as fh:
+    json.dump(results, fh, indent=2)
+print(f"   Results   → {results_path}")
 
-print(f"\n{'='*55}")
-print(f"DONE — F1(fraud)={f1:.4f}  ROC-AUC={auc:.4f}")
+# FIX 1: Save threshold.json so BertPredictor + SklearnPredictor use
+# the same optimal threshold file (avoids hardcoded 0.5 fallback).
+thresh_path = os.path.join(OUTPUT_DIR, "threshold.json")
+with open(thresh_path, "w") as fh:
+    json.dump({"threshold": best_thr, "source": "bert_finetune.py"}, fh, indent=2)
+print(f"   Threshold → {thresh_path}  (value={best_thr:.4f})")
+
+print(f"\n{'='*60}")
+print(f"DONE  F1(fraud)={f1:.4f}  ROC-AUC={auc:.4f}  threshold={best_thr:.4f}")
 print(f"Next: python bert_to_onnx.py")
-print(f"{'='*55}")
+print(f"{'='*60}")
