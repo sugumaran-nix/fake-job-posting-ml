@@ -310,6 +310,18 @@ def test_clear_history_works_in_dev_mode(client, monkeypatch):
     assert r.status_code in (200, 302)
 
 
+def test_clear_history_db_failure_redirects_with_error(client, monkeypatch):
+    monkeypatch.setattr(flask_app, "ADMIN_TOKEN", "")
+
+    def fail_exec(*args, **kwargs):
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(flask_app, "_exec", fail_exec)
+    response = client.post("/clear_history", data={}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"History could not be cleared right now" in response.data
+
+
 def test_admin_token_empty_string_is_dev_mode(monkeypatch):
     """Empty ADMIN_TOKEN (unset in env) → dev bypass allowed."""
     monkeypatch.setattr(flask_app, "ADMIN_TOKEN", "")

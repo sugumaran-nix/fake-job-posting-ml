@@ -633,7 +633,13 @@ def clear_history():
     if not _check_admin(request):
         flash("Unauthorised.", "error")
         return redirect(url_for("history"))
-    _exec("DELETE FROM predictions")
+    try:
+        # Clearing an already-empty table is intentionally idempotent.
+        _exec("DELETE FROM predictions")
+    except Exception:
+        logger.exception("History clear failed")
+        flash("History could not be cleared right now. Please try again.", "error")
+        return redirect(url_for("history"))
     flash("History cleared.", "success")
     return redirect(url_for("history"))
 
