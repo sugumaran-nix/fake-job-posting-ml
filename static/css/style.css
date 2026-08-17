@@ -1453,3 +1453,36 @@ main { min-width:0; }
   .flash-stack { padding:12px 16px 0; }
   .flash { padding:11px 12px; font-size:13px; }
 }
+
+/* Semantic icon polish */
+.about-pattern-icon {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  flex-shrink:0;
+  border-radius:10px;
+  background:var(--accent-dim);
+  color:var(--accent);
+  font-size:15px;
+  line-height:1;
+}
+.result-verdict-title {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.result-verdict-title i { font-size:13px; }
+
+.result-pattern-icon,
+.result-reason-icon {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  color:var(--accent);
+  line-height:1;
+}
+.result-pattern-icon { width:20px; font-size:14px; }
+.result-reason-icon { width:18px; margin-top:2px; font-size:13px; }

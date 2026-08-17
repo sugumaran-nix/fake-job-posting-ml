@@ -2,17 +2,17 @@
 utils/evaluation.py — JobGuard v7
 ====================================
 Bug fixes from v6:
-  ✅ FIX: load_model_by_name() now resolves relative paths against BASE_DIR.
+  - FIX: load_model_by_name() now resolves relative paths against BASE_DIR.
           The pre-trained model_registry.json stores relative paths
           ("models/linear_svm.pkl"). When gunicorn is launched from a
           directory other than the project root, os.path.exists(relative)
           returned False and model switching silently fell back to model.pkl.
           Now both relative and absolute paths are handled correctly.
 
-  ✅ FIX: save_all_models() saves absolute paths so newly trained models
+  - FIX: save_all_models() saves absolute paths so newly trained models
           never have the relative-path problem.
 
-  ✅ FIX: CV scoring now uses a cloned estimator so cross_val_score runs
+  - FIX: CV scoring now uses a cloned estimator so cross_val_score runs
           on an unfitted estimator as intended, giving a cleaner estimate.
 """
 

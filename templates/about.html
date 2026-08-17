@@ -60,17 +60,17 @@
     <h2 id="patterns-heading" class="label" style="display:block;margin-bottom:14px;">Fraud patterns detected</h2>
     <div class="grid-2">
       {% for icon, title, desc in [
-        ('💸', 'Fee demands',            'Any request for registration, training, or joining fees before employment starts.'),
-        ('🏦', 'Financial data fishing', 'Upfront requests for bank account details, Aadhaar card, or PAN card numbers.'),
-        ('✅', 'False guarantees',        'Promised guaranteed income, assured placement, or "100% job" offers.'),
-        ('🏠', 'Fake WFH schemes',        'Data-entry and typing jobs that require a fee to receive a "starter kit".'),
-        ('⚡', 'Urgency tactics',          'Artificial pressure — "Apply in 24 hours", "Only 5 seats left", "Offer expires today".'),
-        ('🔗', 'Suspicious URLs',          'Free hosting domains, lookalike brand names, or missing HTTPS certificates.'),
-        ('🏢', 'Fake company names',       'Names designed to mimic government agencies, banks, or well-known corporations.'),
-        ('📢', 'MLM disguised as work',    'Network marketing or referral-income schemes presented as salaried employment.'),
+        ('fa-money-bill-wave', 'Fee demands',            'Any request for registration, training, or joining fees before employment starts.'),
+        ('fa-building-columns', 'Financial data fishing', 'Upfront requests for bank account details, Aadhaar card, or PAN card numbers.'),
+        ('fa-circle-check', 'False guarantees',        'Promised guaranteed income, assured placement, or "100% job" offers.'),
+        ('fa-house-laptop', 'Fake WFH schemes',        'Data-entry and typing jobs that require a fee to receive a "starter kit".'),
+        ('fa-bolt', 'Urgency tactics',          'Artificial pressure — "Apply in 24 hours", "Only 5 seats left", "Offer expires today".'),
+        ('fa-link', 'Suspicious URLs',          'Free hosting domains, lookalike brand names, or missing HTTPS certificates.'),
+        ('fa-building', 'Fake company names',       'Names designed to mimic government agencies, banks, or well-known corporations.'),
+        ('fa-bullhorn', 'MLM disguised as work',    'Network marketing or referral-income schemes presented as salaried employment.'),
       ] %}
       <div style="display:flex;align-items:flex-start;gap:12px;padding:16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);">
-        <span aria-hidden="true" style="font-size:20px;flex-shrink:0;line-height:1;margin-top:1px;">{{ icon }}</span>
+        <span class="about-pattern-icon" aria-hidden="true"><i class="fa-solid {{ icon }}"></i></span>
         <div>
           <p style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px;">{{ title }}</p>
           <p style="font-size:13px;color:var(--t3);line-height:1.5;">{{ desc }}</p>

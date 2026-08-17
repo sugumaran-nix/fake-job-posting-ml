@@ -195,7 +195,7 @@ class BertPredictor:
         )
         # Add a BERT confidence reason
         reasons.append({
-            "icon": "🤖",
+            "icon": "fa-robot",
             "text": (
                 f"DistilBERT (fine-tuned on 17,880 job postings) assigned "
                 f"{fraud_prob * 100:.1f}% probability to this being fraudulent."

@@ -15,8 +15,9 @@
            style="font-size:16px;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}" aria-hidden="true"></i>
       </div>
       <div>
-        <p style="font-size:15px;font-weight:700;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}">
-          {% if result.is_fraud %}⚠ Fraudulent Posting Detected{% else %}✓ Legitimate Posting{% endif %}
+        <p class="result-verdict-title" style="font-size:15px;font-weight:700;{% if result.is_fraud %}color:var(--fraud-text);{% else %}color:var(--legit-text);{% endif %}">
+          <i class="fa-solid {% if result.is_fraud %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %}" aria-hidden="true"></i>
+          {% if result.is_fraud %}Fraudulent Posting Detected{% else %}Legitimate Posting{% endif %}
         </p>
         <p style="font-size:12px;color:var(--t3);margin-top:2px;">
           {{ result.model_name }}{% if elapsed_ms %} &nbsp;·&nbsp; {{ elapsed_ms }} ms{% endif %}
@@ -143,7 +144,7 @@
             {% for pat in exp.fraud_patterns %}
             <div class="pat-card pat-{{ pat.severity }}">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <span aria-hidden="true" style="font-size:15px;line-height:1;">{{ pat.icon }}</span>
+                <span class="result-pattern-icon" aria-hidden="true"><i class="fa-solid {{ pat.icon }}"></i></span>
                 <p style="font-size:13px;font-weight:600;color:var(--t1);">{{ pat.label }}</p>
               </div>
               {% if pat.matched %}
@@ -169,7 +170,7 @@
           <ul role="list" style="list-style:none;padding:0;margin:0;">
             {% for r in exp.reasons %}
             <li style="display:flex;align-items:flex-start;gap:12px;padding:12px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-              <span aria-hidden="true" style="font-size:15px;flex-shrink:0;line-height:1;margin-top:1px;">{{ r.icon }}</span>
+              <span class="result-reason-icon" aria-hidden="true"><i class="fa-solid {{ r.icon }}"></i></span>
               <p style="font-size:13px;color:var(--t2);line-height:1.6;">{{ r.text }}</p>
             </li>
             {% endfor %}
@@ -347,15 +348,15 @@
             {% if analysis.url.flags %}
             <ul role="list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">
               {% for icon, title, detail in analysis.url.flags %}
-              {% set is_pos = icon == '✅' %}
-              {% set is_warn = icon == '🟡' %}
+              {% set is_pos = icon == 'fa-circle-check' %}
+              {% set is_warn = icon == 'fa-triangle-exclamation' %}
               <li style="border-radius:8px;padding:10px 12px;
                 {% if is_pos %}background:var(--legit-dim);border:1px solid var(--legit-ring);
                 {% elif is_warn %}background:var(--warn-dim);border:1px solid var(--warn-ring);
                 {% else %}background:var(--fraud-dim);border:1px solid var(--fraud-ring);{% endif %}">
                 <p style="font-size:11px;font-weight:500;margin-bottom:3px;
                   {% if is_pos %}color:var(--legit-text);{% elif is_warn %}color:var(--warn-text);{% else %}color:var(--fraud-text);{% endif %}">
-                  <span aria-hidden="true">{{ icon }}</span> {{ title }}
+                  <i class="fa-solid {{ icon }}" aria-hidden="true"></i> {{ title }}
                 </p>
                 <p style="font-size:11px;color:var(--t3);">{{ detail }}</p>
               </li>

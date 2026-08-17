@@ -2,14 +2,14 @@
 app.py — JobGuard v9 (Production Edition)
 ==========================================
 Changes from v8:
-  ✅ Type hints on all public functions (python-pro)
-  ✅ CSP header enabled via Talisman (secure-code-guardian)
-  ✅ ADMIN_TOKEN uses hmac.compare_digest — timing-safe (secure-code-guardian)
-  ✅ Thread-safe predictor singleton with threading.Lock (python-pro)
-  ✅ Input length caps on ALL API + form fields (secure-code-guardian)
-  ✅ api_predict 503 no longer leaks internal model info (secure-code-guardian)
-  ✅ Structured logging with request_id (python-pro)
-  ✅ Form fields stripped and capped before any use (secure-code-guardian)
+  - Type hints on all public functions (python-pro)
+  - CSP header enabled via Talisman (secure-code-guardian)
+  - ADMIN_TOKEN uses hmac.compare_digest — timing-safe (secure-code-guardian)
+  - Thread-safe predictor singleton with threading.Lock (python-pro)
+  - Input length caps on ALL API + form fields (secure-code-guardian)
+  - api_predict 503 no longer leaks internal model info (secure-code-guardian)
+  - Structured logging with request_id (python-pro)
+  - Form fields stripped and capped before any use (secure-code-guardian)
 """
 
 from __future__ import annotations

@@ -16,8 +16,8 @@ Evaluates company website URLs using:
 Also performs company name credibility analysis.
 
 Fixes over original:
-  ✅ Brand impersonation check no longer suppressed by is_known flag
-  ✅ Scam-keyword match floors combined risk at "medium" even when
+  - Brand impersonation check no longer suppressed by is_known flag
+  - Scam-keyword match floors combined risk at "medium" even when
      a known-brand score reduction would otherwise cancel it out
 """
 
@@ -130,8 +130,8 @@ def analyse_url(url: str) -> dict:
             "score":      35,
             "label":      "Unverifiable",
             "risk_level": "medium",
-            "summary":    "⚠️ No website URL — cannot verify company legitimacy",
-            "flags": [("🟡", "No company website provided",
+            "summary":    "No website URL — cannot verify company legitimacy",
+            "flags": [("fa-triangle-exclamation", "No company website provided",
                        "Every legitimate company has an official website for recruitment")],
             "techniques": [],
             "domain":     "",
@@ -157,17 +157,17 @@ def analyse_url(url: str) -> dict:
     # ── 1. HTTPS ──────────────────────────────────────────────
     techniques.append("HTTPS Validation")
     if raw.strip().startswith("http://"):
-        flags.append(("🔴", "HTTP used — no SSL/TLS encryption",
+        flags.append(("fa-circle-exclamation", "HTTP used — no SSL/TLS encryption",
                       "All legitimate business websites enforce HTTPS. HTTP = untrusted."))
         score += 25
     else:
-        flags.append(("✅", "HTTPS enabled — SSL/TLS present",
+        flags.append(("fa-circle-check", "HTTPS enabled — SSL/TLS present",
                       "Secure connection is a positive credibility indicator"))
 
     # ── 2. IP ADDRESS INSTEAD OF DOMAIN ───────────────────────
     techniques.append("IP vs Domain Check")
     if re.search(r"https?://\d{1,3}(\.\d{1,3}){3}", u):
-        flags.append(("🔴", "Raw IP address used instead of domain",
+        flags.append(("fa-circle-exclamation", "Raw IP address used instead of domain",
                       "Legitimate companies never use raw IP addresses for their websites"))
         score += 80
         risk = _risk(min(score, 100))
@@ -177,7 +177,7 @@ def analyse_url(url: str) -> dict:
     techniques.append("Free Hosting Detection")
     for fh in FREE_HOSTING:
         if fh in u:
-            flags.append(("🔴", f"Free hosting detected: '{fh}'",
+            flags.append(("fa-circle-exclamation", f"Free hosting detected: '{fh}'",
                           "No legitimate company uses free website hosting for official business"))
             score += 60
             break
@@ -187,7 +187,7 @@ def analyse_url(url: str) -> dict:
     tld_flagged = False
     for tld in SUSPICIOUS_TLDS:
         if full_domain.endswith(tld):
-            flags.append(("🔴", f"High-risk free TLD: '{tld}'",
+            flags.append(("fa-circle-exclamation", f"High-risk free TLD: '{tld}'",
                           f"TLDs like '{tld}' are free/cheap and heavily exploited in fraud"))
             score += 50
             tld_flagged = True
@@ -195,7 +195,7 @@ def analyse_url(url: str) -> dict:
     if not tld_flagged:
         for tld in TRUSTED_TLDS:
             if full_domain.endswith(tld):
-                flags.append(("✅", f"Trusted TLD: '{tld}'",
+                flags.append(("fa-circle-check", f"Trusted TLD: '{tld}'",
                               "Standard domain extension is a positive legitimacy signal"))
                 score -= 5
                 break
@@ -204,11 +204,11 @@ def analyse_url(url: str) -> dict:
     techniques.append("URL Entropy Analysis")
     ent = _entropy(domain_name)
     if ent > 3.8:
-        flags.append(("🟡", f"High domain entropy ({ent:.2f} bits) — looks auto-generated",
+        flags.append(("fa-triangle-exclamation", f"High domain entropy ({ent:.2f} bits) — looks auto-generated",
                       "Random-looking domain names (e.g. xjq72earn.com) are common in scam campaigns"))
         score += 28
     elif ent > 3.2:
-        flags.append(("🟡", f"Moderate domain entropy ({ent:.2f} bits)",
+        flags.append(("fa-triangle-exclamation", f"Moderate domain entropy ({ent:.2f} bits)",
                       "Slightly random domain name — warrants caution"))
         score += 12
 
@@ -218,7 +218,7 @@ def analyse_url(url: str) -> dict:
     for kw in SCAM_URL_KEYWORDS:
         kw_clean = kw.replace("-", "")
         if kw_clean in clean_u:
-            flags.append(("🔴", f"Scam keyword in URL: '{kw}'",
+            flags.append(("fa-circle-exclamation", f"Scam keyword in URL: '{kw}'",
                           "Money/earn/instant keywords in domain names are very strong fraud signals"))
             score += 40
             break
@@ -227,11 +227,11 @@ def analyse_url(url: str) -> dict:
     techniques.append("Subdomain Depth Analysis")
     dot_count = full_domain.count(".")
     if dot_count >= 4:
-        flags.append(("🔴", f"Excessive subdomain depth ({dot_count} levels)",
+        flags.append(("fa-circle-exclamation", f"Excessive subdomain depth ({dot_count} levels)",
                       "Deep nesting can mimic real sites to confuse victims"))
         score += 35
     elif dot_count == 3:
-        flags.append(("🟡", f"Unusual subdomain depth ({dot_count} levels)",
+        flags.append(("fa-triangle-exclamation", f"Unusual subdomain depth ({dot_count} levels)",
                       "Three-level subdomains can obscure the real registrant domain"))
         score += 15
 
@@ -242,7 +242,7 @@ def analyse_url(url: str) -> dict:
             official_root = official.split(".")[0]  # e.g. "infosys" from "infosys.com"
             # Only flag if this isn't the legitimate official domain itself
             if full_domain not in (official, "www." + official):
-                flags.append(("🔴", f"Typosquatting '{brand.title()}' detected",
+                flags.append(("fa-circle-exclamation", f"Typosquatting '{brand.title()}' detected",
                               f"'{full_domain}' is NOT '{official}' — classic brand impersonation tactic"))
                 score += 70
                 break
@@ -251,11 +251,11 @@ def analyse_url(url: str) -> dict:
     techniques.append("Domain Digit Density")
     digit_count = len(re.findall(r"\d", domain_name))
     if digit_count >= 4:
-        flags.append(("🔴", f"High digit count in domain ({digit_count} digits in '{domain_name}')",
+        flags.append(("fa-circle-exclamation", f"High digit count in domain ({digit_count} digits in '{domain_name}')",
                       "Digit-heavy domains are auto-registered for short-lived fraud campaigns"))
         score += 30
     elif digit_count >= 2:
-        flags.append(("🟡", f"Digits in domain name ({digit_count} digits)",
+        flags.append(("fa-triangle-exclamation", f"Digits in domain name ({digit_count} digits)",
                       "Legitimate company names rarely include numbers in their domain"))
         score += 12
 
@@ -263,17 +263,17 @@ def analyse_url(url: str) -> dict:
     techniques.append("Domain Length Analysis")
     dlen = len(domain_name)
     if dlen <= 2:
-        flags.append(("🔴", f"Very short domain name ('{domain_name}' — {dlen} chars)",
+        flags.append(("fa-circle-exclamation", f"Very short domain name ('{domain_name}' — {dlen} chars)",
                       "Extremely short domains are suspicious for a company website"))
         score += 25
     elif dlen > 30:
-        flags.append(("🟡", f"Unusually long domain name ({dlen} chars)",
+        flags.append(("fa-triangle-exclamation", f"Unusually long domain name ({dlen} chars)",
                       "Very long domain names often stuff keywords to appear legitimate"))
         score += 15
 
     # ── TOTAL URL LENGTH ──────────────────────────────────────
     if len(raw) > 120:
-        flags.append(("🟡", f"Very long URL ({len(raw)} characters)",
+        flags.append(("fa-triangle-exclamation", f"Very long URL ({len(raw)} characters)",
                       "Long URLs can hide redirect chains and obscure the real destination"))
         score += 12
 
@@ -288,9 +288,9 @@ def _build_result(score, flags, techniques, domain, raw, risk):
         "low":    "Legitimate Domain",
     }
     summaries = {
-        "high":   "⛔ High risk — domain shows strong fraud indicators",
-        "medium": "⚠️ Domain has suspicious characteristics",
-        "low":    "✅ Domain appears legitimate",
+        "high":   "High risk — domain shows strong fraud indicators",
+        "medium": "Domain has suspicious characteristics",
+        "low":    "Domain appears legitimate",
     }
     return {
         "score":      max(min(score, 100), 0),
@@ -333,7 +333,7 @@ def analyse_company(company: str) -> dict:
     for name in KNOWN_LEGIT_COS:
         if name in cl:
             is_known = True
-            flags.append(("✅", f"Recognised company: {c}",
+            flags.append(("fa-circle-check", f"Recognised company: {c}",
                           "Matches a known verified organisation"))
             score -= 20
             break
@@ -341,7 +341,7 @@ def analyse_company(company: str) -> dict:
     # 2. Scam keywords — always checked, regardless of is_known
     matched_kw = [kw for kw in SCAM_COMPANY_KW if kw in cl]
     if matched_kw:
-        flags.append(("🔴", f"Scam keywords: {', '.join(matched_kw[:3])}",
+        flags.append(("fa-circle-exclamation", f"Scam keywords: {', '.join(matched_kw[:3])}",
                       "Words like 'earn', 'guaranteed', 'instant' are hallmarks of fake job scams"))
         score += 55
 
@@ -356,7 +356,7 @@ def analyse_company(company: str) -> dict:
             word_count   = len(cl.split())
             has_scam_kw  = bool(matched_kw)
             if not is_known or word_count > 3 or has_scam_kw:
-                flags.append(("🔴", f"Possible impersonation of '{brand.title()}'",
+                flags.append(("fa-circle-exclamation", f"Possible impersonation of '{brand.title()}'",
                               f"Adds words around '{brand}' to seem like the real company"))
                 score += 55
             break
@@ -372,7 +372,7 @@ def analyse_company(company: str) -> dict:
     ]
     for pat, reason in vague_patterns:
         if re.search(pat, cl):
-            flags.append(("🟡", reason,
+            flags.append(("fa-triangle-exclamation", reason,
                           "Scam postings frequently use generic company names"))
             score += 28
             break
@@ -383,19 +383,19 @@ def analyse_company(company: str) -> dict:
         cl,
     ))
     if scount >= 3:
-        flags.append(("🟡", f"{scount} legal/geographic suffixes stacked",
+        flags.append(("fa-triangle-exclamation", f"{scount} legal/geographic suffixes stacked",
                       "e.g. 'Global International Enterprises Pvt Ltd India'"))
         score += 22
 
     # 6. Numbers in company name
     if re.search(r"\d", c):
-        flags.append(("🟡", "Company name contains numbers",
+        flags.append(("fa-triangle-exclamation", "Company name contains numbers",
                       "Legitimate company names rarely include digits"))
         score += 12
 
     # 7. Name too short
     if len(c) <= 2:
-        flags.append(("🔴", "Company name too short",
+        flags.append(("fa-circle-exclamation", "Company name too short",
                       "Not a credible business identity"))
         score += 35
 
@@ -407,7 +407,7 @@ def analyse_company(company: str) -> dict:
     scam_flag_fired = any(
         "scam" in f[1].lower() or "earn" in f[1].lower()
         or "mlm" in f[1].lower() or "guaranteed" in f[1].lower()
-        for f in flags if f[0] == "🔴"
+        for f in flags if f[0] == "fa-circle-exclamation"
     )
     if scam_flag_fired and effective_score < 22:
         effective_score = 22  # at minimum "medium"
@@ -415,10 +415,10 @@ def analyse_company(company: str) -> dict:
     risk = _risk(effective_score)
 
     summaries = {
-        "high":    "⛔ Company name shows serious red flags",
-        "medium":  "⚠️ Company name has suspicious characteristics",
-        "low":     "✅ Company name appears credible",
-        "unknown": "ℹ️ No company name provided",
+        "high":    "Company name shows serious red flags",
+        "medium":  "Company name has suspicious characteristics",
+        "low":     "Company name appears credible",
+        "unknown": "No company name provided",
     }
     return {
         "score":      effective_score,
@@ -445,8 +445,8 @@ def analyse_all(website: str, company: str) -> dict:
     combined = url_r["score"] * 0.60 + co_r["score"] * 0.40
 
     red_flags = (
-        len([f for f in url_r["flags"] if f[0] == "🔴"]) +
-        len([f for f in co_r["flags"]  if f[0] == "🔴"])
+        len([f for f in url_r["flags"] if f[0] == "fa-circle-exclamation"]) +
+        len([f for f in co_r["flags"]  if f[0] == "fa-circle-exclamation"])
     )
 
     overall = (

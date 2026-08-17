@@ -121,8 +121,8 @@ def test_build_reasons_legit_for_lr(lr_model, vec_and_data):
     )
     icons = [r["icon"] for r in reasons]
     texts = " ".join(r["text"] for r in reasons)
-    assert "✅" in icons, \
-        "Legitimate prediction should show ✅ professional vocabulary reason"
+    assert "fa-circle-check" in icons, \
+        "Legitimate prediction should show a check icon for professional vocabulary"
     assert "Professional vocabulary" in texts
 
 

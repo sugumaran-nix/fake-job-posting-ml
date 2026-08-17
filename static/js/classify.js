@@ -38,7 +38,7 @@ function updateCounter() {
       counter.textContent = `${length} characters — ${150 - length} more recommended`;
       counter.style.color = 'var(--warn-text)';
     } else {
-      counter.textContent = `${length} characters ✓`;
+      counter.textContent = `${length} characters — ready to review`;
       counter.style.color = 'var(--legit-text)';
     }
   }

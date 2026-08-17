@@ -18,10 +18,10 @@ Pipeline (UPGRADED v2):
     → Rejoin → clean string
 
 Changes from v1:
-  ✅ HTML entity decoding (was missed before — &amp; stayed in tokens)
-  ✅ Contraction expansion (don't → do not — better vocab coverage)
-  ✅ URL removal before lowercasing (avoids tokenising domain garbage)
-  ✅ batch_preprocess() for efficient DataFrame processing
+  - HTML entity decoding (was missed before — &amp; stayed in tokens)
+  - Contraction expansion (don't → do not — better vocab coverage)
+  - URL removal before lowercasing (avoids tokenising domain garbage)
+  - batch_preprocess() for efficient DataFrame processing
 """
 
 import re

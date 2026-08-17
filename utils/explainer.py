@@ -4,27 +4,27 @@ utils/explainer.py — JobGuard v7
 Token-level attribution + pattern-based explanations.
 
 Bug fixes from v6:
-  ✅ FIX 1 — _build_reasons: replaced `decision_score < 0` check with
+  - FIX 1 — _build_reasons: replaced `decision_score < 0` check with
              `not is_fraud` flag. The old check NEVER fired for Logistic
              Regression and Naive Bayes because _decision_score() returns
              P(fraud) ∈ [0,1], which is always ≥ 0. Legitimate predictions
              by LR/NB now correctly show professional-vocabulary reasons.
 
-  ✅ FIX 2 — Random Forest vice-versa token display: feature_importances_
+  - FIX 2 — Random Forest vice-versa token display: feature_importances_
              values are unsigned (always ≥ 0). Previously ALL tokens landed
              in fraud_tokens, so even a LEGITIMATE prediction showed every
              word highlighted red. Now RF tokens are split by predicted
              direction using the is_fraud flag.
 
-  ✅ FIX 3 — CalibratedClassifierCV unwrapping: _get_coefs() and
+  - FIX 3 — CalibratedClassifierCV unwrapping: _get_coefs() and
              _decision_score() now unwrap the sklearn calibration wrapper
              to reach the underlying LinearSVC coef_ for correct attribution.
 
-  ✅ FIX 4 — Nested <mark> tags: _highlight_html() now builds highlight
+  - FIX 4 — Nested <mark> tags: _highlight_html() now builds highlight
              on a token-list pass (no regex on already-modified HTML),
              preventing double-marked spans when a bigram overlaps a unigram.
 
-  ✅ FIX 5 — Lemmatized vocab vs raw text: highlighting is done on the
+  - FIX 5 — Lemmatized vocab vs raw text: highlighting is done on the
              _light_clean output (same pipeline the vectorizer sees) not on
              the raw string, so marks actually appear.
 """
@@ -41,7 +41,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "registration_fee",
         "label":   "Registration / Joining Fee",
-        "icon":    "💸",
+        "icon":    "fa-money-bill-wave",
         "severity":"high",
         "regex":   r"\b(registration\s+fee|joining\s+fee|pay\s+to\s+(join|start|register)|starter\s+kit|one.?time\s+fee)\b",
         "reason":  "Legitimate employers never ask candidates to pay fees to apply or start work.",
@@ -49,7 +49,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "guaranteed_income",
         "label":   "Guaranteed / Unrealistic Income",
-        "icon":    "💰",
+        "icon":    "fa-coins",
         "severity":"high",
         "regex":   r"\b(guaranteed\s+(income|salary|earn|pay|money)|earn\s+up\s+to|₹[\d,]+.{0,10}(guaranteed|month|day)|lakh.{0,10}month|crore.{0,10}year)\b",
         "reason":  "Promises of guaranteed high income with no experience are a classic fraud signal.",
@@ -57,7 +57,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "no_experience",
         "label":   "No Experience / Qualification Required",
-        "icon":    "🎯",
+        "icon":    "fa-bullseye",
         "severity":"medium",
         "regex":   r"\b(no\s+(experience|qualification|degree|skill)\s+(needed|required|necessary)|freshers?\s+welcome|anyone\s+can\s+(apply|join)|no\s+interview)\b",
         "reason":  "High-paying jobs requiring no skills are almost always fraudulent.",
@@ -65,7 +65,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "personal_documents",
         "label":   "Request for Personal Documents",
-        "icon":    "🪪",
+        "icon":    "fa-id-card",
         "severity":"high",
         "regex":   r"\b(aadhaar|pan\s+card|bank\s+account\s+(details|number)|passport\s+copy|send\s+your\s+(documents|id|photo)|submit\s+(id|proof))\b",
         "reason":  "Asking for Aadhaar, PAN, or bank details before an offer letter is identity fraud.",
@@ -73,7 +73,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "work_from_home_easy",
         "label":   "Easy Work-From-Home Scheme",
-        "icon":    "🏠",
+        "icon":    "fa-house-laptop",
         "severity":"medium",
         "regex":   r"\b(work\s+from\s+home.{0,30}(easy|simple|just|only)|earn.{0,20}home|home.?based\s+(job|work|earn)|part.?time.{0,20}earn|sitting\s+at\s+home)\b",
         "reason":  "Vague work-from-home offers with high pay and no required skills are scam indicators.",
@@ -81,7 +81,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "urgent_hiring",
         "label":   "Urgent / Immediate Hiring",
-        "icon":    "⚡",
+        "icon":    "fa-bolt",
         "severity":"low",
         "regex":   r"\b(urgent(ly)?\s+(hiring|required|needed|vacancy)|immediate\s+(joining|vacancy|opening)|apply\s+now.{0,20}(limited|hurry|last)|only\s+\d+\s+(seats?|spots?)\s+left)\b",
         "reason":  "Artificial urgency is a pressure tactic used in fraudulent postings.",
@@ -89,7 +89,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "upfront_payment",
         "label":   "Upfront Payment / Investment",
-        "icon":    "🔴",
+        "icon":    "fa-circle-exclamation",
         "severity":"high",
         "regex":   r"\b(pay\s+(first|upfront|advance|deposit)|refundable\s+deposit|security\s+deposit|training\s+(fee|cost|charge)|material\s+(fee|charge|cost))\b",
         "reason":  "Any upfront payment request — even framed as refundable — is a fraud tactic.",
@@ -97,7 +97,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "mlm_network",
         "label":   "MLM / Network Marketing",
-        "icon":    "🔺",
+        "icon":    "fa-network-wired",
         "severity":"high",
         "regex":   r"\b(network\s+marketing|multi.?level|mlm|pyramid|refer\s+and\s+earn|recruit\s+others|downline|passive\s+income\s+(from|through)\s+(refer|recruit))\b",
         "reason":  "Multi-level marketing structures disguised as jobs are a well-known fraud category.",
@@ -105,7 +105,7 @@ FRAUD_PATTERNS = [
     {
         "id":      "vague_description",
         "label":   "Vague or Generic Job Description",
-        "icon":    "📋",
+        "icon":    "fa-clipboard-list",
         "severity":"low",
         "regex":   r"\b(data\s+entry\s+work\s+from\s+home|online\s+(typing|copy.?paste)|simple\s+(online\s+)?work|earn\s+by\s+(typing|clicking|liking))\b",
         "reason":  "Extremely vague job tasks with no real skill requirements indicate a fake posting.",
@@ -435,7 +435,7 @@ def _build_reasons(
     if len(reasons) < 2 and fraud_tokens:
         top_words = [t["word"] for t in fraud_tokens[:4]]
         reasons.append({
-            "icon": "🔍",
+            "icon": "fa-magnifying-glass",
             "text": (
                 f"High-fraud vocabulary detected: «{', '.join(top_words)}» — "
                 "these terms appear disproportionately in fraudulent postings."
@@ -448,7 +448,7 @@ def _build_reasons(
     if not is_fraud and legit_tokens:
         top_words = [t["word"] for t in legit_tokens[:4]]
         reasons.append({
-            "icon": "✅",
+            "icon": "fa-circle-check",
             "text": (
                 f"Professional vocabulary present: «{', '.join(top_words)}» — "
                 "these terms are strongly associated with genuine job postings."
@@ -461,7 +461,7 @@ def _build_reasons(
     abs_score = abs(decision_score)
     if abs_score > 2.0:
         reasons.append({
-            "icon": "📊",
+            "icon": "fa-chart-line",
             "text": (
                 f"Model decision boundary crossed with high margin "
                 f"(score {decision_score:+.2f}) — prediction is confident."
@@ -471,7 +471,7 @@ def _build_reasons(
         })
     elif abs_score < 0.4:
         reasons.append({
-            "icon": "⚠️",
+            "icon": "fa-triangle-exclamation",
             "text": (
                 f"Model decision score is near the boundary "
                 f"(score {decision_score:+.2f}) — treat this result with caution "
